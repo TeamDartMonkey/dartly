@@ -1,0 +1,47 @@
+# Dependencies
+node_modules
+
+# Next.js
+.next/
+out/
+build/
+dist/
+
+# Testing
+coverage
+src/tests/
+
+# Misc
+.DS_Store
+*.pem
+
+# Local env files
+.env*.local
+.env.development
+.env.test.local
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# CI/CD
+.github
+
+# Docs / tooling
+.husky/
+*.md
+README.md
+
+# Logs
+logs/
+
+# Debug
+bun-debug.log*
