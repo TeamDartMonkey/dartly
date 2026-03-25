@@ -10,6 +10,10 @@ const envSchema = z.object({
   LOG_LEVEL: z.enum(["error", "warn", "info", "http", "debug"]).optional(),
   LOG_DIR: z.string().optional(),
   NEXT_PUBLIC_APP_URL: z.url().optional(),
+  DATABASE_URL: z.string().min(1),
+  AUTH_SECRET: z.string().min(1),
+  AUTH_GOOGLE_ID: z.string().min(1),
+  AUTH_GOOGLE_SECRET: z.string().min(1),
 });
 // safeParse allows us to provide a custom error message and exit gracefully
 // instead of throwing an unhandled exception on invalid env vars.
