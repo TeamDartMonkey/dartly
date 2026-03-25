@@ -412,10 +412,19 @@ describe("Button", () => {
 ### Available Variables
 
 ```bash
+# App
 NODE_ENV=development
 LOG_LEVEL=info
 LOG_DIR=logs
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Database
+DATABASE_URL=postgresql://...
+
+# Auth.js — Google OAuth
+AUTH_SECRET=...
+AUTH_GOOGLE_ID=...
+AUTH_GOOGLE_SECRET=...
 ```
 
 ### Using Environment Variables
@@ -477,12 +486,12 @@ All scripts defined in `package.json`:
 | `bun run test:ui` | Run Vitest UI (interactive) |
 | `bun run test:coverage` | Run tests with coverage report |
 
-**Prisma commands** (when Prisma is installed):
+**Prisma commands:**
 | Command | Description |
 |---------|-------------|
-| `bunx prisma studio` | Open Prisma Studio |
-| `bunx prisma migrate dev` | Create and apply Prisma migrations |
-| `bunx prisma generate` | Regenerate Prisma client |
+| `bun run prisma:migrate` | Create and apply Prisma migrations |
+| `bun run prisma:generate` | Regenerate Prisma client after schema changes |
+| `bun run prisma:studio` | Open Prisma Studio for DB inspection |
 
 ---
 
@@ -600,7 +609,7 @@ export const config = {
 
 - Environment variables defined in `next.config.ts` headers, not middleware
 - All public API routes should use `checkRateLimit` from `@/lib/rate-limit`
-- Session management via Supabase Auth
+- Session management via Auth.js v5 (Google OAuth)
 - Row-level security (RLS) policies in Supabase for data isolation
 
 ---
@@ -725,7 +734,7 @@ These choices are final. Do not suggest alternatives.
 | Backend        | Supabase + Prisma    | Managed PostgreSQL with auth and real-time    |
 | Database       | PostgreSQL           | Relational DB, Supabase-managed                |
 | ORM            | Prisma               | Type-safe queries, excellent DX                |
-| Auth           | OAuth                | Social login, no password management           |
+| Auth           | Auth.js v5 + Google OAuth | Social login via OAuth, Prisma adapter for sessions |
 | CSS            | Tailwind CSS v4      | PostCSS plugin for modern setup                |
 | Testing        | Vitest               | Fast, ESM-native, React 19 compatible          |
 | Linting        | Biome                | All-in-one linter + formatter                  |
