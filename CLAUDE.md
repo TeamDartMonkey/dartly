@@ -11,7 +11,7 @@ These choices are final. Do not suggest alternatives or migrations.
 | Backend        | Supabase + Prisma                           | Managed PostgreSQL with built-in auth and real-time features |
 | Database       | PostgreSQL                                  | Relational DB, Supabase-managed for scalability |
 | ORM           | Prisma                                     | Type-safe database client, excellent DX |
-| Auth           | OAuth                                       | Social login integration, no password management overhead |
+| Auth           | Supabase Auth (email/password)               | Built-in auth with email/password registration; OAuth to be added |
 | CSS            | Tailwind CSS v4 with `@theme` API       | PostCSS plugin (`@tailwindcss/postcss`)        |
 | Testing        | Vitest + Testing Library + jsdom          | Fast, ESM-native, React 19 compatible |
 | Linting/Format  | Biome                                        | All-in-one linter + formatter; pre-commit hooks enforce style |
@@ -68,7 +68,7 @@ These choices are final. Do not suggest alternatives or migrations.
 - Protect routes using middleware that checks Supabase session
 - Public routes: home, login, signup
 - Protected routes: dashboard, profile, document library
-- Use OAuth providers for social login (Google, GitHub, etc.)
+- Email/password registration via Supabase Auth (OAuth to be added later)
 
 ### API conventions
 
@@ -115,7 +115,6 @@ These are intentional decisions. Do not "fix" or suggest alternatives:
 - **`zod/v4` import path** — Zod v4 requires this, not `zod`
 - **Single font (Geist Mono)** — monospace-first design choice
 - **Supabase Auth + RLS** — account isolation via database policies, not app-level filtering
-- **OAuth only** — no custom password flows for simplicity
 - **Prisma ORM** — type-safe queries, no raw SQL in app code
 
 ## Scripts Reference

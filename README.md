@@ -91,7 +91,7 @@
 - **Testing:** Vitest + Testing Library + jsdom
 - **Styling:** Tailwind CSS v4
 - **Linting/Formatting:** Biome
-- **Authentication:** OAuth
+- **Authentication:** Supabase Auth (email/password; OAuth to be added)
 - **AI Provider:** (TBD / integrated AI services for resume/document generation)
 - **Deployment Platform:** Vercel
 

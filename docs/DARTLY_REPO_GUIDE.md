@@ -421,10 +421,9 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 # Database
 DATABASE_URL=postgresql://...
 
-# Auth.js — Google OAuth
-AUTH_SECRET=...
-AUTH_GOOGLE_ID=...
-AUTH_GOOGLE_SECRET=...
+# Supabase Auth
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 ```
 
 ### Using Environment Variables
@@ -609,7 +608,7 @@ export const config = {
 
 - Environment variables defined in `next.config.ts` headers, not middleware
 - All public API routes should use `checkRateLimit` from `@/lib/rate-limit`
-- Session management via Auth.js v5 (Google OAuth)
+- Session management via Supabase Auth (email/password)
 - Row-level security (RLS) policies in Supabase for data isolation
 
 ---
@@ -734,7 +733,7 @@ These choices are final. Do not suggest alternatives.
 | Backend        | Supabase + Prisma    | Managed PostgreSQL with auth and real-time    |
 | Database       | PostgreSQL           | Relational DB, Supabase-managed                |
 | ORM            | Prisma               | Type-safe queries, excellent DX                |
-| Auth           | Auth.js v5 + Google OAuth | Social login via OAuth, Prisma adapter for sessions |
+| Auth           | Supabase Auth (email/password) | Built-in auth with email/password registration; OAuth to be added |
 | CSS            | Tailwind CSS v4      | PostCSS plugin for modern setup                |
 | Testing        | Vitest               | Fast, ESM-native, React 19 compatible          |
 | Linting        | Biome                | All-in-one linter + formatter                  |
