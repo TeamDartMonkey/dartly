@@ -32,18 +32,14 @@ export default function DashboardPage() {
     setShowForm(true);
   }
   function handleDelete(id: string) {
-    setJobs((currentJobs) =>
-      currentJobs.filter((job) => job.id !== id)
-    );
+    setJobs((currentJobs) => currentJobs.filter((job) => job.id !== id));
   }
   function handleSave(job: Job) {
     setJobs((currentJobs) => {
       const exists = currentJobs.some((currentJob) => currentJob.id === job.id);
 
       if (exists) {
-        return currentJobs.map((currentJob) =>
-          currentJob.id === job.id ? job : currentJob,
-        );
+        return currentJobs.map((currentJob) => (currentJob.id === job.id ? job : currentJob));
       }
 
       return [job, ...currentJobs];
@@ -76,11 +72,7 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        <JobCardList
-          jobs={jobs}
-          onEdit={handleEditClick}
-          onDelete={handleDelete}
-        />
+        <JobCardList jobs={jobs} onEdit={handleEditClick} onDelete={handleDelete} />
       </div>
 
       <AddJobModal
