@@ -24,3 +24,11 @@ export async function loginUser(email: string, password: string) {
 
   return data;
 }
+
+export async function logoutUser() {
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+    throw new ApiError(500, "Failed to log out.");
+  }
+}
