@@ -1,3 +1,5 @@
+import { LogoutButton } from "@/components/dashboard/logout-button";
+
 export default function DashboardPage() {
   return (
     <div>
@@ -6,5 +8,9 @@ export default function DashboardPage() {
         Your job board will live here.
       </p>
     </div>
+    <main>
+      <p>test</p>
+      <LogoutButton />
+    </main>
   );
 }
