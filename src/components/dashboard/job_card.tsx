@@ -1,6 +1,6 @@
 import type { Job } from "@/types/job";
-import deleteIcon from "@/app/icon/Delete_icon.png";
-import editIcon from '@/app/icon/edit.png'
+import deleteIcon from "@/components/dashboard/icon/Delete_icon.png";
+import editIcon from '@/components/dashboard/icon/edit.png'
 import Image from "next/image";
 type JobCardProps = {
     job: Job;

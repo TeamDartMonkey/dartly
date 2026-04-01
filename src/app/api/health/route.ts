@@ -1,13 +1,24 @@
-import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { withHttpLogging } from "@/lib/api-wrapper";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { createJob, getJobsByUserId } from "@/services/jobs";
 
-export async function GET(request: NextRequest) {
-  return withHttpLogging(request, async () => {
-    const limited = await checkRateLimit(request, { id: "api/health", limit: 60, windowSecs: 60 });
-    if (limited) return limited;
+const USER_ID = "demo-user";
 
-    return NextResponse.json({ status: "ok", timestamp: new Date().toISOString() });
+export async function GET() {
+  const jobs = await getJobsByUserId(USER_ID);
+  return NextResponse.json(jobs);
+}
+
+export async function POST(req: Request) {
+  const body = await req.json();
+
+  const job = await createJob({
+    userId: USER_ID,
+    title: body.title,
+    company: body.company,
+    location: body.location,
+    stage: body.stage,
+    priority: body.priority,
   });
+
+  return NextResponse.json(job);
 }
