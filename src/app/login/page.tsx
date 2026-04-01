@@ -8,6 +8,7 @@ export default function LoginPage() {
       <p>
         Don't have an account? <a href="/register">Sign up</a>
       </p>
+      <a href="/forgot-password">Forgot password?</a>
     </main>
   );
 }
