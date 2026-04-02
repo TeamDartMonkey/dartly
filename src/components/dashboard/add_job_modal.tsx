@@ -38,7 +38,11 @@ export default function AddJobModal({
           </button>
         </div>
 
-        <JobForm initialValues={initialValues} onSubmit={onSubmit} onCancel={onClose} />
+        <JobForm
+          initialValues={initialValues}
+          onSubmit={onSubmit}
+          onCancel={onClose}
+        />
       </div>
     </div>
   );
