@@ -110,11 +110,6 @@ const NAV_ITEMS = [
 export function Sidebar() {
   const pathname = usePathname();
 
-  const AUTH_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password"];
-  if (AUTH_ROUTES.some((route) => pathname.startsWith(route))) {
-    return null;
-  }
-
   return (
     <aside
       className="w-56 shrink-0 flex flex-col border-r border-zinc-800 bg-zinc-950 sticky top-0 h-screen"

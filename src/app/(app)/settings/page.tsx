@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { AccountSection } from "@/components/settings/account-section";
-import { NotificationSection } from "@/components/settings/notification-section";
 import { AppPreferencesSection } from "@/components/settings/app-preferences-section";
+import { NotificationSection } from "@/components/settings/notification-section";
 
 export default function SettingsPage() {
   const [email, setEmail] = useState("");
@@ -37,19 +37,9 @@ export default function SettingsPage() {
       </div>
 
       <div className="space-y-8">
-        <AccountSection
-          email={email}
-          onUpdateEmail={setEmail}
-          onUpdatePassword={() => {}}
-        />
-        <NotificationSection
-          preferences={notifications}
-          onToggle={handleToggleNotification}
-        />
-        <AppPreferencesSection
-          preferences={appPreferences}
-          onUpdate={handleUpdatePreference}
-        />
+        <AccountSection email={email} onUpdateEmail={setEmail} onUpdatePassword={() => {}} />
+        <NotificationSection preferences={notifications} onToggle={handleToggleNotification} />
+        <AppPreferencesSection preferences={appPreferences} onUpdate={handleUpdatePreference} />
       </div>
     </>
   );
