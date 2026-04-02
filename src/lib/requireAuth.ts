@@ -1,8 +1,8 @@
 import "server-only";
-import { createClient } from "@/lib/supabase-server";
+import type { User } from "@supabase/supabase-js";
 import { ApiError } from "@/lib/api-error";
 import { childLogger } from "@/lib/logger";
-import type { User } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase-server";
 
 const log = childLogger("auth");
 

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mockGetUser = vi.fn();
+const { mockGetUser } = vi.hoisted(() => ({ mockGetUser: vi.fn() }));
 
 vi.mock("@/lib/supabase-server", () => ({
   createClient: vi.fn().mockResolvedValue({
@@ -19,8 +19,8 @@ vi.mock("@/lib/logger", () => ({
   }),
 }));
 
-import { requireAuth } from "@/lib/require-auth";
 import { ApiError } from "@/lib/api-error";
+import { requireAuth } from "@/lib/requireAuth";
 
 describe("requireAuth", () => {
   beforeEach(() => {
