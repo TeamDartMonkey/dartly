@@ -43,6 +43,7 @@ export default function JobCard({ job, onEdit, onDelete }: JobCardProps) {
                 <div className="flex gap-2">
                     {onEdit && (
                         <button
+                            type="button"
                             onClick={() => onEdit(job)}
                             className="rounded-md border px-3 py-1 text-xs hover:bg-gray-100"
                         >
@@ -57,6 +58,7 @@ export default function JobCard({ job, onEdit, onDelete }: JobCardProps) {
 
                     {onDelete && (
                         <button
+                            type="button"
                             onClick={() => onDelete(job.id)}
                             className="rounded-md border border-red-300 px-3 py-1 text-xs text-red-600 hover:bg-red-50"
                         >
