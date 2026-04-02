@@ -108,8 +108,6 @@ const NAV_ITEMS = [
 // Sidebar component
 // ---------------------------------------------------------------------------
 export function Sidebar() {
-  // usePathname() tells us which URL the user is currently on.
-  // We use this to highlight the active nav link.
   const pathname = usePathname();
 
   return (

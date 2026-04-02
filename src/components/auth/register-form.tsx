@@ -88,25 +88,60 @@ export function RegisterForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      {error && <p>{error}</p>}
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
+        <div className="rounded-md bg-red-500/10 border border-red-500/20 px-3 py-2 text-sm text-red-400">
+          {error}
+        </div>
+      )}
 
-      <label htmlFor="email">Email</label>
-      <input id="email" name="email" type="email" placeholder="Email" required />
+      <div>
+        <label htmlFor="email" className="mb-1 block text-xs font-medium text-zinc-400">
+          Email
+        </label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          placeholder="you@example.com"
+          required
+          className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+        />
+      </div>
 
-      <label htmlFor="password">Password</label>
-      <input id="password" name="password" type="password" placeholder="Password" required />
+      <div>
+        <label htmlFor="password" className="mb-1 block text-xs font-medium text-zinc-400">
+          Password
+        </label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          placeholder="••••••••"
+          required
+          className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+        />
+      </div>
 
-      <label htmlFor="confirmPassword">Confirm Password</label>
-      <input
-        id="confirmPassword"
-        name="confirmPassword"
-        type="password"
-        placeholder="Confirm Password"
-        required
-      />
+      <div>
+        <label htmlFor="confirmPassword" className="mb-1 block text-xs font-medium text-zinc-400">
+          Confirm Password
+        </label>
+        <input
+          id="confirmPassword"
+          name="confirmPassword"
+          type="password"
+          placeholder="••••••••"
+          required
+          className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+        />
+      </div>
 
-      <button type="submit" disabled={loading}>
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-50 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+      >
         {loading ? "Creating account..." : "Register"}
       </button>
     </form>

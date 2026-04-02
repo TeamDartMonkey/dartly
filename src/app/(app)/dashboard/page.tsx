@@ -50,10 +50,7 @@ export default function DashboardPage() {
     .filter((job) => {
       if (search) {
         const q = search.toLowerCase();
-        return (
-          job.title.toLowerCase().includes(q) ||
-          job.company.toLowerCase().includes(q)
-        );
+        return job.title.toLowerCase().includes(q) || job.company.toLowerCase().includes(q);
       }
       return true;
     })
@@ -73,9 +70,7 @@ export default function DashboardPage() {
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-zinc-50">Dashboard</h1>
-          <p className="mt-1 text-sm text-zinc-400">
-            Track and manage your job applications.
-          </p>
+          <p className="mt-1 text-sm text-zinc-400">Track and manage your job applications.</p>
         </div>
         <button
           type="button"

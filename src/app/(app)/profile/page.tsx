@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { CompletionIndicator } from "@/components/profile/completion-indicator";
-import { IdentitySection } from "@/components/profile/identity-section";
-import { SummarySection } from "@/components/profile/summary-section";
-import { ExperienceSection } from "@/components/profile/experience-section";
-import { EducationSection } from "@/components/profile/education-section";
-import { SkillsSection } from "@/components/profile/skills-section";
+import { useMemo, useState } from "react";
 import { CareerPreferencesSection } from "@/components/profile/career-preferences-section";
-import type { ProfileData, CompletionField } from "@/types/profile";
+import { CompletionIndicator } from "@/components/profile/completion-indicator";
+import { EducationSection } from "@/components/profile/education-section";
+import { ExperienceSection } from "@/components/profile/experience-section";
+import { IdentitySection } from "@/components/profile/identity-section";
+import { SkillsSection } from "@/components/profile/skills-section";
+import { SummarySection } from "@/components/profile/summary-section";
+import type { CompletionField, ProfileData } from "@/types/profile";
 
 const EMPTY_PROFILE: ProfileData = {
   targetRoles: [],

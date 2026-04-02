@@ -13,16 +13,13 @@ export function ResetPasswordForm() {
     const supabase = createClient();
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log("session:", session);
       if (session) {
         setSessionReady(true);
       } else {
-        // Try exchanging the code as fallback
         const code = new URLSearchParams(window.location.search).get("code");
         if (code) {
           supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
             if (error) {
-              console.log("exchange error:", error);
               setError("Invalid or expired reset link.");
             } else {
               setSessionReady(true);
@@ -104,25 +101,52 @@ export function ResetPasswordForm() {
   }
 
   if (error && !sessionReady) {
-    return <p>{error}</p>;
+    return (
+      <div className="rounded-md bg-red-500/10 border border-red-500/20 px-3 py-2 text-sm text-red-400">
+        {error}
+      </div>
+    );
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      {error && <p>{error}</p>}
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
+        <div className="rounded-md bg-red-500/10 border border-red-500/20 px-3 py-2 text-sm text-red-400">
+          {error}
+        </div>
+      )}
 
-      <label htmlFor="password">New Password</label>
-      <input id="password" name="password" type="password" placeholder="Password" />
+      <div>
+        <label htmlFor="password" className="mb-1 block text-xs font-medium text-zinc-400">
+          New Password
+        </label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          placeholder="••••••••"
+          className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+        />
+      </div>
 
-      <label htmlFor="confirmPassword">Confirm New Password</label>
-      <input
-        id="confirmPassword"
-        name="confirmPassword"
-        type="password"
-        placeholder="Confirm Password"
-      />
+      <div>
+        <label htmlFor="confirmPassword" className="mb-1 block text-xs font-medium text-zinc-400">
+          Confirm New Password
+        </label>
+        <input
+          id="confirmPassword"
+          name="confirmPassword"
+          type="password"
+          placeholder="••••••••"
+          className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+        />
+      </div>
 
-      <button type="submit" disabled={loading}>
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-50 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+      >
         {loading ? "Updating password..." : "Reset Password"}
       </button>
     </form>
