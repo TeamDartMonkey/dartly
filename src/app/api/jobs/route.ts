@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logError } from "@/lib/logger";
 import { createJob, getJobsByUserId } from "@/services/jobs";
 
 const USER_ID = "demo-user";
@@ -8,7 +9,7 @@ export async function GET() {
     const jobs = await getJobsByUserId(USER_ID);
     return NextResponse.json(jobs, { status: 200 });
   } catch (error) {
-    console.error("Failed to fetch jobs:", error);
+    logError("Failed to fetch jobs", error);
     return NextResponse.json({ error: "Failed to fetch jobs" }, { status: 500 });
   }
 }
@@ -32,7 +33,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(job, { status: 201 });
   } catch (error) {
-    console.error("Failed to create job:", error);
+    logError("Failed to create job", error);
     return NextResponse.json({ error: "Failed to create job" }, { status: 500 });
   }
 }
