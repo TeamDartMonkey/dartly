@@ -1,14 +1,36 @@
-import type { JobStage } from "@prisma/client";
+import type { Job as PrismaJob, JobStage as PrismaJobStage } from "@prisma/client";
+import { STAGE_PRISMA_TO_UI, STAGE_UI_TO_PRISMA } from "@/constants/job-stages";
 import { prisma } from "@/services/prisma";
+import type { Job, JobStage } from "@/types/job";
 
 type CreateJobInput = {
   userId: string;
   title: string;
   company: string;
   location?: string;
-  stage?: JobStage;
+  stage?: string;
   priority?: boolean;
 };
+
+type UpdateJobInput = {
+  title?: string;
+  company?: string;
+  location?: string;
+  stage?: string;
+  priority?: boolean;
+};
+
+export function toJobResponse(job: PrismaJob): Job {
+  return {
+    id: job.id,
+    title: job.title,
+    company: job.company,
+    stage: STAGE_PRISMA_TO_UI[job.stage] ?? "Interested",
+    lastActivityDate: (job.lastActivityAt ?? job.createdAt).toISOString().slice(0, 10),
+    location: job.location ?? undefined,
+    priority: job.priority,
+  };
+}
 
 export async function getJobsByUserId(userId: string) {
   return prisma.job.findMany({
@@ -18,15 +40,45 @@ export async function getJobsByUserId(userId: string) {
 }
 
 export async function createJob(data: CreateJobInput) {
+  const prismaStage = data.stage
+    ? (STAGE_UI_TO_PRISMA[data.stage as JobStage] as PrismaJobStage)
+    : "INTERESTED";
+
   return prisma.job.create({
     data: {
       userId: data.userId,
       title: data.title,
       company: data.company,
       location: data.location,
-      stage: data.stage ?? "INTERESTED",
+      stage: prismaStage,
       priority: data.priority ?? false,
       lastActivityAt: new Date(),
     },
   });
+}
+
+export async function updateJob(id: string, userId: string, data: UpdateJobInput) {
+  const existing = await prisma.job.findFirst({ where: { id, userId } });
+  if (!existing) return null;
+
+  const prismaStage = data.stage
+    ? (STAGE_UI_TO_PRISMA[data.stage as JobStage] as PrismaJobStage)
+    : undefined;
+
+  return prisma.job.update({
+    where: { id },
+    data: {
+      ...(data.title !== undefined && { title: data.title }),
+      ...(data.company !== undefined && { company: data.company }),
+      ...(data.location !== undefined && { location: data.location }),
+      ...(prismaStage !== undefined && { stage: prismaStage }),
+      ...(data.priority !== undefined && { priority: data.priority }),
+      lastActivityAt: new Date(),
+    },
+  });
+}
+
+export async function deleteJob(id: string, userId: string): Promise<boolean> {
+  const { count } = await prisma.job.deleteMany({ where: { id, userId } });
+  return count > 0;
 }

@@ -3,7 +3,7 @@ import { handleApiError } from "@/lib/api-error";
 import { withHttpLogging } from "@/lib/api-wrapper";
 import logger from "@/lib/logger";
 import { createClient } from "@/lib/supabase-server";
-import { createJob, getJobsByUserId } from "@/services/jobs";
+import { createJob, getJobsByUserId, toJobResponse } from "@/services/jobs";
 
 export async function GET(request: NextRequest) {
   return withHttpLogging(request, async () => {
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       }
 
       const jobs = await getJobsByUserId(user.id);
-      return NextResponse.json(jobs, { status: 200 });
+      return NextResponse.json(jobs.map(toJobResponse), { status: 200 });
     } catch (err) {
       logger.error("Failed to fetch jobs", { err });
       return handleApiError(err);
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
         company,
       });
 
-      return NextResponse.json(job, { status: 201 });
+      return NextResponse.json(toJobResponse(job), { status: 201 });
     } catch (err) {
       logger.error("Failed to create job", { err });
       return handleApiError(err);
