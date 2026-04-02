@@ -10,8 +10,26 @@ type JobCardListProps = {
 export default function JobCardList({ jobs, onEdit, onDelete }: JobCardListProps) {
   if (!jobs || jobs.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-gray-300 p-10 text-center text-gray-500">
-        No jobs found.
+      <div className="bg-zinc-900 border border-dashed border-zinc-700 rounded-lg p-10 text-center">
+        <svg
+          className="mx-auto mb-3 text-zinc-600"
+          width="40"
+          height="40"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+        </svg>
+        <p className="text-sm text-zinc-400">No jobs yet.</p>
+        <p className="mt-1 text-xs text-zinc-500">
+          Click &quot;Add Job&quot; to start tracking your applications.
+        </p>
       </div>
     );
   }

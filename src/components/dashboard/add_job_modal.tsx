@@ -21,23 +21,21 @@ export default function AddJobModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+      <div className="w-full max-w-2xl bg-zinc-900 border border-zinc-700 rounded-lg shadow-sm p-6">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-900">
+          <h2 className="text-lg font-semibold text-zinc-50">
             {initialValues ? "Edit Job" : "Add Job"}
           </h2>
-
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md px-3 py-1 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+            className="bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-50 rounded-md px-2.5 py-1 text-sm"
             aria-label="Close modal"
           >
-            ✕
+            &#x2715;
           </button>
         </div>
-
         <JobForm initialValues={initialValues} onSubmit={onSubmit} onCancel={onClose} />
       </div>
     </div>
