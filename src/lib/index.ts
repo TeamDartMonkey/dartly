@@ -5,3 +5,4 @@ export { withHttpLogging } from "./api-wrapper";
 export { env } from "./env";
 export { childLogger, default as logger, logError, logHttp } from "./logger";
 export { checkRateLimit, getRateLimiter } from "./rate-limit";
+export { requireAuth } from "./requireAuth";
