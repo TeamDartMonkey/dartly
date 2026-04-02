@@ -9,26 +9,15 @@ type JobFormProps = {
   onCancel: () => void;
 };
 
-const STAGES: JobStage[] = [
-  "Interested",
-  "Applied",
-  "Interview",
-  "Offer",
-  "Rejected",
-  "Archived",
-];
+const STAGES: JobStage[] = ["Interested", "Applied", "Interview", "Offer", "Rejected", "Archived"];
 
-export default function JobForm({
-  initialValues,
-  onSubmit,
-  onCancel,
-}: JobFormProps) {
+export default function JobForm({ initialValues, onSubmit, onCancel }: JobFormProps) {
   const [title, setTitle] = useState(initialValues?.title ?? "");
   const [company, setCompany] = useState(initialValues?.company ?? "");
   const [location, setLocation] = useState(initialValues?.location ?? "");
-const [stage, setStage] = useState<JobStage>(initialValues?.stage ?? ("Interested" as JobStage)
-);  const [lastActivityDate, setLastActivityDate] = useState(
-    initialValues?.lastActivityDate ?? new Date().toISOString().slice(0, 10),
+  const [stage, setStage] = useState<JobStage>(initialValues?.stage ?? ("Interested" as JobStage));
+  const [lastActivityDate, setLastActivityDate] = useState(
+    initialValues?.lastActivityDate ?? new Date().toISOString().slice(0, 10)
   );
   const [priority, setPriority] = useState(initialValues?.priority ?? false);
 
@@ -115,10 +104,7 @@ const [stage, setStage] = useState<JobStage>(initialValues?.stage ?? ("Intereste
       </div>
 
       <div>
-        <label
-          className="mb-1 block text-sm font-medium text-gray-700"
-          htmlFor="lastActivityDate"
-        >
+        <label className="mb-1 block text-sm font-medium text-gray-700" htmlFor="lastActivityDate">
           Last Activity Date
         </label>
         <input
