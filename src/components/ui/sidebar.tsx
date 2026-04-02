@@ -145,7 +145,7 @@ export function Sidebar() {
         {NAV_ITEMS.map((item) => {
           // A link is "active" if the current URL starts with its href.
           // e.g. /dashboard/some-job-id still counts as Dashboard being active.
-          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
 
           return (
             <Link
