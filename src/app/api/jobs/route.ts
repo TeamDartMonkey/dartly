@@ -2,21 +2,13 @@ import { type NextRequest, NextResponse } from "next/server";
 import { handleApiError } from "@/lib/api-error";
 import { withHttpLogging } from "@/lib/api-wrapper";
 import logger from "@/lib/logger";
-import { createClient } from "@/lib/supabase-server";
+import { requireAuth } from "@/lib/requireAuth";
 import { createJob, getJobsByUserId, toJobResponse } from "@/services/jobs";
 
 export async function GET(request: NextRequest) {
   return withHttpLogging(request, async () => {
     try {
-      const supabase = await createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      }
-
+      const user = await requireAuth();
       const jobs = await getJobsByUserId(user.id);
       return NextResponse.json(jobs.map(toJobResponse), { status: 200 });
     } catch (err) {
@@ -29,14 +21,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   return withHttpLogging(request, async () => {
     try {
-      const supabase = await createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      }
+      const user = await requireAuth();
 
       const { title, company, location, stage, priority } = await request.json();
 

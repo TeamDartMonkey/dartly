@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import AddJobModal from "@/components/dashboard/add_job_modal";
 import JobCardList from "@/components/dashboard/job_card_list";
@@ -8,6 +9,7 @@ import type { Job, JobStage } from "@/types/job";
 const STAGES: JobStage[] = ["Interested", "Applied", "Interview", "Offer", "Rejected", "Archived"];
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -18,12 +20,18 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetch("/api/jobs")
-      .then((res) => res.json())
+      .then((res) => {
+        if (res.status === 401) {
+          router.push("/login");
+          return null;
+        }
+        return res.json();
+      })
       .then((data) => {
-        if (Array.isArray(data)) setJobs(data);
+        if (data && Array.isArray(data)) setJobs(data);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [router]);
 
   function handleAddClick() {
     setEditingJob(null);
@@ -37,6 +45,10 @@ export default function DashboardPage() {
 
   async function handleDelete(id: string) {
     const res = await fetch(`/api/jobs/${id}`, { method: "DELETE" });
+    if (res.status === 401) {
+      router.push("/login");
+      return;
+    }
     if (res.ok) {
       setJobs((current) => current.filter((job) => job.id !== id));
     }
@@ -57,6 +69,10 @@ export default function DashboardPage() {
           priority: job.priority,
         }),
       });
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
       if (res.ok) {
         const updated: Job = await res.json();
         setJobs((current) => current.map((j) => (j.id === updated.id ? updated : j)));
@@ -73,6 +89,10 @@ export default function DashboardPage() {
           priority: job.priority,
         }),
       });
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
       if (res.ok) {
         const created: Job = await res.json();
         setJobs((current) => [created, ...current]);

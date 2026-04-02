@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { CareerPreferencesSection } from "@/components/profile/career-preferences-section";
 import { CompletionIndicator } from "@/components/profile/completion-indicator";
@@ -36,27 +37,37 @@ function getCompletionFields(profile: ProfileData): CompletionField[] {
 }
 
 export default function ProfilePage() {
+  const router = useRouter();
   const [profile, setProfile] = useState<ProfileData>(EMPTY_PROFILE);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/profile")
-      .then((res) => res.json())
+      .then((res) => {
+        if (res.status === 401) {
+          router.push("/login");
+          return null;
+        }
+        return res.json();
+      })
       .then((data) => {
         if (data && typeof data === "object") {
           setProfile((prev) => ({ ...EMPTY_PROFILE, ...prev, ...data }));
         }
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [router]);
 
   async function handleUpdate(fields: Partial<ProfileData>) {
-    const merged = { ...profile, ...fields };
     const res = await fetch("/api/profile", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(fields),
     });
+    if (res.status === 401) {
+      router.push("/login");
+      return;
+    }
     if (res.ok) {
       const saved: ProfileData = await res.json();
       setProfile((prev) => ({
@@ -66,8 +77,6 @@ export default function ProfilePage() {
         educations: prev.educations,
         skills: prev.skills,
       }));
-    } else {
-      setProfile(merged);
     }
   }
 
