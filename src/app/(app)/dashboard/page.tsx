@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import AddJobModal from "@/components/dashboard/add_job_modal";
 import JobCardList from "@/components/dashboard/job_card_list";
 import type { Job, JobStage } from "@/types/job";
@@ -8,12 +9,29 @@ import type { Job, JobStage } from "@/types/job";
 const STAGES: JobStage[] = ["Interested", "Applied", "Interview", "Offer", "Rejected", "Archived"];
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [search, setSearch] = useState("");
   const [stageFilter, setStageFilter] = useState<JobStage | "">("");
   const [sortBy, setSortBy] = useState<"recent" | "company" | "priority">("recent");
+
+  useEffect(() => {
+    fetch("/api/jobs")
+      .then((res) => {
+        if (res.status === 401) {
+          router.push("/login");
+          return null;
+        }
+        return res.json();
+      })
+      .then((data) => {
+        if (data && Array.isArray(data)) setJobs(data);
+      })
+      .finally(() => setLoading(false));
+  }, [router]);
 
   function handleAddClick() {
     setEditingJob(null);
@@ -25,18 +43,62 @@ export default function DashboardPage() {
     setShowForm(true);
   }
 
-  function handleDelete(id: string) {
-    setJobs((current) => current.filter((job) => job.id !== id));
+  async function handleDelete(id: string) {
+    const res = await fetch(`/api/jobs/${id}`, { method: "DELETE" });
+    if (res.status === 401) {
+      router.push("/login");
+      return;
+    }
+    if (res.ok) {
+      setJobs((current) => current.filter((job) => job.id !== id));
+    }
   }
 
-  function handleSave(job: Job) {
-    setJobs((current) => {
-      const exists = current.some((j) => j.id === job.id);
-      if (exists) {
-        return current.map((j) => (j.id === job.id ? job : j));
+  async function handleSave(job: Job) {
+    const isEdit = jobs.some((j) => j.id === job.id);
+
+    if (isEdit) {
+      const res = await fetch(`/api/jobs/${job.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: job.title,
+          company: job.company,
+          location: job.location,
+          stage: job.stage,
+          priority: job.priority,
+        }),
+      });
+      if (res.status === 401) {
+        router.push("/login");
+        return;
       }
-      return [job, ...current];
-    });
+      if (res.ok) {
+        const updated: Job = await res.json();
+        setJobs((current) => current.map((j) => (j.id === updated.id ? updated : j)));
+      }
+    } else {
+      const res = await fetch("/api/jobs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: job.title,
+          company: job.company,
+          location: job.location,
+          stage: job.stage,
+          priority: job.priority,
+        }),
+      });
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
+      if (res.ok) {
+        const created: Job = await res.json();
+        setJobs((current) => [created, ...current]);
+      }
+    }
+
     setShowForm(false);
     setEditingJob(null);
   }
@@ -83,7 +145,6 @@ export default function DashboardPage() {
 
       {/* Toolbar: Search, Filter, Sort */}
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-        {/* Search */}
         <div className="relative flex-1">
           <svg
             className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"
@@ -109,7 +170,6 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* Stage filter */}
         <select
           value={stageFilter}
           onChange={(e) => setStageFilter(e.target.value as JobStage | "")}
@@ -123,7 +183,6 @@ export default function DashboardPage() {
           ))}
         </select>
 
-        {/* Sort */}
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as "recent" | "company" | "priority")}
@@ -136,14 +195,20 @@ export default function DashboardPage() {
       </div>
 
       {/* Job count */}
-      <p className="mb-4 text-xs text-zinc-500">
-        {filtered.length} {filtered.length === 1 ? "job" : "jobs"}
-        {stageFilter ? ` in ${stageFilter}` : ""}
-        {search ? ` matching "${search}"` : ""}
-      </p>
+      {!loading && (
+        <p className="mb-4 text-xs text-zinc-500">
+          {filtered.length} {filtered.length === 1 ? "job" : "jobs"}
+          {stageFilter ? ` in ${stageFilter}` : ""}
+          {search ? ` matching "${search}"` : ""}
+        </p>
+      )}
 
       {/* Job board */}
-      <JobCardList jobs={filtered} onEdit={handleEditClick} onDelete={handleDelete} />
+      {loading ? (
+        <div className="text-sm text-zinc-500">Loading...</div>
+      ) : (
+        <JobCardList jobs={filtered} onEdit={handleEditClick} onDelete={handleDelete} />
+      )}
 
       {/* Add/Edit modal */}
       <AddJobModal

@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { CareerPreferencesSection } from "@/components/profile/career-preferences-section";
 import { CompletionIndicator } from "@/components/profile/completion-indicator";
 import { EducationSection } from "@/components/profile/education-section";
@@ -36,13 +37,54 @@ function getCompletionFields(profile: ProfileData): CompletionField[] {
 }
 
 export default function ProfilePage() {
+  const router = useRouter();
   const [profile, setProfile] = useState<ProfileData>(EMPTY_PROFILE);
+  const [loading, setLoading] = useState(true);
 
-  function handleUpdate(fields: Partial<ProfileData>) {
-    setProfile((prev) => ({ ...prev, ...fields }));
+  useEffect(() => {
+    fetch("/api/profile")
+      .then((res) => {
+        if (res.status === 401) {
+          router.push("/login");
+          return null;
+        }
+        return res.json();
+      })
+      .then((data) => {
+        if (data && typeof data === "object") {
+          setProfile((prev) => ({ ...EMPTY_PROFILE, ...prev, ...data }));
+        }
+      })
+      .finally(() => setLoading(false));
+  }, [router]);
+
+  async function handleUpdate(fields: Partial<ProfileData>) {
+    const res = await fetch("/api/profile", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(fields),
+    });
+    if (res.status === 401) {
+      router.push("/login");
+      return;
+    }
+    if (res.ok) {
+      const saved: ProfileData = await res.json();
+      setProfile((prev) => ({
+        ...prev,
+        ...saved,
+        experiences: prev.experiences,
+        educations: prev.educations,
+        skills: prev.skills,
+      }));
+    }
   }
 
   const completionFields = useMemo(() => getCompletionFields(profile), [profile]);
+
+  if (loading) {
+    return <div className="text-sm text-zinc-500">Loading...</div>;
+  }
 
   return (
     <>
