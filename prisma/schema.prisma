@@ -10,64 +10,6 @@ datasource db {
 }
 
 // ---------------------------------------------------------------------------
-// Auth.js adapter models — do not modify field names or types
-// ---------------------------------------------------------------------------
-
-model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  emailVerified DateTime?
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  accounts  Account[]
-  sessions  Session[]
-  profile   Profile?
-  jobs      Job[]
-  documents Document[]
-}
-
-model Account {
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String?
-  access_token      String?
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String?
-  session_state     String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@id([provider, providerAccountId])
-}
-
-model Session {
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model VerificationToken {
-  identifier String
-  token      String
-  expires    DateTime
-
-  @@id([identifier, token])
-}
-
-// ---------------------------------------------------------------------------
 // App models
 // ---------------------------------------------------------------------------
 
@@ -90,7 +32,6 @@ model Profile {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   experiences Experience[]
   educations  Education[]
   skills      Skill[]
@@ -160,7 +101,6 @@ model Job {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   stageHistory  JobStageHistory[]
   activities    JobActivity[]
   documentLinks JobDocumentLink[]
@@ -203,7 +143,6 @@ model Document {
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
 
-  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   versions DocumentVersion[]
   jobLinks JobDocumentLink[]
 }
