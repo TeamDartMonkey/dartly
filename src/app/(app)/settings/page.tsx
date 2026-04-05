@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { LogoutButton } from "@/components/dashboard/logout-button";
 import { AccountSection } from "@/components/settings/account-section";
 import { AppPreferencesSection } from "@/components/settings/app-preferences-section";
 import { NotificationSection } from "@/components/settings/notification-section";
@@ -40,6 +41,10 @@ export default function SettingsPage() {
         <AccountSection email={email} onUpdateEmail={setEmail} onUpdatePassword={() => {}} />
         <NotificationSection preferences={notifications} onToggle={handleToggleNotification} />
         <AppPreferencesSection preferences={appPreferences} onUpdate={handleUpdatePreference} />
+      </div>
+
+      <div className="mt-8 pt-6 border-t border-zinc-800">
+        <LogoutButton />
       </div>
     </>
   );
