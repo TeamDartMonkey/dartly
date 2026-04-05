@@ -7,7 +7,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-
 // cn() is a utility already in the project (src/utils/cn.ts).
 // It merges Tailwind classes cleanly so we can write conditional styles.
 import { cn } from "@/utils/cn";
