@@ -1,19 +1,30 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { CareerPreferencesSection } from "@/components/profile/career-preferences-section";
 import { CompletionIndicator } from "@/components/profile/completion-indicator";
-import { EducationSection } from "@/components/profile/education-section";
-import { ExperienceSection } from "@/components/profile/experience-section";
 import { IdentitySection } from "@/components/profile/identity-section";
-import { SkillsSection } from "@/components/profile/skills-section";
 import { SummarySection } from "@/components/profile/summary-section";
-import type { CompletionField, ProfileData } from "@/types/profile";
+import { ExperienceSection } from "@/components/profile/experience-section";
+import { EducationSection } from "@/components/profile/education-section";
+import { SkillsSection } from "@/components/profile/skills-section";
+import { CareerPreferencesSection } from "@/components/profile/career-preferences-section";
+import type { ProfileData, CompletionField } from "@/types/profile";
+
+const STORAGE_KEY = "profile_data";
 
 const EMPTY_PROFILE: ProfileData = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  location: "",
+  professionalLinks: {},
+  headline: "",
+  summary: "",
   targetRoles: [],
   targetLocations: [],
+  workModePreference: "",
+  salaryPreference: undefined,
   experiences: [],
   educations: [],
   skills: [],
@@ -37,53 +48,55 @@ function getCompletionFields(profile: ProfileData): CompletionField[] {
 }
 
 export default function ProfilePage() {
-  const router = useRouter();
   const [profile, setProfile] = useState<ProfileData>(EMPTY_PROFILE);
-  const [loading, setLoading] = useState(true);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    fetch("/api/profile")
-      .then((res) => {
-        if (res.status === 401) {
-          router.push("/login");
-          return null;
-        }
-        return res.json();
-      })
-      .then((data) => {
-        if (data && typeof data === "object") {
-          setProfile((prev) => ({ ...EMPTY_PROFILE, ...prev, ...data }));
-        }
-      })
-      .finally(() => setLoading(false));
-  }, [router]);
+    try {
+      const savedProfile = localStorage.getItem(STORAGE_KEY);
 
-  async function handleUpdate(fields: Partial<ProfileData>) {
-    const res = await fetch("/api/profile", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(fields),
-    });
-    if (res.status === 401) {
-      router.push("/login");
-      return;
+      if (savedProfile) {
+        const parsedProfile = JSON.parse(savedProfile);
+
+        setProfile({
+          ...EMPTY_PROFILE,
+          ...parsedProfile,
+          professionalLinks: parsedProfile.professionalLinks ?? {},
+          targetRoles: parsedProfile.targetRoles ?? [],
+          targetLocations: parsedProfile.targetLocations ?? [],
+          experiences: parsedProfile.experiences ?? [],
+          educations: parsedProfile.educations ?? [],
+          skills: parsedProfile.skills ?? [],
+        });
+      }
+    } catch (error) {
+      console.error("Failed to load profile:", error);
+    } finally {
+      setLoaded(true);
     }
-    if (res.ok) {
-      const saved: ProfileData = await res.json();
-      setProfile((prev) => ({
-        ...prev,
-        ...saved,
-        experiences: prev.experiences,
-        educations: prev.educations,
-        skills: prev.skills,
-      }));
+  }, []);
+
+  useEffect(() => {
+    if (!loaded) return;
+
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+    } catch (error) {
+      console.error("Failed to save profile:", error);
     }
+  }, [profile, loaded]);
+
+  function handleUpdate(fields: Partial<ProfileData>) {
+    setProfile((prev) => ({
+      ...prev,
+      ...fields,
+    }));
   }
 
   const completionFields = useMemo(() => getCompletionFields(profile), [profile]);
 
-  if (loading) {
-    return <div className="text-sm text-zinc-500">Loading...</div>;
+  if (!loaded) {
+    return <div className="text-sm text-zinc-400">Loading profile...</div>;
   }
 
   return (
@@ -99,9 +112,18 @@ export default function ProfilePage() {
         <CompletionIndicator fields={completionFields} />
         <IdentitySection profile={profile} onUpdate={handleUpdate} />
         <SummarySection profile={profile} onUpdate={handleUpdate} />
-        <ExperienceSection experiences={profile.experiences} />
-        <EducationSection educations={profile.educations} />
-        <SkillsSection skills={profile.skills} />
+        <ExperienceSection
+          experiences={profile.experiences}
+          onUpdate={(experiences) => handleUpdate({ experiences })}
+        />
+        <EducationSection
+          educations={profile.educations}
+          onUpdate={(educations) => handleUpdate({ educations })}
+        />
+        <SkillsSection
+          skills={profile.skills}
+          onUpdate={(skills) => handleUpdate({ skills })}
+        />
         <CareerPreferencesSection profile={profile} onUpdate={handleUpdate} />
       </div>
     </>
