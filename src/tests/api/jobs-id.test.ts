@@ -82,6 +82,17 @@ describe("PUT /api/jobs/[id]", () => {
     const res = await PUT(makeRequest({ title: "Engineer" }), context);
     expect(res.status).toBe(401);
   });
+
+  it("returns 404 when user does not own the job (ownership denial)", async () => {
+    mockUpdateJob.mockResolvedValue(null);
+
+    const res = await PUT(makeRequest({ title: "Hacked" }), context);
+    const body = await res.json();
+
+    expect(res.status).toBe(404);
+    expect(body.error).toBe("Job not found");
+    expect(mockUpdateJob).toHaveBeenCalledWith("job-456", "user-123", { title: "Hacked" });
+  });
 });
 
 describe("DELETE /api/jobs/[id]", () => {
@@ -123,5 +134,19 @@ describe("DELETE /api/jobs/[id]", () => {
     }) as unknown as NextRequest;
     const res = await DELETE(req, context);
     expect(res.status).toBe(401);
+  });
+
+  it("returns 404 when user does not own the job (ownership denial)", async () => {
+    mockDeleteJob.mockResolvedValue(false);
+
+    const req = new Request("http://localhost/api/jobs/job-456", {
+      method: "DELETE",
+    }) as unknown as NextRequest;
+    const res = await DELETE(req, context);
+    const body = await res.json();
+
+    expect(res.status).toBe(404);
+    expect(body.error).toBe("Job not found");
+    expect(mockDeleteJob).toHaveBeenCalledWith("job-456", "user-123");
   });
 });
