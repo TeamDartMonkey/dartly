@@ -3,12 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { CareerPreferencesSection } from "@/components/profile/career-preferences-section";
-import { CompletionIndicator } from "@/components/profile/completion-indicator";
 import { EducationSection } from "@/components/profile/education-section";
 import { ExperienceSection } from "@/components/profile/experience-section";
 import { IdentitySection } from "@/components/profile/identity-section";
 import { SkillsSection } from "@/components/profile/skills-section";
 import { SummarySection } from "@/components/profile/summary-section";
+import { CompletionIndicator } from "@/components/ui/completion-indicator";
 import { ProfileSkeleton } from "@/components/ui/skeletons/profile-skeleton";
 import type { CompletionField, ProfileData } from "@/types/profile";
 
@@ -101,7 +101,10 @@ export default function ProfilePage() {
       </div>
 
       <div className="space-y-8">
-        <CompletionIndicator fields={completionFields} />
+        <CompletionIndicator
+          items={completionFields}
+          totalLabel={`${completionFields.filter((f) => f.complete).length} of ${completionFields.length} complete`}
+        />
         <IdentitySection profile={profile} onUpdate={handleUpdate} />
         <SummarySection profile={profile} onUpdate={handleUpdate} />
         <ExperienceSection
