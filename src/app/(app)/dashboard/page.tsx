@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import AddJobModal from "@/components/dashboard/add_job_modal";
 import JobCardList from "@/components/dashboard/job_card_list";
+import { Select } from "@/components/ui/select";
+import { DashboardSkeleton } from "@/components/ui/skeletons/dashboard-skeleton";
 import type { Job, JobStage } from "@/types/job";
 
 const STAGES: JobStage[] = ["Interested", "Applied", "Interview", "Offer", "Rejected", "Archived"];
@@ -170,28 +172,26 @@ export default function DashboardPage() {
           />
         </div>
 
-        <select
+        <Select
           value={stageFilter}
-          onChange={(e) => setStageFilter(e.target.value as JobStage | "")}
-          className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-        >
-          <option value="">All stages</option>
-          {STAGES.map((stage) => (
-            <option key={stage} value={stage}>
-              {stage}
-            </option>
-          ))}
-        </select>
+          onChange={(val) => setStageFilter(val as JobStage | "")}
+          options={[
+            { value: "", label: "All stages" },
+            ...STAGES.map((stage) => ({ value: stage, label: stage })),
+          ]}
+          className="sm:w-36"
+        />
 
-        <select
+        <Select
           value={sortBy}
-          onChange={(e) => setSortBy(e.target.value as "recent" | "company" | "priority")}
-          className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-        >
-          <option value="recent">Most recent</option>
-          <option value="company">Company A-Z</option>
-          <option value="priority">Priority first</option>
-        </select>
+          onChange={(val) => setSortBy(val as "recent" | "company" | "priority")}
+          options={[
+            { value: "recent", label: "Most recent" },
+            { value: "company", label: "Company A-Z" },
+            { value: "priority", label: "Priority first" },
+          ]}
+          className="sm:w-36"
+        />
       </div>
 
       {/* Job count */}
@@ -205,7 +205,7 @@ export default function DashboardPage() {
 
       {/* Job board */}
       {loading ? (
-        <div className="text-sm text-zinc-500">Loading...</div>
+        <DashboardSkeleton />
       ) : (
         <JobCardList jobs={filtered} onEdit={handleEditClick} onDelete={handleDelete} />
       )}

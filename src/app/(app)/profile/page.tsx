@@ -9,6 +9,7 @@ import { ExperienceSection } from "@/components/profile/experience-section";
 import { IdentitySection } from "@/components/profile/identity-section";
 import { SkillsSection } from "@/components/profile/skills-section";
 import { SummarySection } from "@/components/profile/summary-section";
+import { ProfileSkeleton } from "@/components/ui/skeletons/profile-skeleton";
 import type { CompletionField, ProfileData } from "@/types/profile";
 
 const EMPTY_PROFILE: ProfileData = {
@@ -93,7 +94,7 @@ export default function ProfilePage() {
   const completionFields = useMemo(() => getCompletionFields(profile), [profile]);
 
   if (loading) {
-    return <div className="text-sm text-zinc-500">Loading...</div>;
+    return <ProfileSkeleton />;
   }
 
   return (

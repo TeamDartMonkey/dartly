@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Select } from "@/components/ui/select";
 import type { Job, JobStage } from "@/types/job";
 
 type JobFormProps = {
@@ -94,18 +95,12 @@ export default function JobForm({ initialValues, onSubmit, onCancel }: JobFormPr
         <label className={labelStyles} htmlFor="stage">
           Stage
         </label>
-        <select
+        <Select
           id="stage"
           value={stage}
-          onChange={(e) => setStage(e.target.value as JobStage)}
-          className={inputStyles}
-        >
-          {STAGES.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
+          onChange={(val) => setStage(val as JobStage)}
+          options={STAGES.map((s) => ({ value: s, label: s }))}
+        />
       </div>
 
       <div>
