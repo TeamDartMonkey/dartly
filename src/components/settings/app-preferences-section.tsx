@@ -1,5 +1,7 @@
 "use client";
 
+import { Select } from "@/components/ui/select";
+
 type AppPreferencesSectionProps = {
   preferences: {
     defaultJobStage: string;
@@ -7,9 +9,6 @@ type AppPreferencesSectionProps = {
   };
   onUpdate: (key: string, value: string | boolean) => void;
 };
-
-const inputStyles =
-  "w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent";
 
 const labelStyles = "mb-1 block text-xs font-medium text-zinc-400";
 
@@ -25,16 +24,12 @@ export function AppPreferencesSection({ preferences, onUpdate }: AppPreferencesS
           <label className={labelStyles} htmlFor="defaultStage">
             Default stage for new jobs
           </label>
-          <select
+          <Select
             id="defaultStage"
             value={preferences.defaultJobStage}
-            onChange={(e) => onUpdate("defaultJobStage", e.target.value)}
-            className={inputStyles}
-          >
-            {JOB_STAGES.map((stage) => (
-              <option key={stage} value={stage}>{stage}</option>
-            ))}
-          </select>
+            onChange={(val) => onUpdate("defaultJobStage", val)}
+            options={JOB_STAGES.map((stage) => ({ value: stage, label: stage }))}
+          />
         </div>
 
         <div className="flex items-center justify-between py-3">

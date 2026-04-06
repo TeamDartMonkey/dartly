@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Select } from "@/components/ui/select";
 import type { ProfileData } from "@/types/profile";
 
 type CareerPreferencesSectionProps = {
@@ -91,18 +92,16 @@ export function CareerPreferencesSection({ profile, onUpdate }: CareerPreference
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className={labelStyles} htmlFor="workMode">Work Mode</label>
-              <select
+              <label className={labelStyles} htmlFor="workMode">
+                Work Mode
+              </label>
+              <Select
                 id="workMode"
                 value={workMode}
-                onChange={(e) => setWorkMode(e.target.value)}
-                className={inputStyles}
-              >
-                <option value="">Select preference</option>
-                {WORK_MODES.map((mode) => (
-                  <option key={mode} value={mode}>{mode}</option>
-                ))}
-              </select>
+                onChange={setWorkMode}
+                placeholder="Select preference"
+                options={WORK_MODES.map((mode) => ({ value: mode, label: mode }))}
+              />
             </div>
             <div>
               <label className={labelStyles} htmlFor="salary">
@@ -141,17 +140,21 @@ export function CareerPreferencesSection({ profile, onUpdate }: CareerPreference
           <div>
             <p className="text-xs text-zinc-500">Target Roles</p>
             <p className="text-zinc-50">
-              {profile.targetRoles.length > 0
-                ? profile.targetRoles.join(", ")
-                : <span className="text-zinc-600">Not set</span>}
+              {profile.targetRoles.length > 0 ? (
+                profile.targetRoles.join(", ")
+              ) : (
+                <span className="text-zinc-600">Not set</span>
+              )}
             </p>
           </div>
           <div>
             <p className="text-xs text-zinc-500">Target Locations</p>
             <p className="text-zinc-50">
-              {profile.targetLocations.length > 0
-                ? profile.targetLocations.join(", ")
-                : <span className="text-zinc-600">Not set</span>}
+              {profile.targetLocations.length > 0 ? (
+                profile.targetLocations.join(", ")
+              ) : (
+                <span className="text-zinc-600">Not set</span>
+              )}
             </p>
           </div>
           <div>
@@ -163,9 +166,11 @@ export function CareerPreferencesSection({ profile, onUpdate }: CareerPreference
           <div>
             <p className="text-xs text-zinc-500">Salary Preference</p>
             <p className="text-zinc-50">
-              {profile.salaryPreference
-                ? `$${profile.salaryPreference.toLocaleString()}/year`
-                : <span className="text-zinc-600">Not set</span>}
+              {profile.salaryPreference ? (
+                `$${profile.salaryPreference.toLocaleString()}/year`
+              ) : (
+                <span className="text-zinc-600">Not set</span>
+              )}
             </p>
           </div>
         </div>
