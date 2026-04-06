@@ -79,13 +79,7 @@ export default function ProfilePage() {
 
     if (res.ok) {
       const saved: ProfileData = await res.json();
-      setProfile((prev) => ({
-        ...prev,
-        ...saved,
-        experiences: prev.experiences,
-        educations: prev.educations,
-        skills: prev.skills,
-      }));
+      setProfile(saved);
     } else {
       setProfile(profile);
     }
