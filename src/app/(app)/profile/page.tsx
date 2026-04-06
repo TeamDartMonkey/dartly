@@ -62,10 +62,13 @@ export default function ProfilePage() {
     const merged = { ...profile, ...fields };
     setProfile(merged);
 
+    const payload = Object.fromEntries(
+      Object.entries(fields).map(([k, v]) => [k, v === undefined ? null : v])
+    );
     const res = await fetch("/api/profile", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(fields),
+      body: JSON.stringify(payload),
     });
 
     if (res.status === 401) {
