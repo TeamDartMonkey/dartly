@@ -10,6 +10,7 @@
 -- always set userId to the authenticated user's Supabase Auth ID.
 --
 -- Usage: Run this SQL in the Supabase SQL Editor or via psql.
+-- This script is idempotent — safe to re-run.
 -- =============================================================================
 
 -- =============================================================================
@@ -21,18 +22,22 @@
 -- ---------------------------------------------------------------------------
 ALTER TABLE "Profile" ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own profile" ON "Profile";
 CREATE POLICY "Users can view own profile"
   ON "Profile" FOR SELECT
   USING ("userId" = auth.uid()::text);
 
+DROP POLICY IF EXISTS "Users can insert own profile" ON "Profile";
 CREATE POLICY "Users can insert own profile"
   ON "Profile" FOR INSERT
   WITH CHECK ("userId" = auth.uid()::text);
 
+DROP POLICY IF EXISTS "Users can update own profile" ON "Profile";
 CREATE POLICY "Users can update own profile"
   ON "Profile" FOR UPDATE
   USING ("userId" = auth.uid()::text);
 
+DROP POLICY IF EXISTS "Users can delete own profile" ON "Profile";
 CREATE POLICY "Users can delete own profile"
   ON "Profile" FOR DELETE
   USING ("userId" = auth.uid()::text);
@@ -42,18 +47,22 @@ CREATE POLICY "Users can delete own profile"
 -- ---------------------------------------------------------------------------
 ALTER TABLE "Job" ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own jobs" ON "Job";
 CREATE POLICY "Users can view own jobs"
   ON "Job" FOR SELECT
   USING ("userId" = auth.uid()::text);
 
+DROP POLICY IF EXISTS "Users can insert own jobs" ON "Job";
 CREATE POLICY "Users can insert own jobs"
   ON "Job" FOR INSERT
   WITH CHECK ("userId" = auth.uid()::text);
 
+DROP POLICY IF EXISTS "Users can update own jobs" ON "Job";
 CREATE POLICY "Users can update own jobs"
   ON "Job" FOR UPDATE
   USING ("userId" = auth.uid()::text);
 
+DROP POLICY IF EXISTS "Users can delete own jobs" ON "Job";
 CREATE POLICY "Users can delete own jobs"
   ON "Job" FOR DELETE
   USING ("userId" = auth.uid()::text);
@@ -63,18 +72,22 @@ CREATE POLICY "Users can delete own jobs"
 -- ---------------------------------------------------------------------------
 ALTER TABLE "Document" ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own documents" ON "Document";
 CREATE POLICY "Users can view own documents"
   ON "Document" FOR SELECT
   USING ("userId" = auth.uid()::text);
 
+DROP POLICY IF EXISTS "Users can insert own documents" ON "Document";
 CREATE POLICY "Users can insert own documents"
   ON "Document" FOR INSERT
   WITH CHECK ("userId" = auth.uid()::text);
 
+DROP POLICY IF EXISTS "Users can update own documents" ON "Document";
 CREATE POLICY "Users can update own documents"
   ON "Document" FOR UPDATE
   USING ("userId" = auth.uid()::text);
 
+DROP POLICY IF EXISTS "Users can delete own documents" ON "Document";
 CREATE POLICY "Users can delete own documents"
   ON "Document" FOR DELETE
   USING ("userId" = auth.uid()::text);
@@ -88,6 +101,7 @@ CREATE POLICY "Users can delete own documents"
 -- ---------------------------------------------------------------------------
 ALTER TABLE "Experience" ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own experiences" ON "Experience";
 CREATE POLICY "Users can view own experiences"
   ON "Experience" FOR SELECT
   USING (
@@ -96,6 +110,7 @@ CREATE POLICY "Users can view own experiences"
     )
   );
 
+DROP POLICY IF EXISTS "Users can insert own experiences" ON "Experience";
 CREATE POLICY "Users can insert own experiences"
   ON "Experience" FOR INSERT
   WITH CHECK (
@@ -104,6 +119,7 @@ CREATE POLICY "Users can insert own experiences"
     )
   );
 
+DROP POLICY IF EXISTS "Users can update own experiences" ON "Experience";
 CREATE POLICY "Users can update own experiences"
   ON "Experience" FOR UPDATE
   USING (
@@ -112,6 +128,7 @@ CREATE POLICY "Users can update own experiences"
     )
   );
 
+DROP POLICY IF EXISTS "Users can delete own experiences" ON "Experience";
 CREATE POLICY "Users can delete own experiences"
   ON "Experience" FOR DELETE
   USING (
@@ -125,6 +142,7 @@ CREATE POLICY "Users can delete own experiences"
 -- ---------------------------------------------------------------------------
 ALTER TABLE "Education" ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own education" ON "Education";
 CREATE POLICY "Users can view own education"
   ON "Education" FOR SELECT
   USING (
@@ -133,6 +151,7 @@ CREATE POLICY "Users can view own education"
     )
   );
 
+DROP POLICY IF EXISTS "Users can insert own education" ON "Education";
 CREATE POLICY "Users can insert own education"
   ON "Education" FOR INSERT
   WITH CHECK (
@@ -141,6 +160,7 @@ CREATE POLICY "Users can insert own education"
     )
   );
 
+DROP POLICY IF EXISTS "Users can update own education" ON "Education";
 CREATE POLICY "Users can update own education"
   ON "Education" FOR UPDATE
   USING (
@@ -149,6 +169,7 @@ CREATE POLICY "Users can update own education"
     )
   );
 
+DROP POLICY IF EXISTS "Users can delete own education" ON "Education";
 CREATE POLICY "Users can delete own education"
   ON "Education" FOR DELETE
   USING (
@@ -162,6 +183,7 @@ CREATE POLICY "Users can delete own education"
 -- ---------------------------------------------------------------------------
 ALTER TABLE "Skill" ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own skills" ON "Skill";
 CREATE POLICY "Users can view own skills"
   ON "Skill" FOR SELECT
   USING (
@@ -170,6 +192,7 @@ CREATE POLICY "Users can view own skills"
     )
   );
 
+DROP POLICY IF EXISTS "Users can insert own skills" ON "Skill";
 CREATE POLICY "Users can insert own skills"
   ON "Skill" FOR INSERT
   WITH CHECK (
@@ -178,6 +201,7 @@ CREATE POLICY "Users can insert own skills"
     )
   );
 
+DROP POLICY IF EXISTS "Users can update own skills" ON "Skill";
 CREATE POLICY "Users can update own skills"
   ON "Skill" FOR UPDATE
   USING (
@@ -186,6 +210,7 @@ CREATE POLICY "Users can update own skills"
     )
   );
 
+DROP POLICY IF EXISTS "Users can delete own skills" ON "Skill";
 CREATE POLICY "Users can delete own skills"
   ON "Skill" FOR DELETE
   USING (
@@ -199,6 +224,7 @@ CREATE POLICY "Users can delete own skills"
 -- ---------------------------------------------------------------------------
 ALTER TABLE "JobStageHistory" ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own job stage history" ON "JobStageHistory";
 CREATE POLICY "Users can view own job stage history"
   ON "JobStageHistory" FOR SELECT
   USING (
@@ -207,6 +233,7 @@ CREATE POLICY "Users can view own job stage history"
     )
   );
 
+DROP POLICY IF EXISTS "Users can insert own job stage history" ON "JobStageHistory";
 CREATE POLICY "Users can insert own job stage history"
   ON "JobStageHistory" FOR INSERT
   WITH CHECK (
@@ -215,6 +242,7 @@ CREATE POLICY "Users can insert own job stage history"
     )
   );
 
+DROP POLICY IF EXISTS "Users can update own job stage history" ON "JobStageHistory";
 CREATE POLICY "Users can update own job stage history"
   ON "JobStageHistory" FOR UPDATE
   USING (
@@ -223,6 +251,7 @@ CREATE POLICY "Users can update own job stage history"
     )
   );
 
+DROP POLICY IF EXISTS "Users can delete own job stage history" ON "JobStageHistory";
 CREATE POLICY "Users can delete own job stage history"
   ON "JobStageHistory" FOR DELETE
   USING (
@@ -236,6 +265,7 @@ CREATE POLICY "Users can delete own job stage history"
 -- ---------------------------------------------------------------------------
 ALTER TABLE "JobActivity" ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own job activities" ON "JobActivity";
 CREATE POLICY "Users can view own job activities"
   ON "JobActivity" FOR SELECT
   USING (
@@ -244,6 +274,7 @@ CREATE POLICY "Users can view own job activities"
     )
   );
 
+DROP POLICY IF EXISTS "Users can insert own job activities" ON "JobActivity";
 CREATE POLICY "Users can insert own job activities"
   ON "JobActivity" FOR INSERT
   WITH CHECK (
@@ -252,6 +283,7 @@ CREATE POLICY "Users can insert own job activities"
     )
   );
 
+DROP POLICY IF EXISTS "Users can update own job activities" ON "JobActivity";
 CREATE POLICY "Users can update own job activities"
   ON "JobActivity" FOR UPDATE
   USING (
@@ -260,6 +292,7 @@ CREATE POLICY "Users can update own job activities"
     )
   );
 
+DROP POLICY IF EXISTS "Users can delete own job activities" ON "JobActivity";
 CREATE POLICY "Users can delete own job activities"
   ON "JobActivity" FOR DELETE
   USING (
@@ -273,6 +306,7 @@ CREATE POLICY "Users can delete own job activities"
 -- ---------------------------------------------------------------------------
 ALTER TABLE "DocumentVersion" ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own document versions" ON "DocumentVersion";
 CREATE POLICY "Users can view own document versions"
   ON "DocumentVersion" FOR SELECT
   USING (
@@ -281,6 +315,7 @@ CREATE POLICY "Users can view own document versions"
     )
   );
 
+DROP POLICY IF EXISTS "Users can insert own document versions" ON "DocumentVersion";
 CREATE POLICY "Users can insert own document versions"
   ON "DocumentVersion" FOR INSERT
   WITH CHECK (
@@ -289,6 +324,7 @@ CREATE POLICY "Users can insert own document versions"
     )
   );
 
+DROP POLICY IF EXISTS "Users can update own document versions" ON "DocumentVersion";
 CREATE POLICY "Users can update own document versions"
   ON "DocumentVersion" FOR UPDATE
   USING (
@@ -297,6 +333,7 @@ CREATE POLICY "Users can update own document versions"
     )
   );
 
+DROP POLICY IF EXISTS "Users can delete own document versions" ON "DocumentVersion";
 CREATE POLICY "Users can delete own document versions"
   ON "DocumentVersion" FOR DELETE
   USING (
@@ -310,6 +347,7 @@ CREATE POLICY "Users can delete own document versions"
 -- ---------------------------------------------------------------------------
 ALTER TABLE "JobDocumentLink" ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own job document links" ON "JobDocumentLink";
 CREATE POLICY "Users can view own job document links"
   ON "JobDocumentLink" FOR SELECT
   USING (
@@ -318,6 +356,7 @@ CREATE POLICY "Users can view own job document links"
     )
   );
 
+DROP POLICY IF EXISTS "Users can insert own job document links" ON "JobDocumentLink";
 CREATE POLICY "Users can insert own job document links"
   ON "JobDocumentLink" FOR INSERT
   WITH CHECK (
@@ -329,6 +368,7 @@ CREATE POLICY "Users can insert own job document links"
     )
   );
 
+DROP POLICY IF EXISTS "Users can update own job document links" ON "JobDocumentLink";
 CREATE POLICY "Users can update own job document links"
   ON "JobDocumentLink" FOR UPDATE
   USING (
@@ -337,6 +377,7 @@ CREATE POLICY "Users can update own job document links"
     )
   );
 
+DROP POLICY IF EXISTS "Users can delete own job document links" ON "JobDocumentLink";
 CREATE POLICY "Users can delete own job document links"
   ON "JobDocumentLink" FOR DELETE
   USING (
