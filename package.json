@@ -16,7 +16,12 @@
     "postinstall": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "db:seed": "bun run src/scripts/seed.ts",
+    "db:clean": "bun run src/scripts/clean-seed.ts"
+  },
+  "prisma": {
+    "seed": "bun run src/scripts/seed.ts"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,json,jsonc}": [
