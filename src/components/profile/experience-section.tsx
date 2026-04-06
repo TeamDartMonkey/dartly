@@ -7,13 +7,18 @@ type ExperienceSectionProps = {
   onUpdate: (experiences: Experience[]) => void;
 };
 
+const inputStyles =
+  "w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent";
+
+const labelStyles = "mb-1 block text-xs font-medium text-zinc-400";
+
 export function ExperienceSection({
   experiences,
   onUpdate,
 }: ExperienceSectionProps) {
   function handleAddExperience() {
     const newExperience: Experience = {
-      id: "", 
+      id: "",
       type: "EMPLOYMENT",
       title: "",
       organization: "",
@@ -35,7 +40,6 @@ export function ExperienceSection({
     const updated = experiences.map((experience, i) =>
       i === index ? { ...experience, [field]: value } : experience
     );
-
     onUpdate(updated);
   }
 
@@ -44,13 +48,13 @@ export function ExperienceSection({
   }
 
   return (
-    <div className="rounded-lg border border-zinc-700 bg-zinc-900 p-6 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
+    <div className="bg-zinc-900 border border-zinc-700 rounded-lg shadow-sm p-6">
+      <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-zinc-50">Experience</h2>
         <button
           type="button"
           onClick={handleAddExperience}
-          className="rounded-md border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm font-medium text-zinc-50 hover:bg-zinc-700"
+          className="bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-zinc-50 px-4 py-2 rounded-md text-sm font-medium"
         >
           Add
         </button>
@@ -67,76 +71,76 @@ export function ExperienceSection({
             >
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-sm text-zinc-400">
+                  <label className={labelStyles} htmlFor={`experience-title-${index}`}>
                     Title
                   </label>
                   <input
+                    id={`experience-title-${index}`}
                     value={experience.title}
-                    onChange={(e) =>
-                      handleChange(index, "title", e.target.value)
-                    }
-                    className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-50 outline-none focus:border-zinc-500"
+                    onChange={(e) => handleChange(index, "title", e.target.value)}
+                    className={inputStyles}
                     placeholder="Job title"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm text-zinc-400">
+                  <label className={labelStyles} htmlFor={`experience-organization-${index}`}>
                     Organization
                   </label>
                   <input
+                    id={`experience-organization-${index}`}
                     value={experience.organization ?? ""}
                     onChange={(e) =>
                       handleChange(index, "organization", e.target.value)
                     }
-                    className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-50 outline-none focus:border-zinc-500"
-                    placeholder="Company"
+                    className={inputStyles}
+                    placeholder="Company or organization"
                   />
                 </div>
 
-                {/* ✅ FIXED DATE INPUT */}
                 <div>
-                  <label className="mb-1 block text-sm text-zinc-400">
+                  <label className={labelStyles} htmlFor={`experience-start-date-${index}`}>
                     Start Date
                   </label>
                   <input
+                    id={`experience-start-date-${index}`}
                     type="date"
                     value={experience.startDate ?? ""}
                     onChange={(e) =>
                       handleChange(index, "startDate", e.target.value)
                     }
-                    className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-50 outline-none focus:border-zinc-500"
+                    className={inputStyles}
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm text-zinc-400">
+                  <label className={labelStyles} htmlFor={`experience-end-date-${index}`}>
                     End Date
                   </label>
                   <input
+                    id={`experience-end-date-${index}`}
                     type="date"
                     value={experience.endDate ?? ""}
-                    onChange={(e) =>
-                      handleChange(index, "endDate", e.target.value)
-                    }
+                    onChange={(e) => handleChange(index, "endDate", e.target.value)}
                     disabled={experience.isCurrent}
-                    className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-50 outline-none focus:border-zinc-500"
+                    className={inputStyles}
                   />
                 </div>
               </div>
 
               <div className="mt-4">
-                <label className="mb-1 block text-sm text-zinc-400">
+                <label className={labelStyles} htmlFor={`experience-description-${index}`}>
                   Description
                 </label>
                 <textarea
+                  id={`experience-description-${index}`}
                   value={experience.description ?? ""}
                   onChange={(e) =>
                     handleChange(index, "description", e.target.value)
                   }
                   rows={4}
-                  className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-50 outline-none focus:border-zinc-500"
-                  placeholder="Describe your work"
+                  className={inputStyles}
+                  placeholder="Describe your work or project"
                 />
               </div>
 

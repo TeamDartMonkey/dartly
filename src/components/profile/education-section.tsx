@@ -7,6 +7,11 @@ type EducationSectionProps = {
   onUpdate: (educations: Education[]) => void;
 };
 
+const inputStyles =
+  "w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent";
+
+const labelStyles = "mb-1 block text-xs font-medium text-zinc-400";
+
 function isValidGpa(value: string) {
   if (value === "") return true;
   const num = Number(value);
@@ -24,7 +29,7 @@ export function EducationSection({
 }: EducationSectionProps) {
   function handleAddEducation() {
     const newEducation: Education = {
-      id: crypto.randomUUID(),
+      id: "",
       institution: "",
       degree: "",
       fieldOfStudy: "",
@@ -70,13 +75,13 @@ export function EducationSection({
   }
 
   return (
-    <div className="rounded-lg border border-zinc-700 bg-zinc-900 p-6 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
+    <div className="bg-zinc-900 border border-zinc-700 rounded-lg shadow-sm p-6">
+      <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-zinc-50">Education</h2>
         <button
           type="button"
           onClick={handleAddEducation}
-          className="rounded-md border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm font-medium text-zinc-50 hover:bg-zinc-700"
+          className="bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-zinc-50 px-4 py-2 rounded-md text-sm font-medium"
         >
           Add
         </button>
@@ -93,101 +98,102 @@ export function EducationSection({
             >
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-sm text-zinc-400">
+                  <label className={labelStyles} htmlFor={`education-institution-${index}`}>
                     Institution
                   </label>
                   <input
+                    id={`education-institution-${index}`}
                     value={education.institution}
                     onChange={(e) =>
                       handleChange(index, "institution", e.target.value)
                     }
-                    className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-50 outline-none focus:border-zinc-500"
+                    className={inputStyles}
                     placeholder="e.g. NJIT"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm text-zinc-400">
+                  <label className={labelStyles} htmlFor={`education-degree-${index}`}>
                     Degree
                   </label>
                   <input
+                    id={`education-degree-${index}`}
                     value={education.degree ?? ""}
-                    onChange={(e) =>
-                      handleChange(index, "degree", e.target.value)
-                    }
-                    className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-50 outline-none focus:border-zinc-500"
+                    onChange={(e) => handleChange(index, "degree", e.target.value)}
+                    className={inputStyles}
                     placeholder="e.g. Bachelor's"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm text-zinc-400">
+                  <label className={labelStyles} htmlFor={`education-field-${index}`}>
                     Field of Study
                   </label>
                   <input
+                    id={`education-field-${index}`}
                     value={education.fieldOfStudy ?? ""}
                     onChange={(e) =>
                       handleChange(index, "fieldOfStudy", e.target.value)
                     }
-                    className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-50 outline-none focus:border-zinc-500"
+                    className={inputStyles}
                     placeholder="e.g. Concrete Industry Management"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm text-zinc-400">
+                  <label className={labelStyles} htmlFor={`education-gpa-${index}`}>
                     GPA
                   </label>
                   <input
+                    id={`education-gpa-${index}`}
                     type="number"
                     step="0.01"
                     min="0"
                     value={education.gpa ?? ""}
                     onChange={(e) => handleChange(index, "gpa", e.target.value)}
-                    className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-50 outline-none focus:border-zinc-500"
+                    className={inputStyles}
                     placeholder="e.g. 3.50"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm text-zinc-400">
+                  <label className={labelStyles} htmlFor={`education-start-date-${index}`}>
                     Start Date
                   </label>
                   <input
+                    id={`education-start-date-${index}`}
                     type="date"
                     value={education.startDate ?? ""}
                     onChange={(e) =>
                       handleChange(index, "startDate", e.target.value)
                     }
-                    className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-50 outline-none focus:border-zinc-500"
+                    className={inputStyles}
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm text-zinc-400">
+                  <label className={labelStyles} htmlFor={`education-end-date-${index}`}>
                     End Date
                   </label>
                   <input
+                    id={`education-end-date-${index}`}
                     type="date"
                     value={education.endDate ?? ""}
-                    onChange={(e) =>
-                      handleChange(index, "endDate", e.target.value)
-                    }
-                    className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-50 outline-none focus:border-zinc-500"
+                    onChange={(e) => handleChange(index, "endDate", e.target.value)}
+                    className={inputStyles}
                   />
                 </div>
               </div>
 
               <div className="mt-4">
-                <label className="mb-1 block text-sm text-zinc-400">
+                <label className={labelStyles} htmlFor={`education-honors-${index}`}>
                   Honors
                 </label>
                 <input
+                  id={`education-honors-${index}`}
                   value={education.honors ?? ""}
-                  onChange={(e) =>
-                    handleChange(index, "honors", e.target.value)
-                  }
-                  className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-50 outline-none focus:border-zinc-500"
+                  onChange={(e) => handleChange(index, "honors", e.target.value)}
+                  className={inputStyles}
                   placeholder="e.g. Dean's List"
                 />
               </div>

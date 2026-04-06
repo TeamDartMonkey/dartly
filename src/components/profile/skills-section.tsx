@@ -7,6 +7,11 @@ type SkillsSectionProps = {
   onUpdate: (skills: Skill[]) => void;
 };
 
+const inputStyles =
+  "w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent";
+
+const labelStyles = "mb-1 block text-xs font-medium text-zinc-400";
+
 export function SkillsSection({ skills, onUpdate }: SkillsSectionProps) {
   function handleAddSkill() {
     const newSkill: Skill = {
@@ -31,13 +36,13 @@ export function SkillsSection({ skills, onUpdate }: SkillsSectionProps) {
   }
 
   return (
-    <div className="rounded-lg border border-zinc-700 bg-zinc-900 p-6 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
+    <div className="bg-zinc-900 border border-zinc-700 rounded-lg shadow-sm p-6">
+      <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-zinc-50">Skills</h2>
         <button
           type="button"
           onClick={handleAddSkill}
-          className="rounded-md border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm font-medium text-zinc-50 hover:bg-zinc-700"
+          className="bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-zinc-50 px-4 py-2 rounded-md text-sm font-medium"
         >
           Add
         </button>
@@ -54,43 +59,40 @@ export function SkillsSection({ skills, onUpdate }: SkillsSectionProps) {
             >
               <div className="grid gap-4 md:grid-cols-3">
                 <div>
-                  <label className="mb-1 block text-sm text-zinc-400">
+                  <label className={labelStyles} htmlFor={`skill-name-${index}`}>
                     Skill Name
                   </label>
                   <input
+                    id={`skill-name-${index}`}
                     value={skill.name}
-                    onChange={(e) =>
-                      handleChange(index, "name", e.target.value)
-                    }
-                    className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-50 outline-none focus:border-zinc-500"
+                    onChange={(e) => handleChange(index, "name", e.target.value)}
+                    className={inputStyles}
                     placeholder="e.g. AutoCAD"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm text-zinc-400">
+                  <label className={labelStyles} htmlFor={`skill-category-${index}`}>
                     Category
                   </label>
                   <input
+                    id={`skill-category-${index}`}
                     value={skill.category ?? ""}
-                    onChange={(e) =>
-                      handleChange(index, "category", e.target.value)
-                    }
-                    className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-50 outline-none focus:border-zinc-500"
+                    onChange={(e) => handleChange(index, "category", e.target.value)}
+                    className={inputStyles}
                     placeholder="e.g. Technical"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm text-zinc-400">
+                  <label className={labelStyles} htmlFor={`skill-proficiency-${index}`}>
                     Proficiency
                   </label>
                   <input
+                    id={`skill-proficiency-${index}`}
                     value={skill.proficiency ?? ""}
-                    onChange={(e) =>
-                      handleChange(index, "proficiency", e.target.value)
-                    }
-                    className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-50 outline-none focus:border-zinc-500"
+                    onChange={(e) => handleChange(index, "proficiency", e.target.value)}
+                    className={inputStyles}
                     placeholder="e.g. Intermediate"
                   />
                 </div>
