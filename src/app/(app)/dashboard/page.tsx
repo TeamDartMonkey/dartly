@@ -4,8 +4,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import AddJobModal from "@/components/dashboard/add_job_modal";
 import JobCardList from "@/components/dashboard/job_card_list";
+import { ConfirmDeleteModal } from "@/components/ui/confirm-delete-modal";
 import { Select } from "@/components/ui/select";
 import { DashboardSkeleton } from "@/components/ui/skeletons/dashboard-skeleton";
+import { showToast } from "@/components/ui/toast";
 import type { Job, JobStage } from "@/types/job";
 
 const STAGES: JobStage[] = ["Interested", "Applied", "Interview", "Offer", "Rejected", "Archived"];
@@ -19,6 +21,7 @@ export default function DashboardPage() {
   const [search, setSearch] = useState("");
   const [stageFilter, setStageFilter] = useState<JobStage | "">("");
   const [sortBy, setSortBy] = useState<"recent" | "company" | "priority">("recent");
+  const [pendingDeleteJob, setPendingDeleteJob] = useState<Job | null>(null);
 
   useEffect(() => {
     fetch("/api/jobs")
@@ -53,7 +56,16 @@ export default function DashboardPage() {
     }
     if (res.ok) {
       setJobs((current) => current.filter((job) => job.id !== id));
+      showToast("Job removed");
+    } else {
+      showToast("Failed to remove job", "error");
     }
+  }
+
+  async function confirmDeleteJob() {
+    if (!pendingDeleteJob) return;
+    await handleDelete(pendingDeleteJob.id);
+    setPendingDeleteJob(null);
   }
 
   async function handleSave(job: Job) {
@@ -78,6 +90,9 @@ export default function DashboardPage() {
       if (res.ok) {
         const updated: Job = await res.json();
         setJobs((current) => current.map((j) => (j.id === updated.id ? updated : j)));
+        showToast("Job updated");
+      } else {
+        showToast("Failed to update job", "error");
       }
     } else {
       const res = await fetch("/api/jobs", {
@@ -98,6 +113,9 @@ export default function DashboardPage() {
       if (res.ok) {
         const created: Job = await res.json();
         setJobs((current) => [created, ...current]);
+        showToast("Job added");
+      } else {
+        showToast("Failed to add job", "error");
       }
     }
 
@@ -207,7 +225,14 @@ export default function DashboardPage() {
       {loading ? (
         <DashboardSkeleton />
       ) : (
-        <JobCardList jobs={filtered} onEdit={handleEditClick} onDelete={handleDelete} />
+        <JobCardList
+          jobs={filtered}
+          onEdit={handleEditClick}
+          onDelete={(id) => {
+            const job = jobs.find((j) => j.id === id);
+            if (job) setPendingDeleteJob(job);
+          }}
+        />
       )}
 
       {/* Add/Edit modal */}
@@ -216,6 +241,16 @@ export default function DashboardPage() {
         initialValues={editingJob}
         onSubmit={handleSave}
         onClose={handleCancel}
+      />
+
+      {/* Delete confirmation */}
+      <ConfirmDeleteModal
+        open={pendingDeleteJob !== null}
+        onClose={() => setPendingDeleteJob(null)}
+        onConfirm={confirmDeleteJob}
+        itemName={
+          pendingDeleteJob ? `${pendingDeleteJob.title} at ${pendingDeleteJob.company}` : undefined
+        }
       />
     </>
   );

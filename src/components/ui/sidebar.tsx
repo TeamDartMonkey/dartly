@@ -106,8 +106,20 @@ const NAV_ITEMS = [
 // ---------------------------------------------------------------------------
 // Sidebar component
 // ---------------------------------------------------------------------------
-export function Sidebar() {
+type SidebarProps = {
+  firstName?: string;
+  lastName?: string;
+};
+
+export function Sidebar({ firstName, lastName }: SidebarProps) {
   const pathname = usePathname();
+
+  const initials =
+    firstName || lastName
+      ? `${(firstName ?? "")[0] ?? ""}${(lastName ?? "")[0] ?? ""}`.toUpperCase()
+      : "?";
+  const fullName =
+    firstName || lastName ? `${firstName ?? ""} ${lastName ?? ""}`.trim() : "Profile";
 
   return (
     <aside
@@ -173,23 +185,18 @@ export function Sidebar() {
           (Auth stories S1-010 through S1-015 will fill this in)
       ---------------------------------------------------------------- */}
       <div className="px-3 py-4 border-t border-zinc-800">
-        <div className="flex items-center gap-3 px-3 py-2 rounded-md text-xs text-zinc-500">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.75"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        <Link
+          href="/profile"
+          className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60 transition-colors"
+        >
+          <div
             aria-hidden="true"
+            className="w-7 h-7 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-xs font-medium text-indigo-400 shrink-0"
           >
-            <circle cx="12" cy="8" r="4" />
-            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
-          </svg>
-          <span>Account</span>
-        </div>
+            {initials}
+          </div>
+          <span className="truncate">{fullName}</span>
+        </Link>
       </div>
     </aside>
   );

@@ -3,13 +3,14 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { CareerPreferencesSection } from "@/components/profile/career-preferences-section";
-import { CompletionIndicator } from "@/components/profile/completion-indicator";
 import { EducationSection } from "@/components/profile/education-section";
 import { ExperienceSection } from "@/components/profile/experience-section";
 import { IdentitySection } from "@/components/profile/identity-section";
 import { SkillsSection } from "@/components/profile/skills-section";
 import { SummarySection } from "@/components/profile/summary-section";
+import { CompletionIndicator } from "@/components/ui/completion-indicator";
 import { ProfileSkeleton } from "@/components/ui/skeletons/profile-skeleton";
+import { showToast } from "@/components/ui/toast";
 import type { CompletionField, ProfileData } from "@/types/profile";
 
 const EMPTY_PROFILE: ProfileData = {
@@ -59,7 +60,7 @@ export default function ProfilePage() {
       .finally(() => setLoading(false));
   }, [router]);
 
-  async function handleUpdate(fields: Partial<ProfileData>) {
+  async function handleUpdate(fields: Partial<ProfileData>, message?: string) {
     const merged = { ...profile, ...fields };
     setProfile(merged);
 
@@ -79,15 +80,12 @@ export default function ProfilePage() {
 
     if (res.ok) {
       const saved: ProfileData = await res.json();
-      setProfile((prev) => ({
-        ...prev,
-        ...saved,
-        experiences: prev.experiences,
-        educations: prev.educations,
-        skills: prev.skills,
-      }));
+      setProfile(saved);
+      showToast(message ?? "Profile updated");
+      router.refresh();
     } else {
       setProfile(profile);
+      showToast("Failed to update profile", "error");
     }
   }
 
@@ -107,19 +105,31 @@ export default function ProfilePage() {
       </div>
 
       <div className="space-y-8">
-        <CompletionIndicator fields={completionFields} />
-        <IdentitySection profile={profile} onUpdate={handleUpdate} />
-        <SummarySection profile={profile} onUpdate={handleUpdate} />
+        <CompletionIndicator
+          items={completionFields}
+          totalLabel={`${completionFields.filter((f) => f.complete).length} of ${completionFields.length} complete`}
+        />
+        <IdentitySection
+          profile={profile}
+          onUpdate={(f) => handleUpdate(f, "Contact info updated")}
+        />
+        <SummarySection profile={profile} onUpdate={(f) => handleUpdate(f, "Summary updated")} />
         <ExperienceSection
           experiences={profile.experiences}
-          onUpdate={(experiences) => handleUpdate({ experiences })}
+          onUpdate={(experiences, msg) => handleUpdate({ experiences }, msg)}
         />
         <EducationSection
           educations={profile.educations}
-          onUpdate={(educations) => handleUpdate({ educations })}
+          onUpdate={(educations, msg) => handleUpdate({ educations }, msg)}
         />
-        <SkillsSection skills={profile.skills} onUpdate={(skills) => handleUpdate({ skills })} />
-        <CareerPreferencesSection profile={profile} onUpdate={handleUpdate} />
+        <SkillsSection
+          skills={profile.skills}
+          onUpdate={(skills, msg) => handleUpdate({ skills }, msg)}
+        />
+        <CareerPreferencesSection
+          profile={profile}
+          onUpdate={(f) => handleUpdate(f, "Career preferences updated")}
+        />
       </div>
     </>
   );

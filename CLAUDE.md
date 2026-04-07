@@ -42,7 +42,7 @@ These choices are final. Do not suggest alternatives or migrations.
 - `src/constants/` — app-wide constants (job statuses, document types, etc.)
 - `src/app/api/` — API route handlers
 - `src/tests/` — test files organized by module
-- `src/proxy.ts` — middleware (Next.js 16 convention)
+- `src/middleware.ts` — Edge middleware for auth session checks and route protection (redirects unauthenticated users to /login, authenticated users on public routes to /dashboard)
 
 ### Code style
 
