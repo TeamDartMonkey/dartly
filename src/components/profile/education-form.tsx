@@ -13,6 +13,8 @@ type EducationFormProps = {
 
 type FormErrors = {
   institution?: string;
+  degree?: string;
+  fieldOfStudy?: string;
   startDate?: string;
   endDate?: string;
   gpa?: string;
@@ -20,23 +22,38 @@ type FormErrors = {
 
 function validate(values: {
   institution: string;
-  startDate?: string;
-  endDate?: string;
-  gpa?: string;
+  degree: string;
+  fieldOfStudy: string;
+  startDate: string;
+  endDate: string;
+  gpa: string;
 }): FormErrors {
   const errors: FormErrors = {};
 
-  if (!values.institution.trim()) {
-    errors.institution = "Institution is required";
+  if (!values.institution.trim()) errors.institution = "Institution is required";
+  if (!values.degree.trim()) errors.degree = "Degree is required";
+  if (!values.fieldOfStudy.trim()) errors.fieldOfStudy = "Field of study is required";
+  if (!values.startDate) {
+    errors.startDate = "Start date is required";
+  } else if (new Date(values.startDate) > new Date()) {
+    errors.startDate = "Start date cannot be in the future";
   }
 
-  if (values.startDate && values.endDate) {
+  if (!values.endDate) {
+    errors.endDate = "End date is required";
+  } else if (new Date(values.endDate) > new Date()) {
+    errors.endDate = "End date cannot be in the future";
+  }
+
+  if (values.startDate && values.endDate && !errors.startDate && !errors.endDate) {
     if (new Date(values.endDate) < new Date(values.startDate)) {
       errors.endDate = "End date must be after start date";
     }
   }
 
-  if (values.gpa) {
+  if (!values.gpa.trim()) {
+    errors.gpa = "GPA is required";
+  } else {
     const num = Number(values.gpa);
     if (Number.isNaN(num) || num < 0) {
       errors.gpa = "GPA must be a non-negative number";
@@ -58,7 +75,14 @@ export function EducationForm({ education, onSave, onCancel }: EducationFormProp
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    const validationErrors = validate({ institution, startDate, endDate, gpa });
+    const validationErrors = validate({
+      institution,
+      degree,
+      fieldOfStudy,
+      startDate,
+      endDate,
+      gpa,
+    });
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
@@ -67,11 +91,11 @@ export function EducationForm({ education, onSave, onCancel }: EducationFormProp
     onSave({
       id: education?.id ?? "",
       institution: institution.trim(),
-      degree: degree.trim() || undefined,
-      fieldOfStudy: fieldOfStudy.trim() || undefined,
-      startDate: startDate || undefined,
-      endDate: endDate || undefined,
-      gpa: gpa.trim() || undefined,
+      degree: degree.trim(),
+      fieldOfStudy: fieldOfStudy.trim(),
+      startDate,
+      endDate,
+      gpa: gpa.trim(),
     });
   }
 
@@ -95,7 +119,12 @@ export function EducationForm({ education, onSave, onCancel }: EducationFormProp
         label="Degree"
         placeholder="e.g. Bachelor's"
         value={degree}
-        onChange={(e) => setDegree(e.target.value)}
+        onChange={(e) => {
+          setDegree(e.target.value);
+          if (errors.degree) setErrors((prev) => ({ ...prev, degree: undefined }));
+        }}
+        error={errors.degree}
+        required
       />
 
       <Input
@@ -103,7 +132,12 @@ export function EducationForm({ education, onSave, onCancel }: EducationFormProp
         label="Field of Study"
         placeholder="e.g. Computer Science"
         value={fieldOfStudy}
-        onChange={(e) => setFieldOfStudy(e.target.value)}
+        onChange={(e) => {
+          setFieldOfStudy(e.target.value);
+          if (errors.fieldOfStudy) setErrors((prev) => ({ ...prev, fieldOfStudy: undefined }));
+        }}
+        error={errors.fieldOfStudy}
+        required
       />
 
       <DatePicker
@@ -116,6 +150,7 @@ export function EducationForm({ education, onSave, onCancel }: EducationFormProp
         }}
         error={errors.startDate}
         placeholder="Start date"
+        required
       />
 
       <DatePicker
@@ -128,6 +163,7 @@ export function EducationForm({ education, onSave, onCancel }: EducationFormProp
         }}
         error={errors.endDate}
         placeholder="End date"
+        required
       />
 
       <Input
@@ -140,6 +176,7 @@ export function EducationForm({ education, onSave, onCancel }: EducationFormProp
           if (errors.gpa) setErrors((prev) => ({ ...prev, gpa: undefined }));
         }}
         error={errors.gpa}
+        required
       />
 
       <div className="flex items-center justify-end gap-3 pt-2">

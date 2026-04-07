@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Select } from "@/components/ui/select";
 import type { Job, JobStage } from "@/types/job";
 
@@ -103,18 +104,14 @@ export default function JobForm({ initialValues, onSubmit, onCancel }: JobFormPr
         />
       </div>
 
-      <div>
-        <label className={labelStyles} htmlFor="lastActivityDate">
-          Last Activity Date
-        </label>
-        <input
-          id="lastActivityDate"
-          type="date"
-          value={lastActivityDate}
-          onChange={(e) => setLastActivityDate(e.target.value)}
-          className={inputStyles}
-        />
-      </div>
+      <DatePicker
+        id="lastActivityDate"
+        label="Last Activity Date"
+        value={lastActivityDate}
+        onChange={setLastActivityDate}
+        placeholder="Select date"
+        required
+      />
 
       <label className="flex items-center gap-2 text-sm text-zinc-300">
         <input

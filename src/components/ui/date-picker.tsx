@@ -1,8 +1,7 @@
 "use client";
 
 import { format, parse } from "date-fns";
-import { enUS } from "date-fns/locale/en-US";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DayPicker } from "react-day-picker";
 import { createPortal } from "react-dom";
 import "react-day-picker/style.css";
@@ -31,64 +30,68 @@ export function DatePicker({
 }: DatePickerProps) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const popoverRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (!open) return;
-    function measure() {
-      const rect = triggerRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      setCoords({ top: rect.bottom + 4, left: rect.left });
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
     }
-    measure();
-    window.addEventListener("scroll", measure, true);
-    window.addEventListener("resize", measure);
-    return () => {
-      window.removeEventListener("scroll", measure, true);
-      window.removeEventListener("resize", measure);
-    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
   }, [open]);
 
   useEffect(() => {
     if (!open) return;
-    function onDocClick(e: MouseEvent) {
+    function onClick(e: MouseEvent) {
       const t = e.target as Node;
       if (triggerRef.current?.contains(t)) return;
-      if (popoverRef.current?.contains(t)) return;
+      const popover = document.getElementById(`${id}-popover`);
+      if (popover?.contains(t)) return;
       setOpen(false);
     }
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, [open]);
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [id, open]);
 
   const selected = value ? parse(value, "yyyy-MM-dd", new Date()) : undefined;
-  const displayValue = value && selected ? format(selected, "MMM yyyy") : "";
+  const displayValue = selected ? format(selected, "MMM yyyy") : "";
 
   function handleSelect(date: Date | undefined) {
     if (date) {
       onChange(format(date, "yyyy-MM-dd"));
-    } else {
-      onChange("");
+      setOpen(false);
     }
-    setOpen(false);
+  }
+
+  function getPopoverStyle(): React.CSSProperties {
+    if (!triggerRef.current) return { display: "none" };
+    const rect = triggerRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const approxHeight = 340;
+    const openAbove = spaceBelow < approxHeight;
+    return {
+      position: "fixed",
+      top: openAbove ? undefined : rect.bottom + 4,
+      bottom: openAbove ? window.innerHeight - rect.top + 4 : undefined,
+      left: rect.left,
+    };
   }
 
   return (
-    <div className="relative">
+    <div>
       {label && (
         <Label htmlFor={id} required={required}>
           {label}
         </Label>
       )}
       <button
-        ref={triggerRef}
         id={id}
+        ref={triggerRef}
         type="button"
         disabled={disabled}
         onClick={() => setOpen((v) => !v)}
@@ -124,31 +127,28 @@ export function DatePicker({
         </svg>
       </button>
 
-      {mounted && open && coords
-        ? createPortal(
-            <div
-              ref={popoverRef}
-              style={{
-                position: "fixed",
-                top: coords.top,
-                left: coords.left,
-              }}
-              className="z-[60] bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl p-3 rdp-dartly"
-              role="dialog"
-            >
-              <DayPicker
-                mode="single"
-                selected={selected}
-                onSelect={handleSelect}
-                captionLayout="dropdown"
-                startMonth={new Date(1970, 0)}
-                endMonth={new Date(2035, 11)}
-                locale={enUS}
-              />
-            </div>,
-            document.body
-          )
-        : null}
+      {mounted &&
+        open &&
+        createPortal(
+          <div
+            id={`${id}-popover`}
+            className="rdp-dartly z-[60] bg-zinc-900 border border-zinc-700 rounded-lg shadow-2xl p-3 animate-[scaleIn_150ms_ease-out]"
+            style={getPopoverStyle()}
+            role="dialog"
+            aria-label="Choose date"
+          >
+            <DayPicker
+              mode="single"
+              captionLayout="dropdown"
+              selected={selected}
+              onSelect={handleSelect}
+              startMonth={new Date(1970, 0)}
+              endMonth={new Date(2035, 11)}
+              defaultMonth={selected ?? new Date()}
+            />
+          </div>,
+          document.body
+        )}
 
       {error && (
         <p id={`${id}-error`} className="mt-1 text-xs text-red-400">

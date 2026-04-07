@@ -7,7 +7,7 @@ import type { Experience } from "@/types/profile";
 
 type ExperienceSectionProps = {
   experiences: Experience[];
-  onUpdate: (experiences: Experience[]) => void;
+  onUpdate: (experiences: Experience[], message?: string) => void;
 };
 
 function formatDate(date: string | undefined): string {
@@ -42,15 +42,18 @@ export function ExperienceSection({ experiences, onUpdate }: ExperienceSectionPr
     const exp = experiences[index];
     const label = exp?.title?.trim() || "this experience";
     if (!window.confirm(`Delete ${label}? This cannot be undone.`)) return;
-    onUpdate(experiences.filter((_, i) => i !== index));
+    onUpdate(
+      experiences.filter((_, i) => i !== index),
+      "Experience removed"
+    );
   }
 
   function handleSave(experience: Experience) {
     if (editingIndex !== null) {
       const updated = experiences.map((exp, i) => (i === editingIndex ? experience : exp));
-      onUpdate(updated);
+      onUpdate(updated, "Experience updated");
     } else {
-      onUpdate([...experiences, { ...experience, id: crypto.randomUUID() }]);
+      onUpdate([...experiences, { ...experience, id: crypto.randomUUID() }], "Experience added");
     }
     setModalOpen(false);
     setEditingIndex(null);

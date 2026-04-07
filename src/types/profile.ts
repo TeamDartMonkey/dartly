@@ -2,21 +2,21 @@ export type Experience = {
   id: string;
   type: "EMPLOYMENT" | "PROJECT";
   title: string;
-  organization?: string;
-  startDate?: string;
+  organization: string;
+  startDate: string;
   endDate?: string;
   isCurrent: boolean;
-  description?: string;
+  description: string;
 };
 
 export type Education = {
   id: string;
   institution: string;
-  degree?: string;
-  fieldOfStudy?: string;
-  startDate?: string;
-  endDate?: string;
-  gpa?: string;
+  degree: string;
+  fieldOfStudy: string;
+  startDate: string;
+  endDate: string;
+  gpa: string;
 };
 
 export type Skill = {

@@ -41,11 +41,11 @@ function mapExperience(e: DbExperience): Experience {
     id: e.id,
     type: e.type,
     title: e.title,
-    organization: e.organization ?? undefined,
-    startDate: toIsoDate(e.startDate),
+    organization: e.organization ?? "",
+    startDate: toIsoDate(e.startDate) ?? "",
     endDate: toIsoDate(e.endDate),
     isCurrent: e.isCurrent,
-    description: e.description ?? undefined,
+    description: e.description ?? "",
   };
 }
 
@@ -53,11 +53,11 @@ function mapEducation(e: DbEducation): Education {
   return {
     id: e.id,
     institution: e.institution,
-    degree: e.degree ?? undefined,
-    fieldOfStudy: e.fieldOfStudy ?? undefined,
-    startDate: toIsoDate(e.startDate),
-    endDate: toIsoDate(e.endDate),
-    gpa: e.gpa ?? undefined,
+    degree: e.degree ?? "",
+    fieldOfStudy: e.fieldOfStudy ?? "",
+    startDate: toIsoDate(e.startDate) ?? "",
+    endDate: toIsoDate(e.endDate) ?? "",
+    gpa: e.gpa ?? "",
   };
 }
 
@@ -166,11 +166,11 @@ export async function upsertProfile(
             profileId: profile.id,
             type: e.type,
             title: e.title,
-            organization: e.organization ?? null,
+            organization: e.organization,
             startDate: fromIsoDate(e.startDate),
             endDate: e.isCurrent ? null : fromIsoDate(e.endDate),
             isCurrent: e.isCurrent,
-            description: e.description ?? null,
+            description: e.description,
           })),
         });
       }
@@ -183,11 +183,11 @@ export async function upsertProfile(
           data: data.educations.map((e) => ({
             profileId: profile.id,
             institution: e.institution,
-            degree: e.degree ?? null,
-            fieldOfStudy: e.fieldOfStudy ?? null,
+            degree: e.degree,
+            fieldOfStudy: e.fieldOfStudy,
             startDate: fromIsoDate(e.startDate),
             endDate: fromIsoDate(e.endDate),
-            gpa: e.gpa ?? null,
+            gpa: e.gpa,
           })),
         });
       }

@@ -93,7 +93,7 @@ export function CareerPreferencesSection({ profile, onUpdate }: CareerPreference
           <p className="text-xs text-zinc-500">Salary Preference</p>
           <p className="text-zinc-50">
             {profile.salaryPreference ? (
-              `$${profile.salaryPreference.toLocaleString()}/year`
+              `$${profile.salaryPreference.toLocaleString()}/hr`
             ) : (
               <span className="text-zinc-600">Not set</span>
             )}
@@ -135,7 +135,7 @@ export function CareerPreferencesSection({ profile, onUpdate }: CareerPreference
             </div>
             <Input
               id="career-salary"
-              label="Salary Preference ($/year)"
+              label="Salary Preference ($/hr)"
               type="number"
               placeholder="85000"
               min="0"

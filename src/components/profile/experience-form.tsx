@@ -28,9 +28,11 @@ const EXPERIENCE_TYPE_OPTIONS = [
 
 function validate(values: {
   title: string;
-  startDate?: string;
+  organization: string;
+  startDate: string;
   endDate?: string;
   isCurrent: boolean;
+  description: string;
 }): FormErrors {
   const errors: FormErrors = {};
 
@@ -38,10 +40,24 @@ function validate(values: {
     errors.title = "Title is required";
   }
 
-  if (values.startDate && !values.isCurrent && values.endDate) {
-    if (new Date(values.endDate) < new Date(values.startDate)) {
+  if (!values.organization.trim()) {
+    errors.organization = "Organization is required";
+  }
+
+  if (!values.startDate) {
+    errors.startDate = "Start date is required";
+  } else if (new Date(values.startDate) > new Date()) {
+    errors.startDate = "Start date cannot be in the future";
+  }
+
+  if (!values.isCurrent && values.endDate) {
+    if (values.startDate && new Date(values.endDate) < new Date(values.startDate)) {
       errors.endDate = "End date must be after start date";
     }
+  }
+
+  if (!values.description.trim()) {
+    errors.description = "Description is required";
   }
 
   return errors;
@@ -60,7 +76,14 @@ export function ExperienceForm({ experience, onSave, onCancel }: ExperienceFormP
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    const validationErrors = validate({ title, startDate, endDate, isCurrent });
+    const validationErrors = validate({
+      title,
+      organization,
+      startDate,
+      endDate,
+      isCurrent,
+      description,
+    });
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
@@ -70,11 +93,11 @@ export function ExperienceForm({ experience, onSave, onCancel }: ExperienceFormP
       id: experience?.id ?? "",
       type,
       title: title.trim(),
-      organization: organization.trim() || undefined,
-      startDate: startDate || undefined,
-      endDate: isCurrent ? undefined : endDate || undefined,
+      organization: organization.trim(),
+      startDate: startDate,
+      endDate: isCurrent ? undefined : endDate,
       isCurrent,
-      description: description.trim() || undefined,
+      description: description.trim(),
     });
   }
 
@@ -111,20 +134,12 @@ export function ExperienceForm({ experience, onSave, onCancel }: ExperienceFormP
         label="Organization"
         placeholder={type === "EMPLOYMENT" ? "e.g. Acme Corp" : "e.g. Open Source"}
         value={organization}
-        onChange={(e) => setOrganization(e.target.value)}
-        error={errors.organization}
-      />
-
-      <DatePicker
-        id="experience-start-date"
-        label="Start Date"
-        value={startDate}
-        onChange={(v) => {
-          setStartDate(v);
-          if (errors.startDate) setErrors((prev) => ({ ...prev, startDate: undefined }));
+        onChange={(e) => {
+          setOrganization(e.target.value);
+          if (errors.organization) setErrors((prev) => ({ ...prev, organization: undefined }));
         }}
-        error={errors.startDate}
-        placeholder="Start date"
+        error={errors.organization}
+        required
       />
 
       <div>
@@ -146,6 +161,19 @@ export function ExperienceForm({ experience, onSave, onCancel }: ExperienceFormP
         </label>
       </div>
 
+      <DatePicker
+        id="experience-start-date"
+        label="Start Date"
+        value={startDate}
+        onChange={(v) => {
+          setStartDate(v);
+          if (errors.startDate) setErrors((prev) => ({ ...prev, startDate: undefined }));
+        }}
+        error={errors.startDate}
+        placeholder="Start date"
+        required
+      />
+
       {!isCurrent && (
         <DatePicker
           id="experience-end-date"
@@ -157,6 +185,7 @@ export function ExperienceForm({ experience, onSave, onCancel }: ExperienceFormP
           }}
           error={errors.endDate}
           placeholder="End date"
+          required
         />
       )}
 
@@ -165,9 +194,13 @@ export function ExperienceForm({ experience, onSave, onCancel }: ExperienceFormP
         label="Description"
         placeholder="Brief description of your role or project..."
         value={description}
-        onChange={(e) => setDescription(e.target.value)}
+        onChange={(e) => {
+          setDescription(e.target.value);
+          if (errors.description) setErrors((prev) => ({ ...prev, description: undefined }));
+        }}
         error={errors.description}
         rows={4}
+        required
       />
 
       <div className="flex items-center justify-end gap-3 pt-2">

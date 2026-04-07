@@ -6,6 +6,7 @@ import AddJobModal from "@/components/dashboard/add_job_modal";
 import JobCardList from "@/components/dashboard/job_card_list";
 import { Select } from "@/components/ui/select";
 import { DashboardSkeleton } from "@/components/ui/skeletons/dashboard-skeleton";
+import { showToast } from "@/components/ui/toast";
 import type { Job, JobStage } from "@/types/job";
 
 const STAGES: JobStage[] = ["Interested", "Applied", "Interview", "Offer", "Rejected", "Archived"];
@@ -53,6 +54,9 @@ export default function DashboardPage() {
     }
     if (res.ok) {
       setJobs((current) => current.filter((job) => job.id !== id));
+      showToast("Job removed");
+    } else {
+      showToast("Failed to remove job", "error");
     }
   }
 
@@ -78,6 +82,9 @@ export default function DashboardPage() {
       if (res.ok) {
         const updated: Job = await res.json();
         setJobs((current) => current.map((j) => (j.id === updated.id ? updated : j)));
+        showToast("Job updated");
+      } else {
+        showToast("Failed to update job", "error");
       }
     } else {
       const res = await fetch("/api/jobs", {
@@ -98,6 +105,9 @@ export default function DashboardPage() {
       if (res.ok) {
         const created: Job = await res.json();
         setJobs((current) => [created, ...current]);
+        showToast("Job added");
+      } else {
+        showToast("Failed to add job", "error");
       }
     }
 

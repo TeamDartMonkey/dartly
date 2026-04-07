@@ -7,7 +7,7 @@ import type { Education } from "@/types/profile";
 
 type EducationSectionProps = {
   educations: Education[];
-  onUpdate: (educations: Education[]) => void;
+  onUpdate: (educations: Education[], message?: string) => void;
 };
 
 function formatDate(date: string | undefined): string {
@@ -34,15 +34,18 @@ export function EducationSection({ educations, onUpdate }: EducationSectionProps
     const edu = educations[index];
     const label = edu?.institution?.trim() || "this education entry";
     if (!window.confirm(`Delete ${label}? This cannot be undone.`)) return;
-    onUpdate(educations.filter((_, i) => i !== index));
+    onUpdate(
+      educations.filter((_, i) => i !== index),
+      "Education removed"
+    );
   }
 
   function handleSave(education: Education) {
     if (editingIndex !== null) {
       const updated = educations.map((edu, i) => (i === editingIndex ? education : edu));
-      onUpdate(updated);
+      onUpdate(updated, "Education updated");
     } else {
-      onUpdate([...educations, { ...education, id: crypto.randomUUID() }]);
+      onUpdate([...educations, { ...education, id: crypto.randomUUID() }], "Education added");
     }
     setModalOpen(false);
     setEditingIndex(null);
@@ -176,7 +179,6 @@ export function EducationSection({ educations, onUpdate }: EducationSectionProps
           onCancel={() => setModalOpen(false)}
         />
       </Modal>
-      ;
     </div>
   );
 }

@@ -7,7 +7,7 @@ import type { Skill } from "@/types/profile";
 
 type SkillsSectionProps = {
   skills: Skill[];
-  onUpdate: (skills: Skill[]) => void;
+  onUpdate: (skills: Skill[], message?: string) => void;
 };
 
 export function SkillsSection({ skills, onUpdate }: SkillsSectionProps) {
@@ -28,15 +28,18 @@ export function SkillsSection({ skills, onUpdate }: SkillsSectionProps) {
     const skill = skills[index];
     const label = skill?.name?.trim() || "this skill";
     if (!window.confirm(`Remove ${label}?`)) return;
-    onUpdate(skills.filter((_, i) => i !== index));
+    onUpdate(
+      skills.filter((_, i) => i !== index),
+      "Skill removed"
+    );
   }
 
   function handleSave(skill: Skill) {
     if (editingIndex !== null) {
       const updated = skills.map((s, i) => (i === editingIndex ? skill : s));
-      onUpdate(updated);
+      onUpdate(updated, "Skill updated");
     } else {
-      onUpdate([...skills, { ...skill, id: crypto.randomUUID() }]);
+      onUpdate([...skills, { ...skill, id: crypto.randomUUID() }], "Skill added");
     }
     setModalOpen(false);
     setEditingIndex(null);
@@ -69,10 +72,15 @@ export function SkillsSection({ skills, onUpdate }: SkillsSectionProps) {
       ) : (
         <div className="flex flex-wrap gap-2">
           {skills.map((skill, index) => (
-            <button
+            // biome-ignore lint/a11y/useSemanticElements: card nests child remove button
+            <div
               key={skill.id || index}
-              type="button"
+              role="button"
+              tabIndex={0}
               onClick={() => handleEdit(index)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") handleEdit(index);
+              }}
               className="group inline-flex items-center gap-2 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 hover:border-zinc-600 transition-colors"
             >
               <span className="text-sm text-zinc-200 leading-tight">
@@ -109,7 +117,7 @@ export function SkillsSection({ skills, onUpdate }: SkillsSectionProps) {
                   <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
               </button>
-            </button>
+            </div>
           ))}
         </div>
       )}
