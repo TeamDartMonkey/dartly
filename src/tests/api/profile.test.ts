@@ -19,6 +19,10 @@ vi.mock("@/lib/logger", () => ({
   default: { info: vi.fn(), error: vi.fn() },
 }));
 
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
+}));
+
 vi.mock("@/services/profile", () => ({
   getProfile: mockGetProfile,
   upsertProfile: mockUpsertProfile,
@@ -110,5 +114,21 @@ describe("PUT /api/profile", () => {
 
     const res = await PUT(makeRequest("PUT", { firstName: "Jane" }));
     expect(res.status).toBe(401);
+  });
+
+  it("returns 400 when body is invalid JSON", async () => {
+    const req = new Request("http://localhost/api/profile", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: "{invalid",
+    }) as unknown as NextRequest;
+
+    const res = await PUT(req);
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 400 when workModePreference is invalid", async () => {
+    const res = await PUT(makeRequest("PUT", { workModePreference: "INVALID" }));
+    expect(res.status).toBe(400);
   });
 });

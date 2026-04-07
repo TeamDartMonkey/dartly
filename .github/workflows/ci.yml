@@ -15,6 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
+    # Placeholder values — fine for build/lint/type-check and unit tests (which mock
+    # Supabase). When integration tests against real Supabase land, replace these
+    # with secrets and add a Postgres service container.
     env:
       DATABASE_URL: postgresql://user:password@localhost:5432/test
       NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co

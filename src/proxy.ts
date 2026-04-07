@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 
 const publicRoutes = ["/login", "/register", "/forgot-password", "/reset-password"];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
 
@@ -35,14 +35,14 @@ export async function middleware(request: NextRequest) {
   });
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!session && !isPublicRoute) {
+  if (!user && !isPublicRoute) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (session && isPublicRoute) {
+  if (user && isPublicRoute) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 

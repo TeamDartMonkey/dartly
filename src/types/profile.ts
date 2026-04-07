@@ -1,5 +1,5 @@
 export type Experience = {
-  id: string;
+  id?: string;
   type: "EMPLOYMENT" | "PROJECT";
   title: string;
   organization: string;
@@ -10,7 +10,7 @@ export type Experience = {
 };
 
 export type Education = {
-  id: string;
+  id?: string;
   institution: string;
   degree: string;
   fieldOfStudy: string;
@@ -20,7 +20,7 @@ export type Education = {
 };
 
 export type Skill = {
-  id: string;
+  id?: string;
   name: string;
 };
 

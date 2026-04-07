@@ -1,4 +1,4 @@
-import JobCard from "@/components/dashboard/job_card";
+import JobCard from "@/components/dashboard/job-card";
 import type { Job } from "@/types/job";
 
 type JobCardListProps = {

@@ -52,7 +52,7 @@ export function EducationSection({ educations, onUpdate }: EducationSectionProps
       const updated = educations.map((edu, i) => (i === editingIndex ? education : edu));
       onUpdate(updated, "Education updated");
     } else {
-      onUpdate([...educations, { ...education, id: crypto.randomUUID() }], "Education added");
+      onUpdate([...educations, education], "Education added");
     }
     setModalOpen(false);
     setEditingIndex(null);

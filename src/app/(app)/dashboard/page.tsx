@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import AddJobModal from "@/components/dashboard/add_job_modal";
-import JobCardList from "@/components/dashboard/job_card_list";
+import AddJobModal from "@/components/dashboard/add-job-modal";
+import JobCardList from "@/components/dashboard/job-card-list";
 import { ConfirmDeleteModal } from "@/components/ui/confirm-delete-modal";
 import { Select } from "@/components/ui/select";
 import { DashboardSkeleton } from "@/components/ui/skeletons/dashboard-skeleton";
@@ -30,10 +30,16 @@ export default function DashboardPage() {
           router.push("/login");
           return null;
         }
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
         return res.json();
       })
       .then((data) => {
         if (data && Array.isArray(data)) setJobs(data);
+      })
+      .catch(() => {
+        showToast("Failed to load jobs", "error");
       })
       .finally(() => setLoading(false));
   }, [router]);
@@ -68,10 +74,24 @@ export default function DashboardPage() {
     setPendingDeleteJob(null);
   }
 
-  async function handleSave(job: Job) {
-    const isEdit = jobs.some((j) => j.id === job.id);
+  async function handleSave(job: Omit<Job, "id"> & { id?: string }) {
+    const existing = job.id ? jobs.find((j) => j.id === job.id) : undefined;
+    const isEdit = !!existing;
 
     if (isEdit) {
+      // Skip the API call (and the success toast) if nothing actually changed.
+      const unchanged =
+        existing.title === job.title &&
+        existing.company === job.company &&
+        (existing.location ?? "") === (job.location ?? "") &&
+        existing.stage === job.stage &&
+        existing.priority === job.priority;
+      if (unchanged) {
+        setShowForm(false);
+        setEditingJob(null);
+        return;
+      }
+
       const res = await fetch(`/api/jobs/${job.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },

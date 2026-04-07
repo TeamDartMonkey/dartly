@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/services/prisma";
 import type { Education, Experience, ProfileData, Skill } from "@/types/profile";
 
@@ -91,7 +92,8 @@ function toProfileData(profile: {
     email: profile.email ?? undefined,
     phone: profile.phone ?? undefined,
     location: profile.location ?? undefined,
-    professionalLinks: (profile.professionalLinks as Record<string, string>) ?? undefined,
+    professionalLinks:
+      (profile.professionalLinks as Record<string, string> | undefined) ?? undefined,
     headline: profile.headline ?? undefined,
     summary: profile.summary ?? undefined,
     targetRoles: profile.targetRoles,
@@ -104,7 +106,25 @@ function toProfileData(profile: {
   };
 }
 
-function buildUpdateFields(data: Partial<ProfileData>): Record<string, unknown> {
+type ProfilePatchInput = {
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  location?: string | null;
+  headline?: string | null;
+  summary?: string | null;
+  targetRoles?: string[];
+  targetLocations?: string[];
+  workModePreference?: string | null;
+  salaryPreference?: number | null;
+  professionalLinks?: Record<string, string> | null;
+  experiences?: Experience[];
+  educations?: Education[];
+  skills?: Skill[];
+};
+
+function buildUpdateFields(data: ProfilePatchInput): Record<string, unknown> {
   const fields: Record<string, unknown> = {};
   if (data.firstName !== undefined) fields.firstName = data.firstName ?? null;
   if (data.lastName !== undefined) fields.lastName = data.lastName ?? null;
@@ -140,10 +160,104 @@ export async function getProfile(userId: string): Promise<ProfileData | null> {
   return toProfileData(profile);
 }
 
-export async function upsertProfile(
-  userId: string,
-  data: Partial<ProfileData>
-): Promise<ProfileData> {
+async function syncExperiences(
+  tx: Prisma.TransactionClient,
+  profileId: string,
+  incoming: Experience[]
+) {
+  const existing = await tx.experience.findMany({
+    where: { profileId },
+    select: { id: true },
+  });
+  const existingIds = new Set(existing.map((e) => e.id));
+  const incomingIds = new Set(incoming.flatMap((e) => (e.id ? [e.id] : [])));
+
+  const toDelete = [...existingIds].filter((id) => !incomingIds.has(id));
+  if (toDelete.length > 0) {
+    await tx.experience.deleteMany({ where: { id: { in: toDelete } } });
+  }
+
+  for (const e of incoming) {
+    const data = {
+      profileId,
+      type: e.type,
+      title: e.title,
+      organization: e.organization || null,
+      startDate: fromIsoDate(e.startDate),
+      endDate: e.isCurrent ? null : fromIsoDate(e.endDate),
+      isCurrent: e.isCurrent,
+      description: e.description || null,
+    };
+    if (e.id && existingIds.has(e.id)) {
+      await tx.experience.update({ where: { id: e.id }, data });
+    } else {
+      await tx.experience.create({ data });
+    }
+  }
+}
+
+async function syncEducations(
+  tx: Prisma.TransactionClient,
+  profileId: string,
+  incoming: Education[]
+) {
+  const existing = await tx.education.findMany({
+    where: { profileId },
+    select: { id: true },
+  });
+  const existingIds = new Set(existing.map((e) => e.id));
+  const incomingIds = new Set(incoming.flatMap((e) => (e.id ? [e.id] : [])));
+
+  const toDelete = [...existingIds].filter((id) => !incomingIds.has(id));
+  if (toDelete.length > 0) {
+    await tx.education.deleteMany({ where: { id: { in: toDelete } } });
+  }
+
+  for (const e of incoming) {
+    const data = {
+      profileId,
+      institution: e.institution,
+      degree: e.degree || null,
+      fieldOfStudy: e.fieldOfStudy || null,
+      startDate: fromIsoDate(e.startDate),
+      endDate: fromIsoDate(e.endDate),
+      gpa: e.gpa || null,
+    };
+    if (e.id && existingIds.has(e.id)) {
+      await tx.education.update({ where: { id: e.id }, data });
+    } else {
+      await tx.education.create({ data });
+    }
+  }
+}
+
+async function syncSkills(tx: Prisma.TransactionClient, profileId: string, incoming: Skill[]) {
+  const existing = await tx.skill.findMany({
+    where: { profileId },
+    select: { id: true },
+  });
+  const existingIds = new Set(existing.map((s) => s.id));
+  const incomingIds = new Set(incoming.flatMap((s) => (s.id ? [s.id] : [])));
+
+  const toDelete = [...existingIds].filter((id) => !incomingIds.has(id));
+  if (toDelete.length > 0) {
+    await tx.skill.deleteMany({ where: { id: { in: toDelete } } });
+  }
+
+  for (const s of incoming) {
+    const data = {
+      profileId,
+      name: s.name,
+    };
+    if (s.id && existingIds.has(s.id)) {
+      await tx.skill.update({ where: { id: s.id }, data });
+    } else {
+      await tx.skill.create({ data });
+    }
+  }
+}
+
+export async function upsertProfile(userId: string, data: ProfilePatchInput): Promise<ProfileData> {
   const fields = buildUpdateFields(data);
 
   return await prisma.$transaction(async (tx) => {
@@ -159,50 +273,15 @@ export async function upsertProfile(
     });
 
     if (data.experiences !== undefined) {
-      await tx.experience.deleteMany({ where: { profileId: profile.id } });
-      if (data.experiences.length > 0) {
-        await tx.experience.createMany({
-          data: data.experiences.map((e) => ({
-            profileId: profile.id,
-            type: e.type,
-            title: e.title,
-            organization: e.organization,
-            startDate: fromIsoDate(e.startDate),
-            endDate: e.isCurrent ? null : fromIsoDate(e.endDate),
-            isCurrent: e.isCurrent,
-            description: e.description,
-          })),
-        });
-      }
+      await syncExperiences(tx, profile.id, data.experiences);
     }
 
     if (data.educations !== undefined) {
-      await tx.education.deleteMany({ where: { profileId: profile.id } });
-      if (data.educations.length > 0) {
-        await tx.education.createMany({
-          data: data.educations.map((e) => ({
-            profileId: profile.id,
-            institution: e.institution,
-            degree: e.degree,
-            fieldOfStudy: e.fieldOfStudy,
-            startDate: fromIsoDate(e.startDate),
-            endDate: fromIsoDate(e.endDate),
-            gpa: e.gpa,
-          })),
-        });
-      }
+      await syncEducations(tx, profile.id, data.educations);
     }
 
     if (data.skills !== undefined) {
-      await tx.skill.deleteMany({ where: { profileId: profile.id } });
-      if (data.skills.length > 0) {
-        await tx.skill.createMany({
-          data: data.skills.map((s) => ({
-            profileId: profile.id,
-            name: s.name,
-          })),
-        });
-      }
+      await syncSkills(tx, profile.id, data.skills);
     }
 
     const fresh = await tx.profile.findUnique({

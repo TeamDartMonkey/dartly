@@ -28,7 +28,6 @@ model Profile {
   targetLocations    String[]
   workModePreference String?
   salaryPreference   Int?
-  completionStatus   Int      @default(0)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 

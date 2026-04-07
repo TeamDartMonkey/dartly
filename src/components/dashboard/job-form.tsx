@@ -7,7 +7,7 @@ import type { Job, JobStage } from "@/types/job";
 
 type JobFormProps = {
   initialValues?: Job | null;
-  onSubmit: (job: Job) => void;
+  onSubmit: (job: Omit<Job, "id"> & { id?: string }) => void | Promise<void>;
   onCancel: () => void;
 };
 
@@ -27,23 +27,30 @@ export default function JobForm({ initialValues, onSubmit, onCancel }: JobFormPr
     initialValues?.lastActivityDate ?? new Date().toISOString().slice(0, 10)
   );
   const [priority, setPriority] = useState(initialValues?.priority ?? false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    if (isSubmitting) return;
     if (!title.trim() || !company.trim()) {
       return;
     }
 
-    onSubmit({
-      id: initialValues?.id ?? crypto.randomUUID(),
-      title: title.trim(),
-      company: company.trim(),
-      location: location.trim(),
-      stage,
-      lastActivityDate,
-      priority,
-    });
+    setIsSubmitting(true);
+    try {
+      await onSubmit({
+        id: initialValues?.id,
+        title: title.trim(),
+        company: company.trim(),
+        location: location.trim(),
+        stage,
+        lastActivityDate,
+        priority,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -127,15 +134,17 @@ export default function JobForm({ initialValues, onSubmit, onCancel }: JobFormPr
         <button
           type="button"
           onClick={onCancel}
-          className="bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-zinc-50 px-4 py-2 rounded-md text-sm font-medium"
+          disabled={isSubmitting}
+          className="bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-zinc-50 px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Cancel
         </button>
         <button
           type="submit"
-          className="bg-indigo-500 hover:bg-indigo-600 text-zinc-50 px-4 py-2 rounded-md text-sm font-medium"
+          disabled={isSubmitting}
+          className="bg-indigo-500 hover:bg-indigo-600 text-zinc-50 px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {initialValues ? "Update Job" : "Add Job"}
+          {isSubmitting ? "Saving..." : "Save"}
         </button>
       </div>
     </form>

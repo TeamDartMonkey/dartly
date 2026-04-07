@@ -2,10 +2,47 @@
 
 import { format, parse } from "date-fns";
 import { useEffect, useRef, useState } from "react";
-import { DayPicker } from "react-day-picker";
+import { type ChevronProps, DayPicker, type Matcher } from "react-day-picker";
 import { createPortal } from "react-dom";
 import "react-day-picker/style.css";
 import { Label } from "@/components/ui/label";
+
+function Chevron({ orientation, ...props }: ChevronProps) {
+  if (orientation === "left") {
+    return (
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        {...props}
+      >
+        <title>Previous month</title>
+        <polyline points="15 18 9 12 15 6" />
+      </svg>
+    );
+  }
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <title>Next month</title>
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  );
+}
 
 type DatePickerProps = {
   id: string;
@@ -16,6 +53,10 @@ type DatePickerProps = {
   error?: string;
   required?: boolean;
   disabled?: boolean;
+  /** YYYY-MM-DD — earliest selectable date (inclusive) */
+  minDate?: string;
+  /** YYYY-MM-DD — latest selectable date (inclusive) */
+  maxDate?: string;
 };
 
 export function DatePicker({
@@ -27,6 +68,8 @@ export function DatePicker({
   error,
   required,
   disabled,
+  minDate,
+  maxDate,
 }: DatePickerProps) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -59,7 +102,12 @@ export function DatePicker({
   }, [id, open]);
 
   const selected = value ? parse(value, "yyyy-MM-dd", new Date()) : undefined;
-  const displayValue = selected ? format(selected, "MMM yyyy") : "";
+  const displayValue = selected ? format(selected, "MMM d, yyyy") : "";
+  const minDateParsed = minDate ? parse(minDate, "yyyy-MM-dd", new Date()) : undefined;
+  const maxDateParsed = maxDate ? parse(maxDate, "yyyy-MM-dd", new Date()) : undefined;
+  const disabledMatchers: Matcher[] = [];
+  if (minDateParsed) disabledMatchers.push({ before: minDateParsed });
+  if (maxDateParsed) disabledMatchers.push({ after: maxDateParsed });
 
   function handleSelect(date: Date | undefined) {
     if (date) {
@@ -140,11 +188,14 @@ export function DatePicker({
             <DayPicker
               mode="single"
               captionLayout="dropdown"
+              navLayout="around"
+              components={{ Chevron }}
               selected={selected}
               onSelect={handleSelect}
+              disabled={disabledMatchers.length > 0 ? disabledMatchers : undefined}
               startMonth={new Date(1970, 0)}
               endMonth={new Date(2035, 11)}
-              defaultMonth={selected ?? new Date()}
+              defaultMonth={selected ?? minDateParsed ?? new Date()}
             />
           </div>,
           document.body

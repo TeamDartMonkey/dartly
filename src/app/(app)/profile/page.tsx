@@ -34,7 +34,9 @@ function getCompletionFields(profile: ProfileData): CompletionField[] {
     { label: "Education", complete: profile.educations.length > 0 },
     { label: "Skills", complete: profile.skills.length > 0 },
     { label: "Target roles", complete: profile.targetRoles.length > 0 },
+    { label: "Target locations", complete: profile.targetLocations.length > 0 },
     { label: "Work mode", complete: !!profile.workModePreference },
+    { label: "Salary preference", complete: profile.salaryPreference != null },
   ];
 }
 
@@ -50,6 +52,9 @@ export default function ProfilePage() {
           router.push("/login");
           return null;
         }
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
         return res.json();
       })
       .then((data) => {
@@ -57,10 +62,21 @@ export default function ProfilePage() {
           setProfile((prev) => ({ ...EMPTY_PROFILE, ...prev, ...data }));
         }
       })
+      .catch(() => {
+        showToast("Failed to load profile", "error");
+      })
       .finally(() => setLoading(false));
   }, [router]);
 
   async function handleUpdate(fields: Partial<ProfileData>, message?: string) {
+    // Skip the API call (and the toast) if nothing actually changed.
+    // JSON.stringify is safe here — profile values are only primitives, arrays,
+    // and plain objects (no Dates/Maps/Sets).
+    const isDirty = (Object.keys(fields) as (keyof ProfileData)[]).some(
+      (k) => JSON.stringify(fields[k] ?? null) !== JSON.stringify(profile[k] ?? null)
+    );
+    if (!isDirty) return;
+
     const merged = { ...profile, ...fields };
     setProfile(merged);
 

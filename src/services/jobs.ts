@@ -8,7 +8,7 @@ type CreateJobInput = {
   title: string;
   company: string;
   location?: string;
-  stage?: string;
+  stage?: JobStage;
   priority?: boolean;
 };
 
@@ -16,7 +16,7 @@ type UpdateJobInput = {
   title?: string;
   company?: string;
   location?: string;
-  stage?: string;
+  stage?: JobStage;
   priority?: boolean;
 };
 
@@ -41,7 +41,7 @@ export async function getJobsByUserId(userId: string) {
 
 export async function createJob(data: CreateJobInput) {
   const prismaStage = data.stage
-    ? (STAGE_UI_TO_PRISMA[data.stage as JobStage] as PrismaJobStage)
+    ? (STAGE_UI_TO_PRISMA[data.stage] as PrismaJobStage)
     : "INTERESTED";
 
   return prisma.job.create({
@@ -61,9 +61,7 @@ export async function updateJob(id: string, userId: string, data: UpdateJobInput
   const existing = await prisma.job.findFirst({ where: { id, userId } });
   if (!existing) return null;
 
-  const prismaStage = data.stage
-    ? (STAGE_UI_TO_PRISMA[data.stage as JobStage] as PrismaJobStage)
-    : undefined;
+  const prismaStage = data.stage ? (STAGE_UI_TO_PRISMA[data.stage] as PrismaJobStage) : undefined;
 
   return prisma.job.update({
     where: { id },
@@ -73,6 +71,8 @@ export async function updateJob(id: string, userId: string, data: UpdateJobInput
       ...(data.location !== undefined && { location: data.location }),
       ...(prismaStage !== undefined && { stage: prismaStage }),
       ...(data.priority !== undefined && { priority: data.priority }),
+      // Bumped on every save to surface "recently touched" jobs at the top of the
+      // dashboard. Intentionally not gated on field changes.
       lastActivityAt: new Date(),
     },
   });

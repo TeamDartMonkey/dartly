@@ -46,7 +46,7 @@ export function SkillsSection({ skills, onUpdate }: SkillsSectionProps) {
       const updated = skills.map((s, i) => (i === editingIndex ? skill : s));
       onUpdate(updated, "Skill updated");
     } else {
-      onUpdate([...skills, { ...skill, id: crypto.randomUUID() }], "Skill added");
+      onUpdate([...skills, skill], "Skill added");
     }
     setModalOpen(false);
     setEditingIndex(null);

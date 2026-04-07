@@ -7,9 +7,18 @@ type ModalProps = {
   onClose: () => void;
   title?: string;
   children: React.ReactNode;
+  maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl";
 };
 
-export function Modal({ open, onClose, title, children }: ModalProps) {
+const MAX_WIDTH_CLASS = {
+  sm: "max-w-sm",
+  md: "max-w-md",
+  lg: "max-w-lg",
+  xl: "max-w-xl",
+  "2xl": "max-w-2xl",
+};
+
+export function Modal({ open, onClose, title, children, maxWidth = "lg" }: ModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
 
   const handleKeyDown = useCallback(
@@ -53,7 +62,7 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className="relative w-full max-w-lg max-h-[85vh] overflow-y-auto bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-6 animate-[scaleIn_150ms_ease-out] focus:outline-none"
+        className={`relative w-full ${MAX_WIDTH_CLASS[maxWidth]} max-h-[85vh] overflow-y-auto bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-6 animate-[scaleIn_150ms_ease-out] focus:outline-none`}
       >
         {title && (
           <div className="flex items-center justify-between mb-6">

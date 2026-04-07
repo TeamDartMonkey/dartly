@@ -46,8 +46,6 @@ function validate(values: {
 
   if (!values.startDate) {
     errors.startDate = "Start date is required";
-  } else if (new Date(values.startDate) > new Date()) {
-    errors.startDate = "Start date cannot be in the future";
   }
 
   if (!values.isCurrent && values.endDate) {
@@ -185,6 +183,7 @@ export function ExperienceForm({ experience, onSave, onCancel }: ExperienceFormP
           }}
           error={errors.endDate}
           placeholder="End date"
+          minDate={startDate || undefined}
           required
         />
       )}

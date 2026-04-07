@@ -42,7 +42,7 @@ These choices are final. Do not suggest alternatives or migrations.
 - `src/constants/` — app-wide constants (job statuses, document types, etc.)
 - `src/app/api/` — API route handlers
 - `src/tests/` — test files organized by module
-- `src/middleware.ts` — Edge middleware for auth session checks and route protection (redirects unauthenticated users to /login, authenticated users on public routes to /dashboard)
+- `src/proxy.ts` — Edge proxy for auth session checks and route protection (redirects unauthenticated users to /login, authenticated users on public routes to /dashboard)
 
 ### Code style
 
@@ -58,8 +58,8 @@ These choices are final. Do not suggest alternatives or migrations.
 
 - Use Prisma models defined in `prisma/schema.prisma`
 - Foreign keys enforce referential integrity
-- Row-level security (RLS) policies in Supabase for account isolation
-- All queries account-scoped via RLS (no manual user_id filtering in app code)
+- Row-level security (RLS) policies in `supabase/rls-policies.sql` exist as defense-in-depth for any direct supabase-js calls (not used by Prisma)
+- All service-layer queries must explicitly filter by `userId` from `requireAuth()`
 - Migrations managed via Prisma CLI: `bun prisma migrate dev`
 
 ### Authentication conventions
@@ -69,6 +69,7 @@ These choices are final. Do not suggest alternatives or migrations.
 - Public routes: home, login, signup
 - Protected routes: dashboard, profile, document library
 - Email/password registration via Supabase Auth (OAuth to be added later)
+- The `proxy.ts` matcher excludes `/api/*`. **Every API route must call `requireAuth()`** at the top of its handler (or explicitly opt out with a comment explaining why). Do not assume middleware is protecting `/api`.
 
 ### API conventions
 
@@ -96,7 +97,7 @@ Additionally verify:
 - README env var table matches `.env.example`
 - All `src/lib/` files import `"server-only"` (directly or via barrel)
 - No `console.log` / `console.error` in server code (use logger)
-- RLS policies enforce account isolation in Supabase
+- Manual `userId` scoping in services + RLS defense-in-depth in Supabase
 - All API routes are protected with auth checks
 - Rate limiting configured on public endpoints
 - CI/CD pipeline runs successfully on GitHub
@@ -114,7 +115,7 @@ These are intentional decisions. Do not "fix" or suggest alternatives:
 - **No axios** — `fetch` is the web standard
 - **`zod/v4` import path** — Zod v4 requires this, not `zod`
 - **Single font (Geist Mono)** — monospace-first design choice
-- **Supabase Auth + RLS** — account isolation via database policies, not app-level filtering
+- **Supabase Auth + RLS** — account isolation via database policies and manual `userId` scoping in service layer, not app-level filtering alone
 - **Prisma ORM** — type-safe queries, no raw SQL in app code
 
 ## Scripts Reference
