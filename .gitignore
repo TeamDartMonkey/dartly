@@ -33,3 +33,6 @@ bun-debug.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# local plan scratchpads (reference only, never committed)
+docs/plans/

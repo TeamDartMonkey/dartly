@@ -10,7 +10,6 @@ type DbExperience = {
   endDate: Date | null;
   isCurrent: boolean;
   description: string | null;
-  bullets: string[];
 };
 
 type DbEducation = {
@@ -21,14 +20,11 @@ type DbEducation = {
   startDate: Date | null;
   endDate: Date | null;
   gpa: string | null;
-  honors: string | null;
 };
 
 type DbSkill = {
   id: string;
   name: string;
-  category: string | null;
-  proficiency: string | null;
 };
 
 function toIsoDate(d: Date | null): string | undefined {
@@ -50,7 +46,6 @@ function mapExperience(e: DbExperience): Experience {
     endDate: toIsoDate(e.endDate),
     isCurrent: e.isCurrent,
     description: e.description ?? undefined,
-    bullets: e.bullets,
   };
 }
 
@@ -63,7 +58,6 @@ function mapEducation(e: DbEducation): Education {
     startDate: toIsoDate(e.startDate),
     endDate: toIsoDate(e.endDate),
     gpa: e.gpa ?? undefined,
-    honors: e.honors ?? undefined,
   };
 }
 
@@ -71,8 +65,6 @@ function mapSkill(s: DbSkill): Skill {
   return {
     id: s.id,
     name: s.name,
-    category: s.category ?? undefined,
-    proficiency: s.proficiency ?? undefined,
   };
 }
 
@@ -179,7 +171,6 @@ export async function upsertProfile(
             endDate: e.isCurrent ? null : fromIsoDate(e.endDate),
             isCurrent: e.isCurrent,
             description: e.description ?? null,
-            bullets: e.bullets ?? [],
           })),
         });
       }
@@ -197,7 +188,6 @@ export async function upsertProfile(
             startDate: fromIsoDate(e.startDate),
             endDate: fromIsoDate(e.endDate),
             gpa: e.gpa ?? null,
-            honors: e.honors ?? null,
           })),
         });
       }
@@ -210,8 +200,6 @@ export async function upsertProfile(
           data: data.skills.map((s) => ({
             profileId: profile.id,
             name: s.name,
-            category: s.category ?? null,
-            proficiency: s.proficiency ?? null,
           })),
         });
       }

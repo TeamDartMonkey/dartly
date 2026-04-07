@@ -1,5 +1,8 @@
 "use client";
 
+import { useState } from "react";
+import { SkillForm } from "@/components/profile/skill-form";
+import { Modal } from "@/components/ui/modal";
 import type { Skill } from "@/types/profile";
 
 type SkillsSectionProps = {
@@ -7,32 +10,36 @@ type SkillsSectionProps = {
   onUpdate: (skills: Skill[]) => void;
 };
 
-const inputStyles =
-  "w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent";
-
-const labelStyles = "mb-1 block text-xs font-medium text-zinc-400";
-
 export function SkillsSection({ skills, onUpdate }: SkillsSectionProps) {
-  function handleAddSkill() {
-    const newSkill: Skill = {
-      id: "",
-      name: "",
-      category: "",
-      proficiency: "",
-    };
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
-    onUpdate([...skills, newSkill]);
+  function handleAdd() {
+    setEditingIndex(null);
+    setModalOpen(true);
   }
 
-  function handleChange(index: number, field: keyof Skill, value: string) {
-    const updated = skills.map((skill, i) =>
-      i === index ? { ...skill, [field]: value } : skill
-    );
-    onUpdate(updated);
+  function handleEdit(index: number) {
+    setEditingIndex(index);
+    setModalOpen(true);
   }
 
   function handleDelete(index: number) {
+    const skill = skills[index];
+    const label = skill?.name?.trim() || "this skill";
+    if (!window.confirm(`Remove ${label}?`)) return;
     onUpdate(skills.filter((_, i) => i !== index));
+  }
+
+  function handleSave(skill: Skill) {
+    if (editingIndex !== null) {
+      const updated = skills.map((s, i) => (i === editingIndex ? skill : s));
+      onUpdate(updated);
+    } else {
+      onUpdate([...skills, { ...skill, id: crypto.randomUUID() }]);
+    }
+    setModalOpen(false);
+    setEditingIndex(null);
   }
 
   return (
@@ -41,7 +48,7 @@ export function SkillsSection({ skills, onUpdate }: SkillsSectionProps) {
         <h2 className="text-lg font-semibold text-zinc-50">Skills</h2>
         <button
           type="button"
-          onClick={handleAddSkill}
+          onClick={handleAdd}
           className="bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-zinc-50 px-4 py-2 rounded-md text-sm font-medium"
         >
           Add
@@ -49,68 +56,76 @@ export function SkillsSection({ skills, onUpdate }: SkillsSectionProps) {
       </div>
 
       {skills.length === 0 ? (
-        <p className="text-sm text-zinc-500">No skills added yet.</p>
+        <div className="border border-dashed border-zinc-700 rounded-lg py-8 flex flex-col items-center gap-2">
+          <p className="text-sm text-zinc-500">No skills added yet</p>
+          <button
+            type="button"
+            onClick={handleAdd}
+            className="text-sm text-indigo-400 hover:text-indigo-300"
+          >
+            + Add your first skill
+          </button>
+        </div>
       ) : (
-        <div className="space-y-4">
+        <div className="flex flex-wrap gap-2">
           {skills.map((skill, index) => (
-            <div
-              key={skill.id}
-              className="rounded-md border border-zinc-700 bg-zinc-950/40 p-4"
+            <button
+              key={skill.id || index}
+              type="button"
+              onClick={() => handleEdit(index)}
+              className="group inline-flex items-center gap-2 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 hover:border-zinc-600 transition-colors"
             >
-              <div className="grid gap-4 md:grid-cols-3">
-                <div>
-                  <label className={labelStyles} htmlFor={`skill-name-${index}`}>
-                    Skill Name
-                  </label>
-                  <input
-                    id={`skill-name-${index}`}
-                    value={skill.name}
-                    onChange={(e) => handleChange(index, "name", e.target.value)}
-                    className={inputStyles}
-                    placeholder="e.g. AutoCAD"
-                  />
-                </div>
-
-                <div>
-                  <label className={labelStyles} htmlFor={`skill-category-${index}`}>
-                    Category
-                  </label>
-                  <input
-                    id={`skill-category-${index}`}
-                    value={skill.category ?? ""}
-                    onChange={(e) => handleChange(index, "category", e.target.value)}
-                    className={inputStyles}
-                    placeholder="e.g. Technical"
-                  />
-                </div>
-
-                <div>
-                  <label className={labelStyles} htmlFor={`skill-proficiency-${index}`}>
-                    Proficiency
-                  </label>
-                  <input
-                    id={`skill-proficiency-${index}`}
-                    value={skill.proficiency ?? ""}
-                    onChange={(e) => handleChange(index, "proficiency", e.target.value)}
-                    className={inputStyles}
-                    placeholder="e.g. Intermediate"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-4 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => handleDelete(index)}
-                  className="rounded-md border border-red-800 bg-red-950/40 px-3 py-2 text-sm text-red-300 hover:bg-red-900/40"
+              <span className="text-sm text-zinc-200 leading-tight">
+                {skill.name || <span className="text-zinc-600">Unnamed</span>}
+              </span>
+              <button
+                type="button"
+                aria-label="Remove"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(index);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.stopPropagation();
+                    handleDelete(index);
+                  }
+                }}
+                className="ml-1 text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+              >
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  role="img"
+                  aria-label="Remove"
                 >
-                  Delete
-                </button>
-              </div>
-            </div>
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </button>
           ))}
         </div>
       )}
+
+      <Modal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={editingIndex !== null ? "Edit Skill" : "Add Skill"}
+      >
+        <SkillForm
+          key={editingIndex ?? "new"}
+          skill={editingIndex !== null ? skills[editingIndex] : undefined}
+          onSave={handleSave}
+          onCancel={() => setModalOpen(false)}
+        />
+      </Modal>
     </div>
   );
 }
