@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { ForgotPasswordForm } from "./forgot-password-form";
+import { ForgotPasswordForm } from "@/components/auth/forgot-password-form";
 
 //this is different from the other ones because we call supabase directly in the component instead of using an API route
 const mockResetPasswordForEmail = vi.fn();

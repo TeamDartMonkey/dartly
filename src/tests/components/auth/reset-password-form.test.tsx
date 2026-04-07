@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { ResetPasswordForm } from "./reset-password-form";
+import { ResetPasswordForm } from "@/components/auth/reset-password-form";
 
 //this is different from the other ones because we call supabase directly in the component instead of using an API route
 const mockPush = vi.fn();
@@ -31,12 +31,13 @@ describe("ResetPasswordForm", () => {
     await screen.findByText("Invalid or expired reset link.");
   });
 
-  it("renders all fields and submit button", () => {
+  it("renders all fields and submit button", async () => {
     mockGetSession.mockResolvedValue({
       data: { session: { user: { id: "123" } } },
     });
 
     render(<ResetPasswordForm />);
+    await screen.findByLabelText("New Password");
     expect(screen.getByLabelText("New Password")).toBeInTheDocument();
     expect(screen.getByLabelText("Confirm New Password")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /reset password/i })).toBeInTheDocument();
