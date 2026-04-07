@@ -141,7 +141,7 @@ export function CareerPreferencesSection({ profile, onUpdate }: CareerPreference
               id="career-salary"
               label="Salary Preference ($/hr)"
               type="number"
-              placeholder="85000"
+              placeholder="45"
               min="0"
               value={salary}
               onChange={(e) => setSalary(e.target.value)}
