@@ -2,7 +2,7 @@
 
 import { format, parse } from "date-fns";
 import { useEffect, useRef, useState } from "react";
-import { type ChevronProps, DayPicker } from "react-day-picker";
+import { type ChevronProps, DayPicker, type Matcher } from "react-day-picker";
 import { createPortal } from "react-dom";
 import "react-day-picker/style.css";
 import { Label } from "@/components/ui/label";
@@ -53,6 +53,10 @@ type DatePickerProps = {
   error?: string;
   required?: boolean;
   disabled?: boolean;
+  /** YYYY-MM-DD — earliest selectable date (inclusive) */
+  minDate?: string;
+  /** YYYY-MM-DD — latest selectable date (inclusive) */
+  maxDate?: string;
 };
 
 export function DatePicker({
@@ -64,6 +68,8 @@ export function DatePicker({
   error,
   required,
   disabled,
+  minDate,
+  maxDate,
 }: DatePickerProps) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -97,6 +103,11 @@ export function DatePicker({
 
   const selected = value ? parse(value, "yyyy-MM-dd", new Date()) : undefined;
   const displayValue = selected ? format(selected, "MMM d, yyyy") : "";
+  const minDateParsed = minDate ? parse(minDate, "yyyy-MM-dd", new Date()) : undefined;
+  const maxDateParsed = maxDate ? parse(maxDate, "yyyy-MM-dd", new Date()) : undefined;
+  const disabledMatchers: Matcher[] = [];
+  if (minDateParsed) disabledMatchers.push({ before: minDateParsed });
+  if (maxDateParsed) disabledMatchers.push({ after: maxDateParsed });
 
   function handleSelect(date: Date | undefined) {
     if (date) {
@@ -181,9 +192,10 @@ export function DatePicker({
               components={{ Chevron }}
               selected={selected}
               onSelect={handleSelect}
+              disabled={disabledMatchers.length > 0 ? disabledMatchers : undefined}
               startMonth={new Date(1970, 0)}
               endMonth={new Date(2035, 11)}
-              defaultMonth={selected ?? new Date()}
+              defaultMonth={selected ?? minDateParsed ?? new Date()}
             />
           </div>,
           document.body

@@ -10,6 +10,23 @@ type IdentitySectionProps = {
   onUpdate: (fields: Partial<ProfileData>) => void;
 };
 
+// RFC 5322 simplified — local@domain.tld with no whitespace
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function validateEmail(value: string): string | undefined {
+  if (!value) return undefined;
+  return EMAIL_REGEX.test(value) ? undefined : "Enter a valid email address";
+}
+
+function validatePhone(value: string): string | undefined {
+  if (!value) return undefined;
+  // Strip formatting characters; require 10-15 digits (E.164 max is 15)
+  const digits = value.replace(/[\s\-().+]/g, "");
+  if (!/^\d+$/.test(digits)) return "Phone can only contain digits and ()-+ . spaces";
+  if (digits.length < 10 || digits.length > 15) return "Phone must be 10-15 digits";
+  return undefined;
+}
+
 export function IdentitySection({ profile, onUpdate }: IdentitySectionProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [firstName, setFirstName] = useState(profile.firstName ?? "");
@@ -17,6 +34,8 @@ export function IdentitySection({ profile, onUpdate }: IdentitySectionProps) {
   const [email, setEmail] = useState(profile.email ?? "");
   const [phone, setPhone] = useState(profile.phone ?? "");
   const [location, setLocation] = useState(profile.location ?? "");
+  const [emailError, setEmailError] = useState<string | undefined>(undefined);
+  const [phoneError, setPhoneError] = useState<string | undefined>(undefined);
 
   function openModal() {
     setFirstName(profile.firstName ?? "");
@@ -24,15 +43,25 @@ export function IdentitySection({ profile, onUpdate }: IdentitySectionProps) {
     setEmail(profile.email ?? "");
     setPhone(profile.phone ?? "");
     setLocation(profile.location ?? "");
+    setEmailError(undefined);
+    setPhoneError(undefined);
     setModalOpen(true);
   }
 
   function handleSave() {
+    const trimmedEmail = email.trim();
+    const trimmedPhone = phone.trim();
+    const eErr = validateEmail(trimmedEmail);
+    const pErr = validatePhone(trimmedPhone);
+    setEmailError(eErr);
+    setPhoneError(pErr);
+    if (eErr || pErr) return;
+
     onUpdate({
       firstName: firstName.trim() || undefined,
       lastName: lastName.trim() || undefined,
-      email: email.trim() || undefined,
-      phone: phone.trim() || undefined,
+      email: trimmedEmail || undefined,
+      phone: trimmedPhone || undefined,
       location: location.trim() || undefined,
     });
     setModalOpen(false);
@@ -96,7 +125,12 @@ export function IdentitySection({ profile, onUpdate }: IdentitySectionProps) {
             type="email"
             placeholder="jane@example.com"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            error={emailError}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (emailError) setEmailError(validateEmail(e.target.value.trim()));
+            }}
+            onBlur={() => setEmailError(validateEmail(email.trim()))}
           />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
@@ -105,7 +139,12 @@ export function IdentitySection({ profile, onUpdate }: IdentitySectionProps) {
               type="tel"
               placeholder="(555) 123-4567"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              error={phoneError}
+              onChange={(e) => {
+                setPhone(e.target.value);
+                if (phoneError) setPhoneError(validatePhone(e.target.value.trim()));
+              }}
+              onBlur={() => setPhoneError(validatePhone(phone.trim()))}
             />
             <Input
               id="identity-location"

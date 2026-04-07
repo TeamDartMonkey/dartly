@@ -75,9 +75,23 @@ export default function DashboardPage() {
   }
 
   async function handleSave(job: Omit<Job, "id"> & { id?: string }) {
-    const isEdit = !!job.id && jobs.some((j) => j.id === job.id);
+    const existing = job.id ? jobs.find((j) => j.id === job.id) : undefined;
+    const isEdit = !!existing;
 
     if (isEdit) {
+      // Skip the API call (and the success toast) if nothing actually changed.
+      const unchanged =
+        existing.title === job.title &&
+        existing.company === job.company &&
+        (existing.location ?? "") === (job.location ?? "") &&
+        existing.stage === job.stage &&
+        existing.priority === job.priority;
+      if (unchanged) {
+        setShowForm(false);
+        setEditingJob(null);
+        return;
+      }
+
       const res = await fetch(`/api/jobs/${job.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },

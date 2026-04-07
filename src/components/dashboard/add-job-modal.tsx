@@ -7,7 +7,7 @@ import type { Job } from "@/types/job";
 type AddJobModalProps = {
   isOpen: boolean;
   initialValues?: Job | null;
-  onSubmit: (job: Omit<Job, "id"> & { id?: string }) => void;
+  onSubmit: (job: Omit<Job, "id"> & { id?: string }) => void | Promise<void>;
   onClose: () => void;
 };
 

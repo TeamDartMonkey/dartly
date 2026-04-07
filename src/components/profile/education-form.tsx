@@ -35,14 +35,10 @@ function validate(values: {
   if (!values.fieldOfStudy.trim()) errors.fieldOfStudy = "Field of study is required";
   if (!values.startDate) {
     errors.startDate = "Start date is required";
-  } else if (new Date(values.startDate) > new Date()) {
-    errors.startDate = "Start date cannot be in the future";
   }
 
   if (!values.endDate) {
     errors.endDate = "End date is required";
-  } else if (new Date(values.endDate) > new Date()) {
-    errors.endDate = "End date cannot be in the future";
   }
 
   if (values.startDate && values.endDate && !errors.startDate && !errors.endDate) {
@@ -163,6 +159,7 @@ export function EducationForm({ education, onSave, onCancel }: EducationFormProp
         }}
         error={errors.endDate}
         placeholder="End date"
+        minDate={startDate || undefined}
         required
       />
 
