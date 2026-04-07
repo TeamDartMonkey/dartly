@@ -60,47 +60,113 @@
 
 ---
 
-## Data Model (High-Level)
+## Data Model
 
-- **Entities:** User, Profile, Job, JobActivity, Document, DocumentVersion, JobDocumentLink
-- **Relationships:**
-  - User 1:N Job
-  - User 1:N Document
-  - Document 1:N DocumentVersion
-  - Job N:N DocumentVersion via JobDocumentLink
-  - Job 1:N JobActivity
-  - User 1:1 Profile
+### Entities
 
----
+Profile, Experience, Education, Skill, Job, JobStageHistory, JobActivity, Document, DocumentVersion, JobDocumentLink
 
-## Three-Sprint Product Plan
+### Enums
 
-| Sprint | Goal                                           | Key Deliverables                                                                                                     |
-| ------ | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| **1**  | Dashboard foundation, auth, profile baseline   | Dashboard shell, job CRUD, auth, profile CRUD, CI/CD setup                                                           |
-| **2**  | Dashboard completion, profile completion       | Job search/filter, detail UI, document workflow, interview tracking, metrics, profile completion                     |
-| **3**  | Document library, company research, deployment | Global document management, dashboard-library integration, AI-assisted company research, analytics, cloud deployment |
+- **JobStage:** `INTERESTED`, `APPLIED`, `INTERVIEW`, `OFFER`, `REJECTED`, `ARCHIVED`
+- **ExperienceType:** `EMPLOYMENT`, `PROJECT`
+- **DocumentType:** `RESUME`, `COVER_LETTER`, `OTHER`
+- **DocumentStatus:** `DRAFT`, `READY`, `ARCHIVED`
+
+### Relationships
+
+- Profile 1:N Experience
+- Profile 1:N Education
+- Profile 1:N Skill
+- User 1:N Job (via `userId`, auth managed by Supabase)
+- Job 1:N JobStageHistory
+- Job 1:N JobActivity
+- User 1:N Document
+- Document 1:N DocumentVersion
+- Job N:N DocumentVersion via JobDocumentLink
 
 ---
 
 ## Tech Stack
 
-- **Frontend:** Next.js, React, TypeScript
+- **Frontend:** Next.js 16, React 19, TypeScript
 - **Backend:** Supabase, Prisma
-- **Database:** PostgreSQL
+- **Database:** PostgreSQL (Supabase-managed)
+- **Styling:** Tailwind CSS v4 with `@theme` API
+- **Validation:** Zod v4
 - **Testing:** Vitest + Testing Library + jsdom
-- **Styling:** Tailwind CSS v4
 - **Linting/Formatting:** Biome
 - **Authentication:** Supabase Auth (email/password; OAuth to be added)
-- **AI Provider:** (TBD / integrated AI services for resume/document generation)
-- **Deployment Platform:** Vercel
+- **Logging:** Winston
+- **AI Provider:** (TBD)
+- **Deployment:** Vercel
+- **Package Manager:** Bun
+
+---
 
 ## CI/CD
 
 ### GitHub Actions
 
-Automated workflows for build, test, lint, and deployment:
+A single `build-and-test` workflow runs on every push and pull request to `main`:
 
-- **On push to main:** Runs type-check, lint, and tests before merging
-- **On pull request:** Validates all checks pass before review
-- **On release:** Deploys to Vercel production environment
+1. **Install dependencies** (`bun install --frozen-lockfile`)
+2. **Generate Prisma client** (`bun prisma generate`)
+3. **Lint** (`bun lint`)
+4. **Type check** (`bun run type-check`)
+5. **Test** (`bun run test`)
+6. **Build** (`bun run build`)
+
+The pipeline uses Bun on Ubuntu with a 10-minute timeout. Concurrent runs on the same branch are cancelled automatically.
+
+---
+
+## Scripts
+
+| Command               | Description                              |
+| --------------------- | ---------------------------------------- |
+| `bun dev`             | Start dev server                         |
+| `bun run build`       | Production build                         |
+| `bun start`           | Start production server                  |
+| `bun lint`            | Run Biome lint (with auto-fix)           |
+| `bun run format`      | Run Biome formatter                      |
+| `bun run type-check`  | TypeScript type checking                 |
+| `bun run test`        | Run tests                                |
+| `bun run test:ui`     | Vitest UI                                |
+| `bun run test:coverage` | Coverage report                        |
+| `bun prisma studio`   | Open Prisma Studio                       |
+| `bun prisma migrate dev` | Create and apply migrations           |
+| `bun prisma generate` | Regenerate Prisma client                 |
+| `bun run db:seed`     | Seed the database                        |
+| `bun run db:clean`    | Clean and re-seed the database           |
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- [Bun](https://bun.sh/) installed
+- A Supabase project with PostgreSQL database
+
+### Setup
+
+1. Clone the repository
+2. Copy `.env.example` to `.env.local` and fill in your Supabase credentials
+3. Install dependencies:
+
+```bash
+bun install
+```
+
+4. Apply database migrations:
+
+```bash
+bun prisma migrate dev
+```
+
+5. Start the dev server:
+
+```bash
+bun dev
+```
