@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ExperienceForm } from "@/components/profile/experience-form";
+import { ConfirmDeleteModal } from "@/components/ui/confirm-delete-modal";
 import { Modal } from "@/components/ui/modal";
 import type { Experience } from "@/types/profile";
 
@@ -27,6 +28,7 @@ function formatDateRange(exp: Experience): string {
 export function ExperienceSection({ experiences, onUpdate }: ExperienceSectionProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
 
   function handleAdd() {
     setEditingIndex(null);
@@ -39,14 +41,19 @@ export function ExperienceSection({ experiences, onUpdate }: ExperienceSectionPr
   }
 
   function handleDelete(index: number) {
-    const exp = experiences[index];
-    const label = exp?.title?.trim() || "this experience";
-    if (!window.confirm(`Delete ${label}? This cannot be undone.`)) return;
+    setDeleteIndex(index);
+  }
+
+  function confirmDelete() {
+    if (deleteIndex === null) return;
     onUpdate(
-      experiences.filter((_, i) => i !== index),
+      experiences.filter((_, i) => i !== deleteIndex),
       "Experience removed"
     );
+    setDeleteIndex(null);
   }
+
+  const deleteItem = deleteIndex !== null ? experiences[deleteIndex] : null;
 
   function handleSave(experience: Experience) {
     if (editingIndex !== null) {
@@ -61,16 +68,7 @@ export function ExperienceSection({ experiences, onUpdate }: ExperienceSectionPr
 
   return (
     <div className="bg-zinc-900 border border-zinc-700 rounded-lg shadow-sm p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-zinc-50">Experience</h2>
-        <button
-          type="button"
-          onClick={handleAdd}
-          className="bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-zinc-50 px-4 py-2 rounded-md text-sm font-medium"
-        >
-          Add
-        </button>
-      </div>
+      <h2 className="text-lg font-semibold text-zinc-50 mb-4">Experience</h2>
 
       {experiences.length === 0 ? (
         <div className="border border-dashed border-zinc-700 rounded-lg py-8 flex flex-col items-center gap-2">
@@ -110,32 +108,7 @@ export function ExperienceSection({ experiences, onUpdate }: ExperienceSectionPr
                     <p className="text-sm text-zinc-400 mt-2 line-clamp-2">{exp.description}</p>
                   )}
                 </div>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEdit(index);
-                    }}
-                    className="p-1.5 text-zinc-500 hover:text-zinc-200 transition-colors"
-                    aria-label="Edit"
-                  >
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      role="img"
-                      aria-label="Edit"
-                    >
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                    </svg>
-                  </button>
+                <div className="flex items-center gap-1 ml-2">
                   <button
                     type="button"
                     onClick={(e) => {
@@ -165,6 +138,13 @@ export function ExperienceSection({ experiences, onUpdate }: ExperienceSectionPr
               </div>
             </div>
           ))}
+          <button
+            type="button"
+            onClick={handleAdd}
+            className="w-full border border-dashed border-zinc-700 rounded-lg py-3 text-sm text-indigo-400 hover:text-indigo-300 hover:border-zinc-600 transition-colors"
+          >
+            + Add experience
+          </button>
         </div>
       )}
 
@@ -180,6 +160,13 @@ export function ExperienceSection({ experiences, onUpdate }: ExperienceSectionPr
           onCancel={() => setModalOpen(false)}
         />
       </Modal>
+
+      <ConfirmDeleteModal
+        open={deleteIndex !== null}
+        onClose={() => setDeleteIndex(null)}
+        onConfirm={confirmDelete}
+        itemName={deleteItem?.title?.trim() || undefined}
+      />
     </div>
   );
 }

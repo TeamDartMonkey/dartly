@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { SkillForm } from "@/components/profile/skill-form";
+import { ConfirmDeleteModal } from "@/components/ui/confirm-delete-modal";
 import { Modal } from "@/components/ui/modal";
 import type { Skill } from "@/types/profile";
 
@@ -13,6 +14,7 @@ type SkillsSectionProps = {
 export function SkillsSection({ skills, onUpdate }: SkillsSectionProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
 
   function handleAdd() {
     setEditingIndex(null);
@@ -25,14 +27,19 @@ export function SkillsSection({ skills, onUpdate }: SkillsSectionProps) {
   }
 
   function handleDelete(index: number) {
-    const skill = skills[index];
-    const label = skill?.name?.trim() || "this skill";
-    if (!window.confirm(`Remove ${label}?`)) return;
+    setDeleteIndex(index);
+  }
+
+  function confirmDelete() {
+    if (deleteIndex === null) return;
     onUpdate(
-      skills.filter((_, i) => i !== index),
+      skills.filter((_, i) => i !== deleteIndex),
       "Skill removed"
     );
+    setDeleteIndex(null);
   }
+
+  const deleteItem = deleteIndex !== null ? skills[deleteIndex] : null;
 
   function handleSave(skill: Skill) {
     if (editingIndex !== null) {
@@ -47,16 +54,7 @@ export function SkillsSection({ skills, onUpdate }: SkillsSectionProps) {
 
   return (
     <div className="bg-zinc-900 border border-zinc-700 rounded-lg shadow-sm p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-zinc-50">Skills</h2>
-        <button
-          type="button"
-          onClick={handleAdd}
-          className="bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-zinc-50 px-4 py-2 rounded-md text-sm font-medium"
-        >
-          Add
-        </button>
-      </div>
+      <h2 className="text-lg font-semibold text-zinc-50 mb-4">Skills</h2>
 
       {skills.length === 0 ? (
         <div className="border border-dashed border-zinc-700 rounded-lg py-8 flex flex-col items-center gap-2">
@@ -72,7 +70,7 @@ export function SkillsSection({ skills, onUpdate }: SkillsSectionProps) {
       ) : (
         <div className="flex flex-wrap gap-2">
           {skills.map((skill, index) => (
-            // biome-ignore lint/a11y/useSemanticElements: card nests child remove button
+            // biome-ignore lint/a11y/useSemanticElements: div nests child delete button
             <div
               key={skill.id || index}
               role="button"
@@ -81,25 +79,19 @@ export function SkillsSection({ skills, onUpdate }: SkillsSectionProps) {
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") handleEdit(index);
               }}
-              className="group inline-flex items-center gap-2 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 hover:border-zinc-600 transition-colors"
+              className="inline-flex items-center gap-1.5 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 hover:border-zinc-600 transition-colors cursor-pointer"
             >
               <span className="text-sm text-zinc-200 leading-tight">
                 {skill.name || <span className="text-zinc-600">Unnamed</span>}
               </span>
               <button
                 type="button"
-                aria-label="Remove"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleDelete(index);
                 }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.stopPropagation();
-                    handleDelete(index);
-                  }
-                }}
-                className="ml-1 text-zinc-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                className="text-zinc-600 hover:text-red-400 transition-colors"
+                aria-label="Remove"
               >
                 <svg
                   width="12"
@@ -110,8 +102,7 @@ export function SkillsSection({ skills, onUpdate }: SkillsSectionProps) {
                   strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  role="img"
-                  aria-label="Remove"
+                  aria-hidden="true"
                 >
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
@@ -119,6 +110,13 @@ export function SkillsSection({ skills, onUpdate }: SkillsSectionProps) {
               </button>
             </div>
           ))}
+          <button
+            type="button"
+            onClick={handleAdd}
+            className="inline-flex items-center gap-1 border border-dashed border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-indigo-400 hover:text-indigo-300 hover:border-zinc-600 transition-colors"
+          >
+            + Add skill
+          </button>
         </div>
       )}
 
@@ -134,6 +132,13 @@ export function SkillsSection({ skills, onUpdate }: SkillsSectionProps) {
           onCancel={() => setModalOpen(false)}
         />
       </Modal>
+
+      <ConfirmDeleteModal
+        open={deleteIndex !== null}
+        onClose={() => setDeleteIndex(null)}
+        onConfirm={confirmDelete}
+        itemName={deleteItem?.name?.trim() || undefined}
+      />
     </div>
   );
 }
