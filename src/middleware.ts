@@ -3,14 +3,15 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 const publicRoutes = ["/login", "/register", "/forgot-password", "/reset-password"];
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 
-export async function proxy(request: NextRequest) {
-  const pathName = request.nextUrl.pathname;
-  const isPublicRoute = publicRoutes.some((route) => pathName.startsWith(route));
+export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+  const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
 
   let supabaseResponse = NextResponse.next({ request });
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
     throw new Error("Missing Supabase environment variables.");
@@ -18,7 +19,6 @@ export async function proxy(request: NextRequest) {
 
   const supabase = createServerClient(supabaseUrl, supabaseKey, {
     cookies: {
-      //this is where we read the cookie
       getAll() {
         return request.cookies.getAll();
       },

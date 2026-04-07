@@ -1,11 +1,14 @@
 import { Sidebar } from "@/components/ui/sidebar";
 import { ToastContainer } from "@/components/ui/toast";
-import { requireAuth } from "@/lib/requireAuth";
+import { createClient } from "@/lib/supabase-server";
 import { getProfile } from "@/services/profile";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const user = await requireAuth();
-  const profile = await getProfile(user.id);
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const profile = await getProfile(user!.id);
 
   return (
     <div className="flex min-h-screen">
