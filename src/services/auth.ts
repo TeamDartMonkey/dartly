@@ -5,7 +5,9 @@ export async function registerUser(email: string, password: string) {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({ email, password });
   if (error) {
-    if (error.message.includes("already registered")) {
+    // Supabase returns AuthApiError with status 422 and code "user_already_exists"
+    // when an email is taken (Supabase JS v2). Check both for resilience across versions.
+    if (error.status === 422 || error.code === "user_already_exists") {
       throw new ApiError(409, "Email is already registered. Please log in instead.");
     }
     throw new ApiError(400, error.message);

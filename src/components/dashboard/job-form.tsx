@@ -7,7 +7,7 @@ import type { Job, JobStage } from "@/types/job";
 
 type JobFormProps = {
   initialValues?: Job | null;
-  onSubmit: (job: Job) => void;
+  onSubmit: (job: Omit<Job, "id"> & { id?: string }) => void;
   onCancel: () => void;
 };
 
@@ -36,7 +36,7 @@ export default function JobForm({ initialValues, onSubmit, onCancel }: JobFormPr
     }
 
     onSubmit({
-      id: initialValues?.id ?? crypto.randomUUID(),
+      id: initialValues?.id,
       title: title.trim(),
       company: company.trim(),
       location: location.trim(),

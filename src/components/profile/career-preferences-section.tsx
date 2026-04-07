@@ -44,7 +44,11 @@ export function CareerPreferencesSection({ profile, onUpdate }: CareerPreference
         .map((s) => s.trim())
         .filter(Boolean),
       workModePreference: workMode || undefined,
-      salaryPreference: salary ? Number.parseInt(salary, 10) : undefined,
+      salaryPreference: (() => {
+        if (!salary) return undefined;
+        const n = Number.parseInt(salary, 10);
+        return Number.isFinite(n) && n >= 0 ? n : undefined;
+      })(),
     });
     setModalOpen(false);
   }

@@ -38,7 +38,7 @@ export default function SettingsPage() {
       </div>
 
       <div className="space-y-8">
-        <AccountSection email={email} onUpdateEmail={setEmail} onUpdatePassword={() => {}} />
+        <AccountSection email={email} onUpdateEmail={setEmail} />
         <NotificationSection preferences={notifications} onToggle={handleToggleNotification} />
         <AppPreferencesSection preferences={appPreferences} onUpdate={handleUpdatePreference} />
       </div>

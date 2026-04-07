@@ -149,4 +149,20 @@ describe("DELETE /api/jobs/[id]", () => {
     expect(body.error).toBe("Job not found");
     expect(mockDeleteJob).toHaveBeenCalledWith("job-456", "user-123");
   });
+
+  it("returns 400 when body is invalid JSON", async () => {
+    const req = new Request("http://localhost/api/jobs/job-456", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: "{invalid",
+    }) as unknown as NextRequest;
+
+    const res = await PUT(req, context);
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 400 when stage is invalid", async () => {
+    const res = await PUT(makeRequest({ title: "x", company: "y", stage: "NOT_A_STAGE" }), context);
+    expect(res.status).toBe(400);
+  });
 });

@@ -3,7 +3,9 @@ import { handleApiError } from "@/lib/api-error";
 import { withHttpLogging } from "@/lib/api-wrapper";
 import logger from "@/lib/logger";
 import { requireAuth } from "@/lib/requireAuth";
+import { validateBody } from "@/lib/validate-body";
 import { deleteJob, toJobResponse, updateJob } from "@/services/jobs";
+import { UpdateJobSchema } from "@/types/schemas";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -12,9 +14,9 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     try {
       const user = await requireAuth();
       const { id } = await context.params;
-      const { title, company, location, stage, priority } = await request.json();
+      const data = await validateBody(request, UpdateJobSchema);
 
-      const job = await updateJob(id, user.id, { title, company, location, stage, priority });
+      const job = await updateJob(id, user.id, data);
 
       if (!job) {
         return NextResponse.json({ error: "Job not found" }, { status: 404 });
@@ -23,7 +25,6 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       logger.info("Job updated", { userId: user.id, jobId: id });
       return NextResponse.json(toJobResponse(job), { status: 200 });
     } catch (err) {
-      logger.error("Failed to update job", { err });
       return handleApiError(err);
     }
   });
@@ -44,7 +45,6 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
       logger.info("Job deleted", { userId: user.id, jobId: id });
       return new NextResponse(null, { status: 204 });
     } catch (err) {
-      logger.error("Failed to delete job", { err });
       return handleApiError(err);
     }
   });

@@ -24,19 +24,15 @@ describe("LoginForm", () => {
 
   //validation failures
   //
-  it("shows error when email is invalid", async () => {
+  it("uses type=email for email input", () => {
     render(<LoginForm />);
-    await userEvent.type(screen.getByLabelText("Email"), "invalid-email");
-    await userEvent.type(screen.getByLabelText("Password"), "Ab1!");
-    await userEvent.click(screen.getByRole("button", { name: /login/i }));
-    expect(screen.getByText("Please enter a valid email address.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Email")).toHaveAttribute("type", "email");
   });
 
-  it("shows error when password is empty", async () => {
+  it("marks email and password as required", () => {
     render(<LoginForm />);
-    await userEvent.type(screen.getByLabelText("Email"), "test@test.com");
-    await userEvent.click(screen.getByRole("button", { name: /login/i }));
-    expect(screen.getByText("Password is required.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Email")).toHaveAttribute("required");
+    expect(screen.getByLabelText("Password")).toHaveAttribute("required");
   });
 
   //invalid credentials

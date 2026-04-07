@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/ui/sidebar";
 import { ToastContainer } from "@/components/ui/toast";
 import { createClient } from "@/lib/supabase-server";
@@ -8,7 +9,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const profile = await getProfile(user!.id);
+
+  if (!user) redirect("/login");
+
+  const profile = await getProfile(user.id);
 
   return (
     <div className="flex min-h-screen">

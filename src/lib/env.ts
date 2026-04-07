@@ -5,11 +5,12 @@ import { z } from "zod/v4";
 // Optional vars have defaults or are truly optional. Required vars cause
 // the app to exit with a clear error message if missing.
 const envSchema = z.object({
-  // Zod v4 requires this import path (not "zod").
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   LOG_LEVEL: z.enum(["error", "warn", "info", "http", "debug"]).optional(),
   LOG_DIR: z.string().optional(),
   NEXT_PUBLIC_APP_URL: z.url().optional(),
+  NEXT_PUBLIC_SUPABASE_URL: z.url(),
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: z.string().min(1),
   DATABASE_URL: z.string().min(1),
   AUTH_SECRET: z.string().min(1).optional(),
   AUTH_GOOGLE_ID: z.string().min(1).optional(),

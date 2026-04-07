@@ -20,19 +20,6 @@ export function LoginForm() {
       password: formData.get("password") as string,
     };
 
-    //client side validation
-    if (!values.email.includes("@") || !values.email.includes(".")) {
-      setError("Please enter a valid email address.");
-      setLoading(false);
-      return;
-    }
-
-    if (!values.password) {
-      setError("Password is required.");
-      setLoading(false);
-      return;
-    }
-
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
@@ -70,7 +57,8 @@ export function LoginForm() {
         <input
           id="email"
           name="email"
-          type="text"
+          type="email"
+          required
           placeholder="you@example.com"
           className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
         />
@@ -84,6 +72,7 @@ export function LoginForm() {
           id="password"
           name="password"
           type="password"
+          required
           placeholder="••••••••"
           className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
         />

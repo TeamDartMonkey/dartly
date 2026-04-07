@@ -50,12 +50,18 @@ export default function ProfilePage() {
           router.push("/login");
           return null;
         }
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
         return res.json();
       })
       .then((data) => {
         if (data && typeof data === "object") {
           setProfile((prev) => ({ ...EMPTY_PROFILE, ...prev, ...data }));
         }
+      })
+      .catch(() => {
+        showToast("Failed to load profile", "error");
       })
       .finally(() => setLoading(false));
   }, [router]);

@@ -60,7 +60,7 @@ export function ExperienceSection({ experiences, onUpdate }: ExperienceSectionPr
       const updated = experiences.map((exp, i) => (i === editingIndex ? experience : exp));
       onUpdate(updated, "Experience updated");
     } else {
-      onUpdate([...experiences, { ...experience, id: crypto.randomUUID() }], "Experience added");
+      onUpdate([...experiences, experience], "Experience added");
     }
     setModalOpen(false);
     setEditingIndex(null);

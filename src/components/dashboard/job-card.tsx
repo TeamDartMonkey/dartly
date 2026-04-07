@@ -21,9 +21,7 @@ export default function JobCard({ job, onEdit, onDelete }: JobCardProps) {
       {/* Top: Title + Stage */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-base font-medium text-zinc-50 truncate">
-            {job.title}
-          </h2>
+          <h2 className="text-base font-medium text-zinc-50 truncate">{job.title}</h2>
           <p className="text-sm text-zinc-400">{job.company}</p>
         </div>
         <span

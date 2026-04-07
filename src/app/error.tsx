@@ -17,7 +17,7 @@ export default function Error({
   }, [error]);
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-background">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-zinc-950">
       <p className="mb-1 text-xs text-white/30">500</p>
       <h2 className="mb-6 text-lg font-medium text-white/80">Something went wrong</h2>
       <button
