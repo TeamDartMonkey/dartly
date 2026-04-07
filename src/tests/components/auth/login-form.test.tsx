@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { LoginForm } from "./login-form";
+import { LoginForm } from "@/components/auth/login-form";
 
 const mockPush = vi.fn();
 
