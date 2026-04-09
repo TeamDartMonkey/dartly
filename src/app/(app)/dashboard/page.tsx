@@ -54,6 +54,27 @@ export default function DashboardPage() {
     setShowForm(true);
   }
 
+  async function handleStageChange(id: string, stage: JobStage) {
+    const res = await fetch(`/api/jobs/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stage }),
+    });
+
+    if (res.status === 401) {
+      router.push("/login");
+      return;
+    }
+
+    if (res.ok) {
+      const updated: Job = await res.json();
+      setJobs((current) => current.map((j) => (j.id === updated.id ? updated : j)));
+      showToast("Job updated");
+    } else {
+      showToast("Failed to update job", "error");
+    }
+  }
+
   async function handleDelete(id: string) {
     const res = await fetch(`/api/jobs/${id}`, { method: "DELETE" });
     if (res.status === 401) {
@@ -252,6 +273,7 @@ export default function DashboardPage() {
             const job = jobs.find((j) => j.id === id);
             if (job) setPendingDeleteJob(job);
           }}
+          onStageChange={handleStageChange}
         />
       )}
 

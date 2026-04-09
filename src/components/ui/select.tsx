@@ -14,9 +14,18 @@ type SelectProps = {
   placeholder?: string;
   id?: string;
   className?: string;
+  textClassName?: string;
 };
 
-export function Select({ options, value, onChange, placeholder, id, className = "" }: SelectProps) {
+export function Select({
+  options,
+  value,
+  onChange,
+  placeholder,
+  id,
+  className = "",
+  textClassName = "",
+}: SelectProps) {
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const ref = useRef<HTMLDivElement>(null);
@@ -103,9 +112,9 @@ export function Select({ options, value, onChange, placeholder, id, className = 
         aria-controls={listboxId}
         onClick={() => setOpen((prev) => !prev)}
         onKeyDown={handleTriggerKey}
-        className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-left text-zinc-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent flex items-center justify-between gap-2"
+        className="min-w-[100px] w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-left text-zinc-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent flex items-center justify-between gap-2"
       >
-        <span className={selected ? "text-zinc-50" : "text-zinc-500"}>
+        <span className={selected ? textClassName || "text-zinc-50" : "text-zinc-500"}>
           {selected ? selected.label : (placeholder ?? "Select...")}
         </span>
         <svg
