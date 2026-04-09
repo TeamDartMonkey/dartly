@@ -1,11 +1,17 @@
+import { useState } from "react";
+import { Select } from "@/components/ui/select";
 import type { Job, JobStage } from "@/types/job";
 
 type JobCardProps = {
   job: Job;
   onEdit?: (job: Job) => void;
   onDelete?: (id: string) => void;
+  onStageChange?: (id: string, stage: JobStage) => void;
 };
 
+const STAGES: JobStage[] = ["Interested", "Applied", "Interview", "Offer", "Rejected", "Archived"];
+
+/*
 const STAGE_STYLES: Record<JobStage, string> = {
   Interested: "bg-zinc-900 text-zinc-400",
   Applied: "bg-blue-950 text-blue-400",
@@ -14,8 +20,32 @@ const STAGE_STYLES: Record<JobStage, string> = {
   Rejected: "bg-red-950 text-red-400",
   Archived: "bg-zinc-900 text-zinc-500",
 };
+*/
 
-export default function JobCard({ job, onEdit, onDelete }: JobCardProps) {
+const STAGE_TEXT_STYLES: Record<JobStage, string> = {
+  Interested: "text-zinc-400",
+  Applied: "text-blue-400",
+  Interview: "text-yellow-400",
+  Offer: "text-green-400",
+  Rejected: "text-red-400",
+  Archived: "text-zinc-500",
+};
+
+export default function JobCard({ job, onEdit, onDelete, onStageChange }: JobCardProps) {
+  const [isChangingStage, setIsChangingStage] = useState(false);
+
+  async function handleStageChange(val: string) {
+    const newStage = val as JobStage;
+    //dont stage change if same stage or if no onStageChange handler provided
+    if (newStage === job.stage || !onStageChange) return;
+    setIsChangingStage(true);
+    try {
+      await onStageChange(job.id, newStage);
+    } finally {
+      setIsChangingStage(false);
+    }
+  }
+
   return (
     <div className="bg-zinc-900 border border-zinc-700 rounded-lg shadow-sm p-6">
       {/* Top: Title + Stage */}
@@ -24,11 +54,29 @@ export default function JobCard({ job, onEdit, onDelete }: JobCardProps) {
           <h2 className="text-base font-medium text-zinc-50 truncate">{job.title}</h2>
           <p className="text-sm text-zinc-400">{job.company}</p>
         </div>
-        <span
-          className={`shrink-0 rounded-md px-2.5 py-1 text-xs font-medium ${STAGE_STYLES[job.stage]}`}
-        >
-          {job.stage}
-        </span>
+        <div className="shrink-0 flex items-center gap-1.5">
+          {isChangingStage && (
+            <svg
+              className="animate-spin text-zinc-500"
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              aria-hidden="true"
+            >
+              <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+            </svg>
+          )}
+          <Select
+            value={job.stage}
+            onChange={handleStageChange}
+            options={STAGES.map((s) => ({ value: s, label: s }))}
+            className={`text-xs font-medium`}
+            textClassName={STAGE_TEXT_STYLES[job.stage]}
+          />
+        </div>
       </div>
 
       {/* Details */}
