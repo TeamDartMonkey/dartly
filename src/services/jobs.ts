@@ -44,16 +44,28 @@ export async function createJob(data: CreateJobInput) {
     ? (STAGE_UI_TO_PRISMA[data.stage] as PrismaJobStage)
     : "INTERESTED";
 
-  return prisma.job.create({
-    data: {
-      userId: data.userId,
-      title: data.title,
-      company: data.company,
-      location: data.location,
-      stage: prismaStage,
-      priority: data.priority ?? false,
-      lastActivityAt: new Date(),
-    },
+  return prisma.$transaction(async (tx) => {
+    const job = await tx.job.create({
+      data: {
+        userId: data.userId,
+        title: data.title,
+        company: data.company,
+        location: data.location,
+        stage: prismaStage,
+        priority: data.priority ?? false,
+        lastActivityAt: new Date(),
+      },
+    });
+
+    await tx.jobStageHistory.create({
+      data: {
+        jobId: job.id,
+        fromStage: null,
+        toStage: prismaStage,
+      },
+    });
+
+    return job;
   });
 }
 
@@ -62,19 +74,34 @@ export async function updateJob(id: string, userId: string, data: UpdateJobInput
   if (!existing) return null;
 
   const prismaStage = data.stage ? (STAGE_UI_TO_PRISMA[data.stage] as PrismaJobStage) : undefined;
+  const stageChanged = prismaStage && prismaStage !== existing.stage;
 
-  return prisma.job.update({
-    where: { id },
-    data: {
-      ...(data.title !== undefined && { title: data.title }),
-      ...(data.company !== undefined && { company: data.company }),
-      ...(data.location !== undefined && { location: data.location }),
-      ...(prismaStage !== undefined && { stage: prismaStage }),
-      ...(data.priority !== undefined && { priority: data.priority }),
-      // Bumped on every save to surface "recently touched" jobs at the top of the
-      // dashboard. Intentionally not gated on field changes.
-      lastActivityAt: new Date(),
-    },
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.job.update({
+      where: { id },
+      data: {
+        ...(data.title !== undefined && { title: data.title }),
+        ...(data.company !== undefined && { company: data.company }),
+        ...(data.location !== undefined && { location: data.location }),
+        ...(prismaStage !== undefined && { stage: prismaStage }),
+        ...(data.priority !== undefined && { priority: data.priority }),
+        // Bumped on every save to surface "recently touched" jobs at the top of the
+        // dashboard. Intentionally not gated on field changes.
+        lastActivityAt: new Date(),
+      },
+    });
+
+    if (stageChanged) {
+      await tx.jobStageHistory.create({
+        data: {
+          jobId: id,
+          fromStage: existing.stage,
+          toStage: prismaStage,
+        },
+      });
+    }
+
+    return updated;
   });
 }
 
