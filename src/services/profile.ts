@@ -11,6 +11,7 @@ type DbExperience = {
   endDate: Date | null;
   isCurrent: boolean;
   description: string | null;
+  order: number;
 };
 
 type DbEducation = {
@@ -135,11 +136,15 @@ function buildUpdateFields(data: ProfilePatchInput): Record<string, unknown> {
   if (data.summary !== undefined) fields.summary = data.summary ?? null;
   if (data.targetRoles !== undefined) fields.targetRoles = data.targetRoles;
   if (data.targetLocations !== undefined) fields.targetLocations = data.targetLocations;
-  if (data.workModePreference !== undefined)
+  if (data.workModePreference !== undefined) {
     fields.workModePreference = data.workModePreference ?? null;
-  if (data.salaryPreference !== undefined) fields.salaryPreference = data.salaryPreference ?? null;
-  if (data.professionalLinks !== undefined)
+  }
+  if (data.salaryPreference !== undefined) {
+    fields.salaryPreference = data.salaryPreference ?? null;
+  }
+  if (data.professionalLinks !== undefined) {
     fields.professionalLinks = data.professionalLinks ?? null;
+  }
   return fields;
 }
 
@@ -148,7 +153,7 @@ export async function getProfile(userId: string): Promise<ProfileData | null> {
     where: { userId },
     include: {
       experiences: {
-        orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
+        orderBy: { order: "asc" },
       },
       educations: {
         orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
@@ -156,6 +161,7 @@ export async function getProfile(userId: string): Promise<ProfileData | null> {
       skills: { orderBy: { name: "asc" } },
     },
   });
+
   if (!profile) return null;
   return toProfileData(profile);
 }
@@ -169,6 +175,7 @@ async function syncExperiences(
     where: { profileId },
     select: { id: true },
   });
+
   const existingIds = new Set(existing.map((e) => e.id));
   const incomingIds = new Set(incoming.flatMap((e) => (e.id ? [e.id] : [])));
 
@@ -177,7 +184,9 @@ async function syncExperiences(
     await tx.experience.deleteMany({ where: { id: { in: toDelete } } });
   }
 
-  for (const e of incoming) {
+  for (let index = 0; index < incoming.length; index++) {
+    const e = incoming[index];
+
     const data = {
       profileId,
       type: e.type,
@@ -187,11 +196,18 @@ async function syncExperiences(
       endDate: e.isCurrent ? null : fromIsoDate(e.endDate),
       isCurrent: e.isCurrent,
       description: e.description || null,
+      order: index,
     };
+
     if (e.id && existingIds.has(e.id)) {
-      await tx.experience.update({ where: { id: e.id }, data });
+      await tx.experience.update({
+        where: { id: e.id },
+        data,
+      });
     } else {
-      await tx.experience.create({ data });
+      await tx.experience.create({
+        data,
+      });
     }
   }
 }
@@ -205,6 +221,7 @@ async function syncEducations(
     where: { profileId },
     select: { id: true },
   });
+
   const existingIds = new Set(existing.map((e) => e.id));
   const incomingIds = new Set(incoming.flatMap((e) => (e.id ? [e.id] : [])));
 
@@ -223,6 +240,7 @@ async function syncEducations(
       endDate: fromIsoDate(e.endDate),
       gpa: e.gpa || null,
     };
+
     if (e.id && existingIds.has(e.id)) {
       await tx.education.update({ where: { id: e.id }, data });
     } else {
@@ -236,6 +254,7 @@ async function syncSkills(tx: Prisma.TransactionClient, profileId: string, incom
     where: { profileId },
     select: { id: true },
   });
+
   const existingIds = new Set(existing.map((s) => s.id));
   const incomingIds = new Set(incoming.flatMap((s) => (s.id ? [s.id] : [])));
 
@@ -249,6 +268,7 @@ async function syncSkills(tx: Prisma.TransactionClient, profileId: string, incom
       profileId,
       name: s.name,
     };
+
     if (s.id && existingIds.has(s.id)) {
       await tx.skill.update({ where: { id: s.id }, data });
     } else {
@@ -286,7 +306,13 @@ export async function upsertProfile(userId: string, data: ProfilePatchInput): Pr
 
     const fresh = await tx.profile.findUnique({
       where: { id: profile.id },
-      include: { experiences: true, educations: true, skills: true },
+      include: {
+        experiences: {
+          orderBy: { order: "asc" },
+        },
+        educations: true,
+        skills: true,
+      },
     });
 
     if (!fresh) throw new Error("Profile not found after upsert");

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { type DragEvent, useState } from "react";
 import { ExperienceForm } from "@/components/profile/experience-form";
 import { ConfirmDeleteModal } from "@/components/ui/confirm-delete-modal";
 import { Modal } from "@/components/ui/modal";
@@ -29,6 +29,8 @@ export function ExperienceSection({ experiences, onUpdate }: ExperienceSectionPr
   const [modalOpen, setModalOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   function handleAdd() {
     setEditingIndex(null);
@@ -44,16 +46,21 @@ export function ExperienceSection({ experiences, onUpdate }: ExperienceSectionPr
     setDeleteIndex(index);
   }
 
+  function handleCloseModal() {
+    setModalOpen(false);
+    setEditingIndex(null);
+  }
+
   function confirmDelete() {
     if (deleteIndex === null) return;
+
     onUpdate(
       experiences.filter((_, i) => i !== deleteIndex),
       "Experience removed"
     );
+
     setDeleteIndex(null);
   }
-
-  const deleteItem = deleteIndex !== null ? experiences[deleteIndex] : null;
 
   function handleSave(experience: Experience) {
     if (editingIndex !== null) {
@@ -62,16 +69,48 @@ export function ExperienceSection({ experiences, onUpdate }: ExperienceSectionPr
     } else {
       onUpdate([...experiences, experience], "Experience added");
     }
-    setModalOpen(false);
-    setEditingIndex(null);
+
+    handleCloseModal();
   }
 
+  function handleDragStart(index: number) {
+    setDraggedIndex(index);
+  }
+
+  function handleDragOver(e: DragEvent<HTMLLIElement>, index: number) {
+    e.preventDefault();
+    setDragOverIndex(index);
+  }
+
+  function handleDrop(index: number) {
+    if (draggedIndex === null || draggedIndex === index) {
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    const updated = [...experiences];
+    const [movedItem] = updated.splice(draggedIndex, 1);
+    updated.splice(index, 0, movedItem);
+
+    onUpdate(updated, "Experience reordered");
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  }
+
+  function handleDragEnd() {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  }
+
+  const deleteItem = deleteIndex !== null ? experiences[deleteIndex] : null;
+
   return (
-    <div className="bg-zinc-900 border border-zinc-700 rounded-lg shadow-sm p-6">
-      <h2 className="text-lg font-semibold text-zinc-50 mb-4">Experience</h2>
+    <div className="rounded-lg border border-zinc-700 bg-zinc-900 p-6 shadow-sm">
+      <h2 className="mb-4 text-lg font-semibold text-zinc-50">Experience</h2>
 
       {experiences.length === 0 ? (
-        <div className="border border-dashed border-zinc-700 rounded-lg py-8 flex flex-col items-center gap-2">
+        <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-zinc-700 py-8">
           <p className="text-sm text-zinc-500">No experience added yet</p>
           <button
             type="button"
@@ -82,66 +121,109 @@ export function ExperienceSection({ experiences, onUpdate }: ExperienceSectionPr
           </button>
         </div>
       ) : (
-        <div className="space-y-3">
-          {experiences.map((exp, index) => (
-            // biome-ignore lint/a11y/useSemanticElements: div needed to nest child buttons
-            <div
-              key={exp.id || index}
-              role="button"
-              tabIndex={0}
-              className="group rounded-lg border border-zinc-700 bg-zinc-950/40 p-4 hover:border-zinc-600 transition-colors cursor-pointer"
-              onClick={() => handleEdit(index)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") handleEdit(index);
-              }}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-zinc-50">
-                    {exp.title || <span className="text-zinc-600">Untitled</span>}
-                    {exp.organization && (
-                      <span className="text-zinc-400 font-normal"> at {exp.organization}</span>
-                    )}
-                  </p>
-                  <p className="text-xs text-zinc-500 mt-0.5">{formatDateRange(exp)}</p>
-                  {exp.description && (
-                    <p className="text-sm text-zinc-400 mt-2 line-clamp-2">{exp.description}</p>
-                  )}
-                </div>
-                <div className="flex items-center gap-1 ml-2">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(index);
-                    }}
-                    className="p-1.5 text-zinc-500 hover:text-red-400 transition-colors"
-                    aria-label="Delete"
+        <div>
+          <ul className="space-y-3">
+            {experiences.map((exp, index) => {
+              const isDragging = draggedIndex === index;
+              const isDragTarget = dragOverIndex === index && draggedIndex !== index;
+
+              return (
+                <>
+                  {/* biome-ignore lint/a11y/noStaticElementInteractions: native drag-and-drop requires handlers on this container */}
+                  <li
+                    key={exp.id || index}
+                    draggable
+                    onDragStart={() => handleDragStart(index)}
+                    onDragOver={(e) => handleDragOver(e, index)}
+                    onDrop={() => handleDrop(index)}
+                    onDragEnd={handleDragEnd}
+                    className={[
+                      "group list-none rounded-lg border bg-zinc-950/40 p-4 transition-colors",
+                      isDragging
+                        ? "border-indigo-500 opacity-50"
+                        : isDragTarget
+                          ? "border-indigo-400"
+                          : "border-zinc-700 hover:border-zinc-600",
+                    ].join(" ")}
                   >
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      role="img"
-                      aria-label="Delete"
-                    >
-                      <polyline points="3 6 5 6 21 6" />
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
+                    <div className="flex items-start justify-between gap-3">
+                      <button
+                        type="button"
+                        onClick={() => handleEdit(index)}
+                        className="min-w-0 flex-1 text-left"
+                      >
+                        <p className="text-sm font-medium text-zinc-50">
+                          {exp.title || <span className="text-zinc-600">Untitled</span>}
+                          {exp.organization && (
+                            <span className="font-normal text-zinc-400">
+                              {" "}
+                              at {exp.organization}
+                            </span>
+                          )}
+                        </p>
+
+                        <p className="mt-0.5 text-xs text-zinc-500">{formatDateRange(exp)}</p>
+
+                        {exp.description && (
+                          <p className="mt-2 line-clamp-2 text-sm text-zinc-400">
+                            {exp.description}
+                          </p>
+                        )}
+                      </button>
+
+                      <div className="flex shrink-0 items-center gap-1">
+                        <span
+                          className="select-none px-2 py-1 text-zinc-500 cursor-grab active:cursor-grabbing"
+                          title="Drag to reorder"
+                          aria-hidden="true"
+                        >
+                          ⋮⋮
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => handleEdit(index)}
+                          className="p-1.5 text-zinc-500 transition-colors hover:text-indigo-400"
+                          aria-label="Edit"
+                          title="Edit"
+                        >
+                          ✎
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(index)}
+                          className="p-1.5 text-zinc-500 transition-colors hover:text-red-400"
+                          aria-label="Delete"
+                          title="Delete"
+                        >
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                          >
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </li>
+                </>
+              );
+            })}
+          </ul>
+
           <button
             type="button"
             onClick={handleAdd}
-            className="w-full border border-dashed border-zinc-700 rounded-lg py-3 text-sm text-indigo-400 hover:text-indigo-300 hover:border-zinc-600 transition-colors"
+            className="mt-3 w-full rounded-lg border border-dashed border-zinc-700 py-3 text-sm text-indigo-400 transition-colors hover:border-zinc-600 hover:text-indigo-300"
           >
             + Add experience
           </button>
@@ -150,14 +232,14 @@ export function ExperienceSection({ experiences, onUpdate }: ExperienceSectionPr
 
       <Modal
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={handleCloseModal}
         title={editingIndex !== null ? "Edit Experience" : "Add Experience"}
       >
         <ExperienceForm
           key={editingIndex ?? "new"}
           experience={editingIndex !== null ? experiences[editingIndex] : undefined}
           onSave={handleSave}
-          onCancel={() => setModalOpen(false)}
+          onCancel={handleCloseModal}
         />
       </Modal>
 
