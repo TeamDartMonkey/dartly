@@ -9,6 +9,7 @@ import { Select } from "@/components/ui/select";
 import { DashboardSkeleton } from "@/components/ui/skeletons/dashboard-skeleton";
 import { showToast } from "@/components/ui/toast";
 import type { Job, JobStage } from "@/types/job";
+import { searchJobs } from "@/utils/search-jobs";
 
 const STAGES: JobStage[] = ["Interested", "Applied", "Interview", "Offer", "Rejected", "Archived"];
 
@@ -148,14 +149,7 @@ export default function DashboardPage() {
     setEditingJob(null);
   }
 
-  const filtered = jobs
-    .filter((job) => {
-      if (search) {
-        const q = search.toLowerCase();
-        return job.title.toLowerCase().includes(q) || job.company.toLowerCase().includes(q);
-      }
-      return true;
-    })
+  const filtered = searchJobs(jobs, search)
     .filter((job) => {
       if (stageFilter) return job.stage === stageFilter;
       return true;

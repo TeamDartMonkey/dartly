@@ -7,5 +7,7 @@ export type Job = {
   stage: JobStage;
   lastActivityDate: string;
   location?: string;
+  description?: string;
+  customNotes?: string;
   priority?: boolean;
 };

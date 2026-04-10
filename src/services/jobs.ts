@@ -28,6 +28,8 @@ export function toJobResponse(job: PrismaJob): Job {
     stage: STAGE_PRISMA_TO_UI[job.stage] ?? "Interested",
     lastActivityDate: (job.lastActivityAt ?? job.createdAt).toISOString().slice(0, 10),
     location: job.location ?? undefined,
+    description: job.description ?? undefined,
+    customNotes: job.customNotes ?? undefined,
     priority: job.priority,
   };
 }
