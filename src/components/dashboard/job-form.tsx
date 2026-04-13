@@ -27,6 +27,7 @@ export default function JobForm({ initialValues, onSubmit, onCancel }: JobFormPr
     initialValues?.lastActivityDate ?? new Date().toISOString().slice(0, 10)
   );
   const [priority, setPriority] = useState(initialValues?.priority ?? false);
+  const [customNotes, setCustomNotes] = useState(initialValues?.customNotes ?? "");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -47,6 +48,7 @@ export default function JobForm({ initialValues, onSubmit, onCancel }: JobFormPr
         stage,
         lastActivityDate,
         priority,
+        customNotes: customNotes.trim() || undefined,
       });
     } finally {
       setIsSubmitting(false);
@@ -119,6 +121,20 @@ export default function JobForm({ initialValues, onSubmit, onCancel }: JobFormPr
         placeholder="Select date"
         required
       />
+
+      <div>
+        <label className={labelStyles} htmlFor="customNotes">
+          Notes
+        </label>
+        <textarea
+          id="customNotes"
+          value={customNotes}
+          onChange={(e) => setCustomNotes(e.target.value)}
+          className={`${inputStyles} resize-none`}
+          placeholder="Any notes about this application..."
+          rows={3}
+        />
+      </div>
 
       <label className="flex items-center gap-2 text-sm text-zinc-300">
         <input

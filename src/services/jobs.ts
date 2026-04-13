@@ -10,6 +10,7 @@ type CreateJobInput = {
   location?: string;
   stage?: JobStage;
   priority?: boolean;
+  customNotes?: string;
 };
 
 type UpdateJobInput = {
@@ -18,6 +19,7 @@ type UpdateJobInput = {
   location?: string;
   stage?: JobStage;
   priority?: boolean;
+  customNotes?: string;
 };
 
 export function toJobResponse(job: PrismaJob): Job {
@@ -55,6 +57,7 @@ export async function createJob(data: CreateJobInput) {
         location: data.location,
         stage: prismaStage,
         priority: data.priority ?? false,
+        customNotes: data.customNotes,
         lastActivityAt: new Date(),
       },
     });
@@ -87,6 +90,7 @@ export async function updateJob(id: string, userId: string, data: UpdateJobInput
         ...(data.location !== undefined && { location: data.location }),
         ...(prismaStage !== undefined && { stage: prismaStage }),
         ...(data.priority !== undefined && { priority: data.priority }),
+        ...(data.customNotes !== undefined && { customNotes: data.customNotes }),
         // Bumped on every save to surface "recently touched" jobs at the top of the
         // dashboard. Intentionally not gated on field changes.
         lastActivityAt: new Date(),
