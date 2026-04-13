@@ -44,7 +44,7 @@ describe("settings service", () => {
         preferences: { ...DEFAULT_PREFERENCES, showArchived: true },
       });
 
-      const result = await upsertSettings("user-1", { showArchived: true });
+      await upsertSettings("user-1", { showArchived: true });
 
       expect(mockUpsert).toHaveBeenCalledWith(
         expect.objectContaining({
