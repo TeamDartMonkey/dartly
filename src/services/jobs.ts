@@ -16,7 +16,6 @@ type CreateJobInput = {
   customNotes?: string | null;
   stage?: JobStage;
   priority?: boolean;
-  customNotes?: string;
 };
 
 type UpdateJobInput = {
@@ -31,7 +30,6 @@ type UpdateJobInput = {
   customNotes?: string | null;
   stage?: JobStage;
   priority?: boolean;
-  customNotes?: string;
 };
 
 export function toJobResponse(job: PrismaJob): Job {
@@ -79,7 +77,6 @@ export async function createJob(data: CreateJobInput) {
         customNotes: data.customNotes,
         stage: prismaStage,
         priority: data.priority ?? false,
-        customNotes: data.customNotes,
         lastActivityAt: new Date(),
       },
     });

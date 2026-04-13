@@ -21,7 +21,6 @@ export const CreateJobSchema = z.object({
   customNotes: z.string().trim().max(5000).or(z.null()).optional(),
   stage: JobStageSchema.optional(),
   priority: z.boolean().optional(),
-  customNotes: z.string().trim().max(2000).optional(),
 });
 
 export const UpdateJobSchema = CreateJobSchema.partial();
