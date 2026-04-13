@@ -3,8 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { OverviewSection } from "./overview-section";
+import { TimelineSection } from "./timeline-section";
 import { showToast } from "@/components/ui/toast";
 import type { Job } from "@/types/job";
+import type { JobActivity } from "@/types/activity";
+
+type Tab = "overview" | "timeline";
 
 const STAGE_STYLES: Record<string, string> = {
   Interested: "bg-zinc-800 text-zinc-300",
@@ -23,7 +27,9 @@ export default function JobDetailPage({
   const router = useRouter();
   const [jobId, setJobId] = useState<string | null>(null);
   const [job, setJob] = useState<Job | null>(null);
+  const [activities, setActivities] = useState<JobActivity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<Tab>("overview");
 
   useEffect(() => {
     params.then(({ jobId }) => setJobId(jobId));
@@ -42,11 +48,22 @@ export default function JobDetailPage({
     }
   }, [jobId, router]);
 
+  const fetchActivities = useCallback(async () => {
+    if (!jobId) return;
+    try {
+      const res = await fetch(`/api/jobs/${jobId}/activities`);
+      if (!res.ok) throw new Error();
+      setActivities(await res.json());
+    } catch {
+      showToast("Failed to load activities", "error");
+    }
+  }, [jobId]);
+
   useEffect(() => {
     if (!jobId) return;
     setLoading(true);
-    fetchJob().finally(() => setLoading(false));
-  }, [jobId, fetchJob]);
+    Promise.all([fetchJob(), fetchActivities()]).finally(() => setLoading(false));
+  }, [jobId, fetchJob, fetchActivities]);
 
   if (loading) {
     return (
@@ -60,13 +77,15 @@ export default function JobDetailPage({
 
   if (!job) return null;
 
+  const TABS: { id: Tab; label: string }[] = [
+    { id: "overview", label: "Overview" },
+    { id: "timeline", label: "Timeline" },
+  ];
+
   return (
     <div>
-      <button
-        type="button"
-        onClick={() => router.push("/dashboard")}
-        className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-50 mb-6 transition-colors"
-      >
+      <button type="button" onClick={() => router.push("/dashboard")}
+        className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-50 mb-6 transition-colors">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" strokeWidth="2" strokeLinecap="round"
           strokeLinejoin="round" aria-hidden="true">
@@ -89,8 +108,30 @@ export default function JobDetailPage({
         </div>
       </div>
 
-      <OverviewSection job={job} onJobUpdated={(updated) => setJob(updated)} />
+      {/* Tab bar */}
+      <div className="flex gap-1 border-b border-zinc-800 mb-6">
+        {TABS.map((tab) => (
+          <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              activeTab === tab.id
+                ? "border-indigo-500 text-indigo-400"
+                : "border-transparent text-zinc-400 hover:text-zinc-50"
+            }`}>
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
+      {activeTab === "overview" && (
+        <OverviewSection job={job} onJobUpdated={(updated) => setJob(updated)} />
+      )}
+      {activeTab === "timeline" && (
+        <TimelineSection
+          activities={activities}
+          jobId={job.id}
+          onActivitiesChanged={fetchActivities}
+        />
+      )}
     </div>
   );
 }
