@@ -12,7 +12,7 @@ export const JobStageSchema = z.enum([
 export const CreateJobSchema = z.object({
   title: z.string().trim().min(1, "Title is required").max(200),
   company: z.string().trim().min(1, "Company is required").max(200),
-  location: z.string().trim().max(200).or(z.null()).optional(),
+  location: z.string().trim().max(200),
   description: z.string().trim().max(5000).or(z.null()).optional(),
   compensationNotes: z.string().trim().max(1000).or(z.null()).optional(),
   applicationDate: z.string().date().or(z.null()).optional(),

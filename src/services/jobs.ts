@@ -8,6 +8,12 @@ type CreateJobInput = {
   title: string;
   company: string;
   location?: string;
+  description?: string | null;
+  compensationNotes?: string | null;
+  applicationDate?: string | null;
+  deadline?: string | null;
+  recruiterNotes?: string | null;
+  customNotes?: string | null;
   stage?: JobStage;
   priority?: boolean;
 };
@@ -16,12 +22,12 @@ type UpdateJobInput = {
   title?: string;
   company?: string;
   location?: string;
-  description?: string;
-  compensationNotes?: string;
-  applicationDate?: string;
-  deadline?: string;
-  recruiterNotes?: string;
-  customNotes?: string;
+  description?: string | null;
+  compensationNotes?: string | null;
+  applicationDate?: string | null;
+  deadline?: string | null;
+  recruiterNotes?: string | null;
+  customNotes?: string | null;
   stage?: JobStage;
   priority?: boolean;
 };
@@ -63,6 +69,12 @@ export async function createJob(data: CreateJobInput) {
         title: data.title,
         company: data.company,
         location: data.location,
+        description: data.description,
+        compensationNotes: data.compensationNotes,
+        applicationDate: data.applicationDate ? new Date(data.applicationDate) : null,
+        deadline: data.deadline ? new Date(data.deadline) : null,
+        recruiterNotes: data.recruiterNotes,
+        customNotes: data.customNotes,
         stage: prismaStage,
         priority: data.priority ?? false,
         lastActivityAt: new Date(),
