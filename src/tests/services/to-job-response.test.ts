@@ -1,3 +1,4 @@
+import type { Job as PrismaJob } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
@@ -11,6 +12,7 @@ describe("toJobResponse", () => {
     const { toJobResponse } = await import("@/services/jobs");
     const prismaJob = {
       id: "1",
+      userId: "user-1",
       title: "Engineer",
       company: "Acme",
       stage: "APPLIED",
@@ -26,7 +28,7 @@ describe("toJobResponse", () => {
       outcomeAt: null,
       createdAt: new Date("2026-01-01"),
       updatedAt: new Date("2026-01-10"),
-    } as any;
+    } satisfies PrismaJob;
 
     const result = toJobResponse(prismaJob);
     expect(result.createdAt).toBe("2026-01-01");
