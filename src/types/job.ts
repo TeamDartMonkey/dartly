@@ -8,6 +8,10 @@ export type Job = {
   lastActivityDate: string;
   location?: string;
   description?: string;
+  compensationNotes?: string;
+  applicationDate?: string;
+  deadline?: string;
+  recruiterNotes?: string;
   customNotes?: string;
   priority?: boolean;
 };

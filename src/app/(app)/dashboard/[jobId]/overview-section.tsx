@@ -20,6 +20,9 @@ export function OverviewSection({ job, onJobUpdated }: Props) {
     description: job.description ?? "",
     compensationNotes: job.compensationNotes ?? "",
     applicationDate: job.applicationDate ? job.applicationDate.slice(0, 10) : "",
+    // S2-007: new fields
+    deadline: job.deadline ? job.deadline.slice(0, 10) : "",
+    recruiterNotes: job.recruiterNotes ?? "",
   });
 
   function handleChange(
@@ -36,6 +39,8 @@ export function OverviewSection({ job, onJobUpdated }: Props) {
       description: job.description ?? "",
       compensationNotes: job.compensationNotes ?? "",
       applicationDate: job.applicationDate ? job.applicationDate.slice(0, 10) : "",
+      deadline: job.deadline ? job.deadline.slice(0, 10) : "",
+      recruiterNotes: job.recruiterNotes ?? "",
     });
     setEditing(false);
   }
@@ -56,6 +61,9 @@ export function OverviewSection({ job, onJobUpdated }: Props) {
           description: form.description.trim() || null,
           compensationNotes: form.compensationNotes.trim() || null,
           applicationDate: form.applicationDate || null,
+          // S2-007: new fields
+          deadline: form.deadline || null,
+          recruiterNotes: form.recruiterNotes.trim() || null,
         }),
       });
       if (!res.ok) { showToast("Failed to save changes", "error"); return; }
@@ -108,13 +116,21 @@ export function OverviewSection({ job, onJobUpdated }: Props) {
             value={form.applicationDate} editing={editing} onChange={handleChange} type="date" />
         </div>
 
-        <Field label="Compensation notes" id="compensationNotes" name="compensationNotes"
-          value={form.compensationNotes} editing={editing} onChange={handleChange}
-          placeholder="e.g. $120k + equity" />
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Deadline" id="deadline" name="deadline" value={form.deadline}
+            editing={editing} onChange={handleChange} type="date" />
+          <Field label="Compensation notes" id="compensationNotes" name="compensationNotes"
+            value={form.compensationNotes} editing={editing} onChange={handleChange}
+            placeholder="e.g. $120k + equity" />
+        </div>
 
         <TextareaField label="Job description" id="description" name="description"
           value={form.description} editing={editing} onChange={handleChange}
           placeholder="Paste the job description here..." rows={6} />
+
+        <TextareaField label="Recruiter / contact notes" id="recruiterNotes" name="recruiterNotes"
+          value={form.recruiterNotes} editing={editing} onChange={handleChange}
+          placeholder="Recruiter name, email, phone, LinkedIn..." rows={3} />
       </div>
     </div>
   );
