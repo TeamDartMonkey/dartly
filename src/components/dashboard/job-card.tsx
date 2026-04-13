@@ -1,4 +1,11 @@
+// S2-005: Added click-to-navigate to /dashboard/[jobId].
+// Changes from original:
+//   - imports useRouter
+//   - card container gets onClick + cursor-pointer + hover border
+//   - Edit and Delete buttons get e.stopPropagation() so they don't also trigger the card navigation
+
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Select } from "@/components/ui/select";
 import type { Job, JobStage } from "@/types/job";
 
@@ -11,17 +18,6 @@ type JobCardProps = {
 
 const STAGES: JobStage[] = ["Interested", "Applied", "Interview", "Offer", "Rejected", "Archived"];
 
-/*
-const STAGE_STYLES: Record<JobStage, string> = {
-  Interested: "bg-zinc-900 text-zinc-400",
-  Applied: "bg-blue-950 text-blue-400",
-  Interview: "bg-yellow-950 text-yellow-400",
-  Offer: "bg-green-950 text-green-400",
-  Rejected: "bg-red-950 text-red-400",
-  Archived: "bg-zinc-900 text-zinc-500",
-};
-*/
-
 const STAGE_TEXT_STYLES: Record<JobStage, string> = {
   Interested: "text-zinc-400",
   Applied: "text-blue-400",
@@ -32,11 +28,11 @@ const STAGE_TEXT_STYLES: Record<JobStage, string> = {
 };
 
 export default function JobCard({ job, onEdit, onDelete, onStageChange }: JobCardProps) {
+  const router = useRouter();
   const [isChangingStage, setIsChangingStage] = useState(false);
 
   async function handleStageChange(val: string) {
     const newStage = val as JobStage;
-    //dont stage change if same stage or if no onStageChange handler provided
     if (newStage === job.stage || !onStageChange) return;
     setIsChangingStage(true);
     try {
@@ -47,14 +43,27 @@ export default function JobCard({ job, onEdit, onDelete, onStageChange }: JobCar
   }
 
   return (
-    <div className="bg-zinc-900 border border-zinc-700 rounded-lg shadow-sm p-6">
+    <div
+      className="bg-zinc-900 border border-zinc-700 hover:border-zinc-500 rounded-lg shadow-sm p-6 cursor-pointer transition-colors"
+      onClick={() => router.push(`/dashboard/${job.id}`)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") router.push(`/dashboard/${job.id}`);
+      }}
+      aria-label={`View details for ${job.title} at ${job.company}`}
+    >
       {/* Top: Title + Stage */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="text-base font-medium text-zinc-50 truncate">{job.title}</h2>
           <p className="text-sm text-zinc-400">{job.company}</p>
         </div>
-        <div className="shrink-0 flex items-center gap-1.5">
+        <div
+          className="shrink-0 flex items-center gap-1.5"
+          // Stop clicks on the stage selector from navigating to detail
+          onClick={(e) => e.stopPropagation()}
+        >
           {isChangingStage && (
             <svg
               className="animate-spin text-zinc-500"
@@ -73,7 +82,7 @@ export default function JobCard({ job, onEdit, onDelete, onStageChange }: JobCar
             value={job.stage}
             onChange={handleStageChange}
             options={STAGES.map((s) => ({ value: s, label: s }))}
-            className={`text-xs font-medium`}
+            className="text-xs font-medium"
             textClassName={STAGE_TEXT_STYLES[job.stage]}
           />
         </div>
@@ -99,7 +108,10 @@ export default function JobCard({ job, onEdit, onDelete, onStageChange }: JobCar
           {onEdit && (
             <button
               type="button"
-              onClick={() => onEdit(job)}
+              onClick={(e) => {
+                e.stopPropagation(); // don't navigate to detail page
+                onEdit(job);
+              }}
               className="bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-zinc-50 rounded-md px-3 py-1 text-xs font-medium"
               aria-label={`Edit ${job.title}`}
             >
@@ -123,7 +135,10 @@ export default function JobCard({ job, onEdit, onDelete, onStageChange }: JobCar
           {onDelete && (
             <button
               type="button"
-              onClick={() => onDelete(job.id)}
+              onClick={(e) => {
+                e.stopPropagation(); // don't navigate to detail page
+                onDelete(job.id);
+              }}
               className="bg-red-600 hover:bg-red-700 text-zinc-50 rounded-md px-3 py-1 text-xs font-medium"
               aria-label={`Delete ${job.title}`}
             >
