@@ -8,28 +8,18 @@ type CreateJobInput = {
   title: string;
   company: string;
   location?: string;
-  description?: string | null;
-  compensationNotes?: string | null;
-  applicationDate?: string | null;
-  deadline?: string | null;
-  recruiterNotes?: string | null;
-  customNotes?: string | null;
   stage?: JobStage;
   priority?: boolean;
+  customNotes?: string;
 };
 
 type UpdateJobInput = {
   title?: string;
   company?: string;
   location?: string;
-  description?: string | null;
-  compensationNotes?: string | null;
-  applicationDate?: string | null;
-  deadline?: string | null;
-  recruiterNotes?: string | null;
-  customNotes?: string | null;
   stage?: JobStage;
   priority?: boolean;
+  customNotes?: string;
 };
 
 export function toJobResponse(job: PrismaJob): Job {
@@ -41,10 +31,6 @@ export function toJobResponse(job: PrismaJob): Job {
     lastActivityDate: (job.lastActivityAt ?? job.createdAt).toISOString().slice(0, 10),
     location: job.location ?? undefined,
     description: job.description ?? undefined,
-    compensationNotes: job.compensationNotes ?? undefined,
-    applicationDate: job.applicationDate?.toISOString().slice(0, 10) ?? undefined,
-    deadline: job.deadline?.toISOString().slice(0, 10) ?? undefined,
-    recruiterNotes: job.recruiterNotes ?? undefined,
     customNotes: job.customNotes ?? undefined,
     priority: job.priority,
   };
@@ -69,14 +55,9 @@ export async function createJob(data: CreateJobInput) {
         title: data.title,
         company: data.company,
         location: data.location,
-        description: data.description,
-        compensationNotes: data.compensationNotes,
-        applicationDate: data.applicationDate ? new Date(data.applicationDate) : null,
-        deadline: data.deadline ? new Date(data.deadline) : null,
-        recruiterNotes: data.recruiterNotes,
-        customNotes: data.customNotes,
         stage: prismaStage,
         priority: data.priority ?? false,
+        customNotes: data.customNotes,
         lastActivityAt: new Date(),
       },
     });
@@ -107,12 +88,6 @@ export async function updateJob(id: string, userId: string, data: UpdateJobInput
         ...(data.title !== undefined && { title: data.title }),
         ...(data.company !== undefined && { company: data.company }),
         ...(data.location !== undefined && { location: data.location }),
-        ...(data.description !== undefined && { description: data.description }),
-        ...(data.compensationNotes !== undefined && { compensationNotes: data.compensationNotes }),
-        ...(data.applicationDate !== undefined && { applicationDate: data.applicationDate ? new Date(data.applicationDate) : null }),
-        ...(data.deadline !== undefined && { deadline: data.deadline ? new Date(data.deadline) : null }),
-        ...(data.recruiterNotes !== undefined && { recruiterNotes: data.recruiterNotes }),
-        ...(data.customNotes !== undefined && { customNotes: data.customNotes }),
         ...(prismaStage !== undefined && { stage: prismaStage }),
         ...(data.priority !== undefined && { priority: data.priority }),
         ...(data.customNotes !== undefined && { customNotes: data.customNotes }),

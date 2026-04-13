@@ -1,8 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
-import { OverviewSection } from "./overview-section";
+import { use, useCallback, useEffect, useState } from "react";
 import { showToast } from "@/components/ui/toast";
 import type { Job } from "@/types/job";
 
@@ -20,14 +19,10 @@ export default function JobDetailPage({
 }: {
   params: Promise<{ jobId: string }>;
 }) {
+  const { jobId } = use(params);
   const router = useRouter();
-  const [jobId, setJobId] = useState<string | null>(null);
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    params.then(({ jobId }) => setJobId(jobId));
-  }, [params]);
 
   const fetchJob = useCallback(async () => {
     if (!jobId) return;
@@ -62,6 +57,7 @@ export default function JobDetailPage({
 
   return (
     <div>
+      {/* Back link */}
       <button
         type="button"
         onClick={() => router.push("/dashboard")}
@@ -75,12 +71,14 @@ export default function JobDetailPage({
         Back to dashboard
       </button>
 
+      {/* Job header */}
       <div className="mb-6">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold text-zinc-50">{job.title}</h1>
             <p className="mt-1 text-sm text-zinc-400">
-              {job.company}{job.location ? ` · ${job.location}` : ""}
+              {job.company}
+              {job.location ? ` · ${job.location}` : ""}
             </p>
           </div>
           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STAGE_STYLES[job.stage] ?? "bg-zinc-800 text-zinc-300"}`}>
@@ -89,8 +87,7 @@ export default function JobDetailPage({
         </div>
       </div>
 
-      <OverviewSection job={job} onJobUpdated={(updated) => setJob(updated)} />
-
+      {/* Sections added by future PRs (S2-006, S2-010, S2-011, S2-012) */}
     </div>
   );
 }
