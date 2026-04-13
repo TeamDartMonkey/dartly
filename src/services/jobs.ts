@@ -39,6 +39,7 @@ export function toJobResponse(job: PrismaJob): Job {
     company: job.company,
     stage: STAGE_PRISMA_TO_UI[job.stage] ?? "Interested",
     lastActivityDate: (job.lastActivityAt ?? job.createdAt).toISOString().slice(0, 10),
+    createdAt: job.createdAt.toISOString().slice(0, 10),
     location: job.location ?? undefined,
     description: job.description ?? undefined,
     compensationNotes: job.compensationNotes ?? undefined,
@@ -109,8 +110,12 @@ export async function updateJob(id: string, userId: string, data: UpdateJobInput
         ...(data.location !== undefined && { location: data.location }),
         ...(data.description !== undefined && { description: data.description }),
         ...(data.compensationNotes !== undefined && { compensationNotes: data.compensationNotes }),
-        ...(data.applicationDate !== undefined && { applicationDate: data.applicationDate ? new Date(data.applicationDate) : null }),
-        ...(data.deadline !== undefined && { deadline: data.deadline ? new Date(data.deadline) : null }),
+        ...(data.applicationDate !== undefined && {
+          applicationDate: data.applicationDate ? new Date(data.applicationDate) : null,
+        }),
+        ...(data.deadline !== undefined && {
+          deadline: data.deadline ? new Date(data.deadline) : null,
+        }),
         ...(data.recruiterNotes !== undefined && { recruiterNotes: data.recruiterNotes }),
         ...(data.customNotes !== undefined && { customNotes: data.customNotes }),
         ...(prismaStage !== undefined && { stage: prismaStage }),

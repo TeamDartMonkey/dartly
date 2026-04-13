@@ -5,6 +5,8 @@ import { Select } from "@/components/ui/select";
 import { DEADLINE_STATE_OPTIONS, getDeadlineState } from "@/constants/job-filters";
 import type { Job, JobStage } from "@/types/job";
 import { searchJobs } from "@/utils/search-jobs";
+import type { SortKey } from "@/utils/sort-jobs";
+import { sortJobs } from "@/utils/sort-jobs";
 
 const STAGES: JobStage[] = ["Interested", "Applied", "Interview", "Offer", "Rejected", "Archived"];
 
@@ -18,7 +20,7 @@ export default function FilterBar({ jobs, onFilteredChange }: FilterBarProps) {
   const [stageFilter, setStageFilter] = useState<JobStage | "">("");
   const [locationFilter, setLocationFilter] = useState("");
   const [deadlineFilter, setDeadlineFilter] = useState("");
-  const [sortBy, setSortBy] = useState<"recent" | "company" | "priority">("recent");
+  const [sortBy, setSortBy] = useState<SortKey>("recent");
 
   const locationOptions = useMemo(() => {
     const unique = [...new Set(jobs.map((j) => j.location).filter(Boolean))] as string[];
@@ -53,11 +55,7 @@ export default function FilterBar({ jobs, onFilteredChange }: FilterBarProps) {
       });
     }
 
-    result = [...result].sort((a, b) => {
-      if (sortBy === "company") return a.company.localeCompare(b.company);
-      if (sortBy === "priority") return (b.priority ? 1 : 0) - (a.priority ? 1 : 0);
-      return b.lastActivityDate.localeCompare(a.lastActivityDate);
-    });
+    result = sortJobs(result, sortBy);
 
     return result;
   }, [jobs, search, stageFilter, locationFilter, deadlineFilter, sortBy]);
@@ -149,9 +147,11 @@ export default function FilterBar({ jobs, onFilteredChange }: FilterBarProps) {
 
         <Select
           value={sortBy}
-          onChange={(val) => setSortBy(val as "recent" | "company" | "priority")}
+          onChange={(val) => setSortBy(val as SortKey)}
           options={[
             { value: "recent", label: "Most recent" },
+            { value: "deadline", label: "Deadline (soonest)" },
+            { value: "created", label: "Date created" },
             { value: "company", label: "Company A-Z" },
             { value: "priority", label: "Priority first" },
           ]}

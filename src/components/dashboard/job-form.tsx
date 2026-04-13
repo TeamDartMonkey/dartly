@@ -7,7 +7,7 @@ import type { Job, JobStage } from "@/types/job";
 
 type JobFormProps = {
   initialValues?: Job | null;
-  onSubmit: (job: Omit<Job, "id"> & { id?: string }) => void | Promise<void>;
+  onSubmit: (job: Omit<Job, "id" | "createdAt"> & { id?: string }) => void | Promise<void>;
   onCancel: () => void;
 };
 

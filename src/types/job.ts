@@ -6,6 +6,7 @@ export type Job = {
   company: string;
   stage: JobStage;
   lastActivityDate: string;
+  createdAt: string;
   location?: string;
   description?: string;
   compensationNotes?: string;
