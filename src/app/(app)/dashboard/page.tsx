@@ -1,18 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import AddJobModal from "@/components/dashboard/add-job-modal";
+import FilterBar from "@/components/dashboard/filter-bar";
 import JobCardList from "@/components/dashboard/job-card-list";
 import { MetricsPanel } from "@/components/dashboard/metrics-panel";
 import { ConfirmDeleteModal } from "@/components/ui/confirm-delete-modal";
-import { Select } from "@/components/ui/select";
 import { DashboardSkeleton } from "@/components/ui/skeletons/dashboard-skeleton";
 import { showToast } from "@/components/ui/toast";
 import type { Job, JobStage } from "@/types/job";
-import { searchJobs } from "@/utils/search-jobs";
-
-const STAGES: JobStage[] = ["Interested", "Applied", "Interview", "Offer", "Rejected", "Archived"];
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -20,10 +17,9 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
-  const [search, setSearch] = useState("");
-  const [stageFilter, setStageFilter] = useState<JobStage | "">("");
-  const [sortBy, setSortBy] = useState<"recent" | "company" | "priority">("recent");
+  const [filtered, setFiltered] = useState<Job[]>([]);
   const [pendingDeleteJob, setPendingDeleteJob] = useState<Job | null>(null);
+  const onFilteredChange = useCallback((f: Job[]) => setFiltered(f), []);
 
   useEffect(() => {
     fetch("/api/jobs")
@@ -109,6 +105,7 @@ export default function DashboardPage() {
         (existing.location ?? "") === (job.location ?? "") &&
         existing.stage === job.stage &&
         existing.priority === job.priority &&
+        (existing.deadline ?? "") === (job.deadline ?? "") &&
         (existing.customNotes ?? "") === (job.customNotes ?? "");
       if (unchanged) {
         setShowForm(false);
@@ -125,6 +122,7 @@ export default function DashboardPage() {
           location: job.location,
           stage: job.stage,
           priority: job.priority,
+          deadline: job.deadline,
           customNotes: job.customNotes,
         }),
       });
@@ -149,6 +147,7 @@ export default function DashboardPage() {
           location: job.location,
           stage: job.stage,
           priority: job.priority,
+          deadline: job.deadline,
           customNotes: job.customNotes,
         }),
       });
@@ -174,17 +173,6 @@ export default function DashboardPage() {
     setEditingJob(null);
   }
 
-  const filtered = searchJobs(jobs, search)
-    .filter((job) => {
-      if (stageFilter) return job.stage === stageFilter;
-      return true;
-    })
-    .sort((a, b) => {
-      if (sortBy === "company") return a.company.localeCompare(b.company);
-      if (sortBy === "priority") return (b.priority ? 1 : 0) - (a.priority ? 1 : 0);
-      return b.lastActivityDate.localeCompare(a.lastActivityDate);
-    });
-
   return (
     <>
       {/* Header */}
@@ -205,63 +193,8 @@ export default function DashboardPage() {
       {/* Metrics */}
       <MetricsPanel />
 
-      {/* Toolbar: Search, Filter, Sort */}
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Search jobs..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-md pl-9 pr-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-          />
-        </div>
-
-        <Select
-          value={stageFilter}
-          onChange={(val) => setStageFilter(val as JobStage | "")}
-          options={[
-            { value: "", label: "All stages" },
-            ...STAGES.map((stage) => ({ value: stage, label: stage })),
-          ]}
-          className="sm:w-36"
-        />
-
-        <Select
-          value={sortBy}
-          onChange={(val) => setSortBy(val as "recent" | "company" | "priority")}
-          options={[
-            { value: "recent", label: "Most recent" },
-            { value: "company", label: "Company A-Z" },
-            { value: "priority", label: "Priority first" },
-          ]}
-          className="sm:w-36"
-        />
-      </div>
-
-      {/* Job count */}
-      {!loading && (
-        <p className="mb-4 text-xs text-zinc-500">
-          {filtered.length} {filtered.length === 1 ? "job" : "jobs"}
-          {stageFilter ? ` in ${stageFilter}` : ""}
-          {search ? ` matching "${search}"` : ""}
-        </p>
-      )}
+      {/* Filter bar */}
+      <FilterBar jobs={jobs} onFilteredChange={onFilteredChange} />
 
       {/* Job board */}
       {loading ? (
