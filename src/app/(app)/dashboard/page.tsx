@@ -93,7 +93,7 @@ export default function DashboardPage() {
     setPendingDeleteJob(null);
   }
 
-  async function handleSave(job: Omit<Job, "id"> & { id?: string }) {
+  async function handleSave(job: Omit<Job, "id" | "createdAt"> & { id?: string }) {
     const existing = job.id ? jobs.find((j) => j.id === job.id) : undefined;
     const isEdit = !!existing;
 
