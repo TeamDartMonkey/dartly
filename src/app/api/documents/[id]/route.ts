@@ -4,25 +4,23 @@ import { withHttpLogging } from "@/lib/api-wrapper";
 import logger from "@/lib/logger";
 import { requireAuth } from "@/lib/requireAuth";
 import { validateBody } from "@/lib/validate-body";
-import { deleteJob, getJob, toJobResponse, updateJob } from "@/services/jobs";
-import { UpdateJobSchema } from "@/types/schemas";
+import { getDocumentById, softDeleteDocument, updateDocumentContent } from "@/services/documents";
+import { UpdateDocumentContentSchema } from "@/types/schemas";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-// Detail page needs to fetch a single job
 export async function GET(request: NextRequest, context: RouteContext) {
   return withHttpLogging(request, async () => {
     try {
       const user = await requireAuth();
       const { id } = await context.params;
 
-      const job = await getJob(id, user.id);
-
-      if (!job) {
-        return NextResponse.json({ error: "Job not found" }, { status: 404 });
+      const doc = await getDocumentById(id, user.id);
+      if (!doc) {
+        return NextResponse.json({ error: "Document not found" }, { status: 404 });
       }
 
-      return NextResponse.json(toJobResponse(job), { status: 200 });
+      return NextResponse.json(doc, { status: 200 });
     } catch (err) {
       return handleApiError(err);
     }
@@ -34,36 +32,33 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     try {
       const user = await requireAuth();
       const { id } = await context.params;
-      const data = await validateBody(request, UpdateJobSchema);
+      const data = await validateBody(request, UpdateDocumentContentSchema);
 
-      const job = await updateJob(id, user.id, data);
-
-      if (!job) {
-        return NextResponse.json({ error: "Job not found" }, { status: 404 });
+      const doc = await updateDocumentContent(id, user.id, data.content);
+      if (!doc) {
+        return NextResponse.json({ error: "Document not found" }, { status: 404 });
       }
 
-      logger.info("Job updated", { userId: user.id, jobId: id });
-      return NextResponse.json(toJobResponse(job), { status: 200 });
+      logger.info("Document updated", { userId: user.id, documentId: id });
+      return NextResponse.json(doc, { status: 200 });
     } catch (err) {
       return handleApiError(err);
     }
   });
 }
 
-// Unchanged from Sprint 1
 export async function DELETE(request: NextRequest, context: RouteContext) {
   return withHttpLogging(request, async () => {
     try {
       const user = await requireAuth();
       const { id } = await context.params;
 
-      const deleted = await deleteJob(id, user.id);
-
+      const deleted = await softDeleteDocument(id, user.id);
       if (!deleted) {
-        return NextResponse.json({ error: "Job not found" }, { status: 404 });
+        return NextResponse.json({ error: "Document not found" }, { status: 404 });
       }
 
-      logger.info("Job deleted", { userId: user.id, jobId: id });
+      logger.info("Document deleted", { userId: user.id, documentId: id });
       return new NextResponse(null, { status: 204 });
     } catch (err) {
       return handleApiError(err);

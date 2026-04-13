@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import AddJobModal from "@/components/dashboard/add-job-modal";
 import JobCardList from "@/components/dashboard/job-card-list";
+import { MetricsPanel } from "@/components/dashboard/metrics-panel";
 import { ConfirmDeleteModal } from "@/components/ui/confirm-delete-modal";
 import { Select } from "@/components/ui/select";
 import { DashboardSkeleton } from "@/components/ui/skeletons/dashboard-skeleton";
@@ -200,6 +201,9 @@ export default function DashboardPage() {
           Add Job
         </button>
       </div>
+
+      {/* Metrics */}
+      <MetricsPanel />
 
       {/* Toolbar: Search, Filter, Sort */}
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">

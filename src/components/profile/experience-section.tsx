@@ -129,7 +129,6 @@ export function ExperienceSection({ experiences, onUpdate }: ExperienceSectionPr
 
               return (
                 <>
-                  {/* biome-ignore lint/a11y/noStaticElementInteractions: native drag-and-drop requires handlers on this container */}
                   <li
                     key={exp.id || index}
                     draggable

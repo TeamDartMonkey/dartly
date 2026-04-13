@@ -115,3 +115,9 @@ export async function deleteJob(id: string, userId: string): Promise<boolean> {
   const { count } = await prisma.job.deleteMany({ where: { id, userId } });
   return count > 0;
 }
+
+export async function getJob(id: string, userId: string) {
+  return prisma.job.findFirst({
+    where: { id, userId },
+  });
+}
