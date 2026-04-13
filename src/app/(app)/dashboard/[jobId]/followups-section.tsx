@@ -214,7 +214,8 @@ function FollowUpRow({ activity, overdue, toggling, deleting, onToggle, onEdit, 
         } disabled:opacity-50`}>
         {activity.completed && (
           <svg width="10" height="10" viewBox="0 0 12 12" fill="none"
-            stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+  aria-hidden="true">
             <polyline points="2 6 5 9 10 3" />
           </svg>
         )}

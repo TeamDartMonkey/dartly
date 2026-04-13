@@ -5,11 +5,12 @@ import { useCallback, useEffect, useState } from "react";
 import { OverviewSection } from "./overview-section";
 import { TimelineSection } from "./timeline-section";
 import { InterviewsSection } from "./interviews-section";
+import { FollowUpsSection } from "./followups-section";
 import { showToast } from "@/components/ui/toast";
 import type { Job } from "@/types/job";
 import type { JobActivity } from "@/types/activity";
 
-type Tab = "overview" | "timeline" | "interviews";
+type Tab = "overview" | "timeline" | "interviews" | "followups";
 
 const STAGE_STYLES: Record<string, string> = {
   Interested: "bg-zinc-800 text-zinc-300",
@@ -82,6 +83,7 @@ export default function JobDetailPage({
     { id: "overview", label: "Overview" },
     { id: "timeline", label: "Timeline" },
     { id: "interviews", label: "Interviews" },
+    { id: "followups", label: "Follow-ups" },
   ];
 
   return (
@@ -132,6 +134,13 @@ export default function JobDetailPage({
       {activeTab === "interviews" && (
         <InterviewsSection
           activities={activities.filter((a) => a.type === "INTERVIEW")}
+          jobId={job.id}
+          onActivitiesChanged={fetchActivities}
+        />
+      )}
+      {activeTab === "followups" && (
+        <FollowUpsSection
+          activities={activities.filter((a) => a.type === "FOLLOWUP")}
           jobId={job.id}
           onActivitiesChanged={fetchActivities}
         />
