@@ -108,7 +108,8 @@ export default function DashboardPage() {
         existing.company === job.company &&
         (existing.location ?? "") === (job.location ?? "") &&
         existing.stage === job.stage &&
-        existing.priority === job.priority;
+        existing.priority === job.priority &&
+        (existing.customNotes ?? "") === (job.customNotes ?? "");
       if (unchanged) {
         setShowForm(false);
         setEditingJob(null);
@@ -124,6 +125,7 @@ export default function DashboardPage() {
           location: job.location,
           stage: job.stage,
           priority: job.priority,
+          customNotes: job.customNotes,
         }),
       });
       if (res.status === 401) {
@@ -147,6 +149,7 @@ export default function DashboardPage() {
           location: job.location,
           stage: job.stage,
           priority: job.priority,
+          customNotes: job.customNotes,
         }),
       });
       if (res.status === 401) {
