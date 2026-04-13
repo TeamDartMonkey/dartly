@@ -4,8 +4,8 @@
 //   - card container gets onClick + cursor-pointer + hover border
 //   - Edit and Delete buttons get e.stopPropagation() so they don't also trigger the card navigation
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { Select } from "@/components/ui/select";
 import type { Job, JobStage } from "@/types/job";
 
@@ -17,6 +17,10 @@ type JobCardProps = {
 };
 
 const STAGES: JobStage[] = ["Interested", "Applied", "Interview", "Offer", "Rejected", "Archived"];
+
+function isOverdue(deadline: string): boolean {
+  return deadline < new Date().toISOString().slice(0, 10);
+}
 
 const STAGE_TEXT_STYLES: Record<JobStage, string> = {
   Interested: "text-zinc-400",
@@ -57,6 +61,11 @@ export default function JobCard({ job, onEdit, onDelete, onStageChange }: JobCar
           </div>
           <div className="mt-4 space-y-1 text-sm text-zinc-500">
             {job.location && <p>{job.location}</p>}
+            {job.deadline && (
+              <p className={isOverdue(job.deadline) ? "text-red-400" : ""}>
+                Deadline: {job.deadline}
+              </p>
+            )}
             <p>Last activity: {job.lastActivityDate}</p>
           </div>
         </button>
