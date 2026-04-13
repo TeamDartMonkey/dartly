@@ -19,3 +19,12 @@ export const LinkDocumentToJobSchema = z.object({
   documentId: z.string().min(1, "Document ID is required"),
   documentVersionId: z.string().min(1, "Document version ID is required"),
 });
+
+export const GenerateDocumentSchema = z.object({
+  jobId: z.string().min(1, "Job ID is required"),
+});
+
+export const RewriteContentSchema = z.object({
+  documentId: z.string().min(1, "Document ID is required"),
+  instruction: z.string().trim().min(1, "Instruction is required").max(500),
+});
