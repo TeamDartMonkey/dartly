@@ -43,27 +43,24 @@ export default function JobCard({ job, onEdit, onDelete, onStageChange }: JobCar
   }
 
   return (
-    <div
-      className="bg-zinc-900 border border-zinc-700 hover:border-zinc-500 rounded-lg shadow-sm p-6 cursor-pointer transition-colors"
-      onClick={() => router.push(`/dashboard/${job.id}`)}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") router.push(`/dashboard/${job.id}`);
-      }}
-      aria-label={`View details for ${job.title} at ${job.company}`}
-    >
-      {/* Top: Title + Stage */}
+    <div className="bg-zinc-900 border border-zinc-700 hover:border-zinc-500 rounded-lg shadow-sm p-6 transition-colors">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="text-base font-medium text-zinc-50 truncate">{job.title}</h2>
-          <p className="text-sm text-zinc-400">{job.company}</p>
-        </div>
-        <div
-          className="shrink-0 flex items-center gap-1.5"
-          // Stop clicks on the stage selector from navigating to detail
-          onClick={(e) => e.stopPropagation()}
+        <button
+          type="button"
+          className="flex-1 text-left"
+          onClick={() => router.push(`/dashboard/${job.id}`)}
+          aria-label={`View details for ${job.title} at ${job.company}`}
         >
+          <div className="min-w-0">
+            <h2 className="text-base font-medium text-zinc-50 truncate">{job.title}</h2>
+            <p className="text-sm text-zinc-400">{job.company}</p>
+          </div>
+          <div className="mt-4 space-y-1 text-sm text-zinc-500">
+            {job.location && <p>{job.location}</p>}
+            <p>Last activity: {job.lastActivityDate}</p>
+          </div>
+        </button>
+        <div className="shrink-0 flex items-center gap-1.5">
           {isChangingStage && (
             <svg
               className="animate-spin text-zinc-500"
@@ -86,12 +83,6 @@ export default function JobCard({ job, onEdit, onDelete, onStageChange }: JobCar
             textClassName={STAGE_TEXT_STYLES[job.stage]}
           />
         </div>
-      </div>
-
-      {/* Details */}
-      <div className="mt-4 space-y-1 text-sm text-zinc-500">
-        {job.location && <p>{job.location}</p>}
-        <p>Last activity: {job.lastActivityDate}</p>
       </div>
 
       {/* Bottom: Priority + Actions */}
