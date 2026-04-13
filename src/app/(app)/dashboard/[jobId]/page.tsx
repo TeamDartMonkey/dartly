@@ -4,11 +4,12 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { OverviewSection } from "./overview-section";
 import { TimelineSection } from "./timeline-section";
+import { InterviewsSection } from "./interviews-section";
 import { showToast } from "@/components/ui/toast";
 import type { Job } from "@/types/job";
 import type { JobActivity } from "@/types/activity";
 
-type Tab = "overview" | "timeline";
+type Tab = "overview" | "timeline" | "interviews";
 
 const STAGE_STYLES: Record<string, string> = {
   Interested: "bg-zinc-800 text-zinc-300",
@@ -80,6 +81,7 @@ export default function JobDetailPage({
   const TABS: { id: Tab; label: string }[] = [
     { id: "overview", label: "Overview" },
     { id: "timeline", label: "Timeline" },
+    { id: "interviews", label: "Interviews" },
   ];
 
   return (
@@ -108,7 +110,6 @@ export default function JobDetailPage({
         </div>
       </div>
 
-      {/* Tab bar */}
       <div className="flex gap-1 border-b border-zinc-800 mb-6">
         {TABS.map((tab) => (
           <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)}
@@ -126,8 +127,11 @@ export default function JobDetailPage({
         <OverviewSection job={job} onJobUpdated={(updated) => setJob(updated)} />
       )}
       {activeTab === "timeline" && (
-        <TimelineSection
-          activities={activities}
+        <TimelineSection activities={activities} jobId={job.id} onActivitiesChanged={fetchActivities} />
+      )}
+      {activeTab === "interviews" && (
+        <InterviewsSection
+          activities={activities.filter((a) => a.type === "INTERVIEW")}
           jobId={job.id}
           onActivitiesChanged={fetchActivities}
         />
