@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { showToast } from "@/components/ui/toast";
-import type { Job } from "@/types/job";
+import type { Job, JobStage } from "@/types/job";
 
 interface Props {
   job: Job;
   onJobUpdated: (job: Job) => void;
 }
+
+const STAGES: JobStage[] = ["Interested", "Applied", "Interview", "Offer", "Rejected", "Archived"];
 
 export function OverviewSection({ job, onJobUpdated }: Props) {
   const [editing, setEditing] = useState(false);
@@ -20,15 +22,19 @@ export function OverviewSection({ job, onJobUpdated }: Props) {
     description: job.description ?? "",
     compensationNotes: job.compensationNotes ?? "",
     applicationDate: job.applicationDate ? job.applicationDate.slice(0, 10) : "",
-    // S2-007: new fields
     deadline: job.deadline ? job.deadline.slice(0, 10) : "",
     recruiterNotes: job.recruiterNotes ?? "",
+    stage: job.stage,
   });
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  }
+
+  function handleStageChange(newStage: JobStage) {
+    setForm((prev) => ({ ...prev, stage: newStage }));
   }
 
   function handleCancel() {
@@ -41,6 +47,7 @@ export function OverviewSection({ job, onJobUpdated }: Props) {
       applicationDate: job.applicationDate ? job.applicationDate.slice(0, 10) : "",
       deadline: job.deadline ? job.deadline.slice(0, 10) : "",
       recruiterNotes: job.recruiterNotes ?? "",
+      stage: job.stage,
     });
     setEditing(false);
   }
@@ -61,9 +68,9 @@ export function OverviewSection({ job, onJobUpdated }: Props) {
           description: form.description.trim() || null,
           compensationNotes: form.compensationNotes.trim() || null,
           applicationDate: form.applicationDate || null,
-          // S2-007: new fields
           deadline: form.deadline || null,
           recruiterNotes: form.recruiterNotes.trim() || null,
+          stage: form.stage,
         }),
       });
       if (!res.ok) { showToast("Failed to save changes", "error"); return; }
@@ -102,11 +109,24 @@ export function OverviewSection({ job, onJobUpdated }: Props) {
       </div>
 
       <div className="space-y-5">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <Field label="Job title *" id="title" name="title" value={form.title}
             editing={editing} onChange={handleChange} />
           <Field label="Company *" id="company" name="company" value={form.company}
             editing={editing} onChange={handleChange} />
+          <div>
+            <label htmlFor="stage" className="block text-xs font-medium text-zinc-400 mb-1">Stage</label>
+            {editing ? (
+              <select id="stage" value={form.stage} onChange={(e) => handleStageChange(e.target.value as JobStage)}
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                {STAGES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            ) : (
+              <p className="text-sm text-zinc-300 py-2 min-h-[36px]">{form.stage}</p>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
