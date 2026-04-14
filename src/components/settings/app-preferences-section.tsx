@@ -1,5 +1,7 @@
 "use client";
 
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import type { DashboardView, UserPreferences } from "@/types/settings";
 
@@ -7,8 +9,6 @@ type AppPreferencesSectionProps = {
   preferences: UserPreferences;
   onUpdate: <K extends keyof UserPreferences>(key: K, value: UserPreferences[K]) => void;
 };
-
-const labelStyles = "mb-1 block text-xs font-medium text-zinc-400";
 
 const JOB_STAGES = [
   { value: "INTERESTED", label: "Interested" },
@@ -65,9 +65,7 @@ export function AppPreferencesSection({ preferences, onUpdate }: AppPreferencesS
 
       <div className="space-y-4">
         <div>
-          <label className={labelStyles} htmlFor="defaultStage">
-            Default stage for new jobs
-          </label>
+          <Label htmlFor="defaultStage">Default stage for new jobs</Label>
           <Select
             id="defaultStage"
             value={preferences.defaultJobStage}
@@ -79,9 +77,7 @@ export function AppPreferencesSection({ preferences, onUpdate }: AppPreferencesS
         </div>
 
         <div>
-          <label className={labelStyles} htmlFor="dashboardView">
-            Dashboard view
-          </label>
+          <Label htmlFor="dashboardView">Dashboard view</Label>
           <Select
             id="dashboardView"
             value={preferences.dashboardView}
@@ -106,10 +102,8 @@ export function AppPreferencesSection({ preferences, onUpdate }: AppPreferencesS
 
         {preferences.autoArchiveRejected && (
           <div>
-            <label className={labelStyles} htmlFor="archiveDays">
-              Days before auto-archiving
-            </label>
-            <input
+            <Label htmlFor="archiveDays">Days before auto-archiving</Label>
+            <Input
               id="archiveDays"
               type="number"
               min={1}
@@ -121,7 +115,7 @@ export function AppPreferencesSection({ preferences, onUpdate }: AppPreferencesS
                   onUpdate("autoArchiveRejectedDays", val);
                 }
               }}
-              className="w-24 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-24"
             />
           </div>
         )}
