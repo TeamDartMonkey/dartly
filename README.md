@@ -1,5 +1,7 @@
 # Dartly
 
+[![CI](https://github.com/TeamDartMonkey/dartly/actions/workflows/ci.yml/badge.svg)](https://github.com/TeamDartMonkey/dartly/actions/workflows/ci.yml)
+
 ---
 
 ## Project Overview
@@ -60,88 +62,6 @@
 
 ---
 
-## Data Model
-
-### Entities
-
-Profile, Experience, Education, Skill, Job, JobStageHistory, JobActivity, Document, DocumentVersion, JobDocumentLink
-
-### Enums
-
-- **JobStage:** `INTERESTED`, `APPLIED`, `INTERVIEW`, `OFFER`, `REJECTED`, `ARCHIVED`
-- **ExperienceType:** `EMPLOYMENT`, `PROJECT`
-- **DocumentType:** `RESUME`, `COVER_LETTER`, `OTHER`
-- **DocumentStatus:** `DRAFT`, `READY`, `ARCHIVED`
-
-### Relationships
-
-- Profile 1:N Experience
-- Profile 1:N Education
-- Profile 1:N Skill
-- User 1:N Job (via `userId`, auth managed by Supabase)
-- Job 1:N JobStageHistory
-- Job 1:N JobActivity
-- User 1:N Document
-- Document 1:N DocumentVersion
-- Job N:N DocumentVersion via JobDocumentLink
-
----
-
-## Tech Stack
-
-- **Frontend:** Next.js 16, React 19, TypeScript
-- **Backend:** Supabase, Prisma
-- **Database:** PostgreSQL (Supabase-managed)
-- **Styling:** Tailwind CSS v4 with `@theme` API
-- **Validation:** Zod v4
-- **Testing:** Vitest + Testing Library + jsdom
-- **Linting/Formatting:** Biome
-- **Authentication:** Supabase Auth (email/password; OAuth to be added)
-- **Logging:** Winston
-- **AI Provider:** (TBD)
-- **Deployment:** Vercel
-- **Package Manager:** Bun
-
----
-
-## CI/CD
-
-### GitHub Actions
-
-A single `build-and-test` workflow runs on every push and pull request to `main`:
-
-1. **Install dependencies** (`bun install --frozen-lockfile`)
-2. **Generate Prisma client** (`bun prisma generate`)
-3. **Lint** (`bun lint`)
-4. **Type check** (`bun run type-check`)
-5. **Test** (`bun run test`)
-6. **Build** (`bun run build`)
-
-The pipeline uses Bun on Ubuntu with a 10-minute timeout. Concurrent runs on the same branch are cancelled automatically.
-
----
-
-## Scripts
-
-| Command               | Description                              |
-| --------------------- | ---------------------------------------- |
-| `bun dev`             | Start dev server                         |
-| `bun run build`       | Production build                         |
-| `bun start`           | Start production server                  |
-| `bun lint`            | Run Biome lint (with auto-fix)           |
-| `bun run format`      | Run Biome formatter                      |
-| `bun run type-check`  | TypeScript type checking                 |
-| `bun run test`        | Run tests                                |
-| `bun run test:ui`     | Vitest UI                                |
-| `bun run test:coverage` | Coverage report                        |
-| `bun prisma studio`   | Open Prisma Studio                       |
-| `bun prisma migrate dev` | Create and apply migrations           |
-| `bun prisma generate` | Regenerate Prisma client                 |
-| `bun run db:seed`     | Seed the database                        |
-| `bun run db:clean`    | Clean and re-seed the database           |
-
----
-
 ## Getting Started
 
 ### Prerequisites
@@ -170,3 +90,15 @@ bun prisma migrate dev
 ```bash
 bun dev
 ```
+
+---
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Developer Reference](docs/developer-reference.md) | Tech stack, CI/CD pipeline, scripts, and data model |
+| [Engineering & Coding Standards](docs/engineering-coding-standards.md) | Code style, API patterns, testing, service layer |
+| [Data & Security Guardrails](docs/data-security-guardrails.md) | Auth, RLS policies, security checklist |
+| [UI/UX Standards](docs/ui-ux-standards.md) | Design system, color palette, component specs |
+| [AI Prompting & Review Standards](docs/ai-prompting-review-standards.md) | AI workflow, code review standards, attribution |

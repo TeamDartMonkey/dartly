@@ -194,7 +194,7 @@ All four must pass. Do not open a PR with any of these failing.
 
 ### 7.1 PR Requirements
 
-In addition to the standard Code Review Checklist in `docs/DARTLY_REPO_GUIDE.md`, every PR containing AI-generated code must:
+In addition to the quality checklist in `CLAUDE.md`, every PR containing AI-generated code must:
 
 1. **Pass CI** — build, test, lint, and type-check all green
 2. **Have a clear description** — what was changed and why
@@ -272,3 +272,4 @@ Server-only: all src/lib/ files import "server-only"
 | Date | Author | Change |
 |------|--------|--------|
 | 2026-03-30 | Ethan Yucetepe | Initial version |
+| 2026-04-14 | Justin Cordova | Updated repo guide reference to CLAUDE.md |
