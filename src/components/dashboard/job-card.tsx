@@ -7,28 +7,15 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Select } from "@/components/ui/select";
+import { STAGE_TEXT_STYLES, STAGES } from "@/constants/job-stages";
 import type { Job, JobStage } from "@/types/job";
+import { isOverdue } from "@/utils/deadline";
 
 type JobCardProps = {
   job: Job;
   onEdit?: (job: Job) => void;
   onDelete?: (id: string) => void;
   onStageChange?: (id: string, stage: JobStage) => void;
-};
-
-const STAGES: JobStage[] = ["Interested", "Applied", "Interview", "Offer", "Rejected", "Archived"];
-
-function isOverdue(deadline: string): boolean {
-  return deadline < new Date().toISOString().slice(0, 10);
-}
-
-const STAGE_TEXT_STYLES: Record<JobStage, string> = {
-  Interested: "text-zinc-400",
-  Applied: "text-blue-400",
-  Interview: "text-yellow-400",
-  Offer: "text-green-400",
-  Rejected: "text-red-400",
-  Archived: "text-zinc-500",
 };
 
 export default function JobCard({ job, onEdit, onDelete, onStageChange }: JobCardProps) {
