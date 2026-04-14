@@ -7,7 +7,7 @@ import type { Job, JobStage } from "@/types/job";
 
 type JobFormProps = {
   initialValues?: Job | null;
-  onSubmit: (job: Omit<Job, "id"> & { id?: string }) => void | Promise<void>;
+  onSubmit: (job: Omit<Job, "id" | "createdAt"> & { id?: string }) => void | Promise<void>;
   onCancel: () => void;
 };
 
@@ -27,6 +27,7 @@ export default function JobForm({ initialValues, onSubmit, onCancel }: JobFormPr
     initialValues?.lastActivityDate ?? new Date().toISOString().slice(0, 10)
   );
   const [priority, setPriority] = useState(initialValues?.priority ?? false);
+  const [deadline, setDeadline] = useState(initialValues?.deadline ?? "");
   const [customNotes, setCustomNotes] = useState(initialValues?.customNotes ?? "");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -48,6 +49,7 @@ export default function JobForm({ initialValues, onSubmit, onCancel }: JobFormPr
         stage,
         lastActivityDate,
         priority,
+        deadline: deadline || undefined,
         customNotes: customNotes.trim() || undefined,
       });
     } finally {
@@ -112,6 +114,14 @@ export default function JobForm({ initialValues, onSubmit, onCancel }: JobFormPr
           options={STAGES.map((s) => ({ value: s, label: s }))}
         />
       </div>
+
+      <DatePicker
+        id="deadline"
+        label="Deadline"
+        value={deadline}
+        onChange={setDeadline}
+        placeholder="Select deadline"
+      />
 
       <DatePicker
         id="lastActivityDate"

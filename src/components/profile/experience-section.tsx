@@ -106,29 +106,29 @@ export function ExperienceSection({ experiences, onUpdate }: ExperienceSectionPr
   const deleteItem = deleteIndex !== null ? experiences[deleteIndex] : null;
 
   return (
-    <div className="rounded-lg border border-zinc-700 bg-zinc-900 p-6 shadow-sm">
-      <h2 className="mb-4 text-lg font-semibold text-zinc-50">Experience</h2>
+    <>
+      <div className="rounded-lg border border-zinc-700 bg-zinc-900 p-6 shadow-sm">
+        <h2 className="mb-4 text-lg font-semibold text-zinc-50">Experience</h2>
 
-      {experiences.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-zinc-700 py-8">
-          <p className="text-sm text-zinc-500">No experience added yet</p>
-          <button
-            type="button"
-            onClick={handleAdd}
-            className="text-sm text-indigo-400 hover:text-indigo-300"
-          >
-            + Add your first experience
-          </button>
-        </div>
-      ) : (
-        <div>
-          <ul className="space-y-3">
-            {experiences.map((exp, index) => {
-              const isDragging = draggedIndex === index;
-              const isDragTarget = dragOverIndex === index && draggedIndex !== index;
+        {experiences.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-zinc-700 py-8">
+            <p className="text-sm text-zinc-500">No experience added yet</p>
+            <button
+              type="button"
+              onClick={handleAdd}
+              className="text-sm text-indigo-400 hover:text-indigo-300"
+            >
+              + Add your first experience
+            </button>
+          </div>
+        ) : (
+          <div>
+            <ul className="space-y-3">
+              {experiences.map((exp, index) => {
+                const isDragging = draggedIndex === index;
+                const isDragTarget = dragOverIndex === index && draggedIndex !== index;
 
-              return (
-                <>
+                return (
                   <li
                     key={exp.id || index}
                     draggable
@@ -214,28 +214,27 @@ export function ExperienceSection({ experiences, onUpdate }: ExperienceSectionPr
                       </div>
                     </div>
                   </li>
-                </>
-              );
-            })}
-          </ul>
-
-          <button
-            type="button"
-            onClick={handleAdd}
-            className="mt-3 w-full rounded-lg border border-dashed border-zinc-700 py-3 text-sm text-indigo-400 transition-colors hover:border-zinc-600 hover:text-indigo-300"
-          >
-            + Add experience
-          </button>
-        </div>
-      )}
+                );
+              })}
+            </ul>
+            <button
+              type="button"
+              onClick={handleAdd}
+              className="w-full border border-dashed border-zinc-700 rounded-lg py-3 text-sm text-indigo-400 hover:text-indigo-300 hover:border-zinc-600 transition-colors"
+            >
+              + Add experience
+            </button>
+          </div>
+        )}
+      </div>
 
       <Modal
         open={modalOpen}
         onClose={handleCloseModal}
-        title={editingIndex !== null ? "Edit Experience" : "Add Experience"}
+        title={editingIndex !== null ? "Edit experience" : "Add experience"}
+        maxWidth="lg"
       >
         <ExperienceForm
-          key={editingIndex ?? "new"}
           experience={editingIndex !== null ? experiences[editingIndex] : undefined}
           onSave={handleSave}
           onCancel={handleCloseModal}
@@ -246,8 +245,12 @@ export function ExperienceSection({ experiences, onUpdate }: ExperienceSectionPr
         open={deleteIndex !== null}
         onClose={() => setDeleteIndex(null)}
         onConfirm={confirmDelete}
-        itemName={deleteItem?.title?.trim() || undefined}
+        itemName={
+          deleteItem
+            ? `${deleteItem.title}${deleteItem.organization ? ` at ${deleteItem.organization}` : ""}`
+            : undefined
+        }
       />
-    </div>
+    </>
   );
 }

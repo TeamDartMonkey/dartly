@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { type SyntheticEvent, useState } from "react";
+import { Input } from "@/components/ui/input";
 import type { RegisterFormData } from "@/types";
 
 export function RegisterForm() {
@@ -95,47 +96,30 @@ export function RegisterForm() {
         </div>
       )}
 
-      <div>
-        <label htmlFor="email" className="mb-1 block text-xs font-medium text-zinc-400">
-          Email
-        </label>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          placeholder="you@example.com"
-          required
-          className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-        />
-      </div>
-
-      <div>
-        <label htmlFor="password" className="mb-1 block text-xs font-medium text-zinc-400">
-          Password
-        </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          placeholder="••••••••"
-          required
-          className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-        />
-      </div>
-
-      <div>
-        <label htmlFor="confirmPassword" className="mb-1 block text-xs font-medium text-zinc-400">
-          Confirm Password
-        </label>
-        <input
-          id="confirmPassword"
-          name="confirmPassword"
-          type="password"
-          placeholder="••••••••"
-          required
-          className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-        />
-      </div>
+      <Input
+        id="email"
+        label="Email"
+        name="email"
+        type="email"
+        required
+        placeholder="you@example.com"
+      />
+      <Input
+        id="password"
+        label="Password"
+        name="password"
+        type="password"
+        required
+        placeholder="••••••••"
+      />
+      <Input
+        id="confirmPassword"
+        label="Confirm Password"
+        name="confirmPassword"
+        type="password"
+        required
+        placeholder="••••••••"
+      />
 
       <button
         type="submit"

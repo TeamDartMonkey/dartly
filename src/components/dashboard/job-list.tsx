@@ -1,8 +1,10 @@
 import JobCard from "@/components/dashboard/job-card";
-import type { Job, JobStage } from "@/types/job";
+import JobListItem from "@/components/dashboard/job-list-item";
+import type { Job, JobStage, ViewMode } from "@/types/job";
 
-type JobCardListProps = {
+type JobListProps = {
   jobs: Job[];
+  viewMode: ViewMode;
   onEdit?: (job: Job) => void;
   onDelete?: (id: string) => void;
   onStageChange?: (id: string, stage: JobStage) => void;
@@ -10,7 +12,7 @@ type JobCardListProps = {
   onRestore?: (id: string) => Promise<void>;
 };
 
-export default function JobCardList({ jobs, onEdit, onDelete, onStageChange, onArchive, onRestore }: JobCardListProps) {
+export default function JobCardList({ jobs, viewMode, onEdit, onDelete, onStageChange, onArchive, onRestore }: JobListProps) {
   if (!jobs || jobs.length === 0) {
     return (
       <div className="bg-zinc-900 border border-dashed border-zinc-700 rounded-lg p-10 text-center">
@@ -33,6 +35,22 @@ export default function JobCardList({ jobs, onEdit, onDelete, onStageChange, onA
         <p className="mt-1 text-xs text-zinc-500">
           Click &quot;Add Job&quot; to start tracking your applications.
         </p>
+      </div>
+    );
+  }
+
+  if (viewMode === "list") {
+    return (
+      <div className="flex flex-col gap-2">
+        {jobs.map((job) => (
+          <JobListItem
+            key={job.id}
+            job={job}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onStageChange={onStageChange}
+          />
+        ))}
       </div>
     );
   }

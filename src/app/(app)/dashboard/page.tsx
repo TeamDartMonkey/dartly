@@ -1,17 +1,19 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import AddJobModal from "@/components/dashboard/add-job-modal";
-import JobCardList from "@/components/dashboard/job-card-list";
+import FilterBar from "@/components/dashboard/filter-bar";
+import JobList from "@/components/dashboard/job-list";
 import { MetricsPanel } from "@/components/dashboard/metrics-panel";
 import { ConfirmDeleteModal } from "@/components/ui/confirm-delete-modal";
-import { Select } from "@/components/ui/select";
 import { DashboardSkeleton } from "@/components/ui/skeletons/dashboard-skeleton";
 import { showToast } from "@/components/ui/toast";
+import { useViewMode } from "@/hooks/use-view-mode";
 import type { Job, JobStage } from "@/types/job";
 import { searchJobs } from "@/utils/search-jobs";
 import { ConfirmArchiveModal } from "@/components/ui/confirm-archive-modal";
+import { Select } from "@/components/ui/select";
 
 const STAGES: JobStage[] = ["Interested", "Applied", "Interview", "Offer", "Rejected"];
 
@@ -29,6 +31,9 @@ export default function DashboardPage() {
   const [pendingArchiveJob, setPendingArchiveJob] = useState<Job | null>(null);
   const [isArchiving, setIsArchiving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [filtered, setFiltered] = useState<Job[]>([]);
+  const onFilteredChange = useCallback((f: Job[]) => setFiltered(f), []);
+  const [viewMode, setViewMode] = useViewMode();
 
   useEffect(() => {
     fetch("/api/jobs")
@@ -156,7 +161,7 @@ export default function DashboardPage() {
     }
   }
 
-  async function handleSave(job: Omit<Job, "id"> & { id?: string }) {
+  async function handleSave(job: Omit<Job, "id" | "createdAt"> & { id?: string }) {
     const existing = job.id ? jobs.find((j) => j.id === job.id) : undefined;
     const isEdit = !!existing;
 
@@ -168,6 +173,7 @@ export default function DashboardPage() {
         (existing.location ?? "") === (job.location ?? "") &&
         existing.stage === job.stage &&
         existing.priority === job.priority &&
+        (existing.deadline ?? "") === (job.deadline ?? "") &&
         (existing.customNotes ?? "") === (job.customNotes ?? "");
       if (unchanged) {
         setShowForm(false);
@@ -184,6 +190,7 @@ export default function DashboardPage() {
           location: job.location,
           stage: job.stage,
           priority: job.priority,
+          deadline: job.deadline,
           customNotes: job.customNotes,
         }),
       });
@@ -208,6 +215,7 @@ export default function DashboardPage() {
           location: job.location,
           stage: job.stage,
           priority: job.priority,
+          deadline: job.deadline,
           customNotes: job.customNotes,
         }),
       });
@@ -233,7 +241,7 @@ export default function DashboardPage() {
     setEditingJob(null);
   }
 
-  const filtered = searchJobs(jobs, search)
+  const displayedJobs = searchJobs(jobs, search)
     .filter((job) => {
       if (showArchived) return job.stage === "Archived";
       if (job.stage === "Archived") return false;
@@ -333,18 +341,26 @@ export default function DashboardPage() {
       {/* Job count */}
       {!loading && (
         <p className="mb-4 text-xs text-zinc-500">
-          {filtered.length} {filtered.length === 1 ? "job" : "jobs"}
+          {displayedJobs.length} {displayedJobs.length === 1 ? "job" : "jobs"}
           {stageFilter ? ` in ${stageFilter}` : ""}
           {search ? ` matching "${search}"` : ""}
         </p>
       )}
+      {/* Filter bar */}
+      <FilterBar
+        jobs={jobs}
+        onFilteredChange={onFilteredChange}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+      />
 
       {/* Job board */}
       {loading ? (
         <DashboardSkeleton />
       ) : (
-        <JobCardList
-          jobs={filtered}
+        <JobList
+          jobs={displayedJobs}
+          viewMode={viewMode}
           onEdit={handleEditClick}
           onDelete={(id) => {
             const job = jobs.find((j) => j.id === id);

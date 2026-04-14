@@ -6,8 +6,15 @@ export type Job = {
   company: string;
   stage: JobStage;
   lastActivityDate: string;
+  createdAt: string;
   location?: string;
   description?: string;
+  compensationNotes?: string;
+  applicationDate?: string;
+  deadline?: string;
+  recruiterNotes?: string;
   customNotes?: string;
   priority?: boolean;
 };
+
+export type ViewMode = "card" | "list";
