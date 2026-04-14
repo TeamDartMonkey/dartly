@@ -64,7 +64,7 @@ export default function JobListItem({ job, onEdit, onDelete, onStageChange }: Jo
             value={job.stage}
             onChange={handleStageChange}
             options={STAGES.map((s) => ({ value: s, label: s }))}
-            className="text-xs font-medium"
+            className="w-[110px] text-xs font-medium"
             textClassName={STAGE_TEXT_STYLES[job.stage]}
           />
         </div>
