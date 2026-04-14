@@ -38,7 +38,7 @@ export default function JobCard({ job, onEdit, onDelete, onStageChange }: JobCar
       <div className="flex items-start justify-between gap-3">
         <button
           type="button"
-          className="flex-1 text-left"
+          className="flex-1 min-w-0 text-left"
           onClick={() => router.push(`/dashboard/${job.id}`)}
           aria-label={`View details for ${job.title} at ${job.company}`}
         >
