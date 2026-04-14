@@ -27,6 +27,9 @@ type DbEducation = {
 type DbSkill = {
   id: string;
   name: string;
+  category: string | null;
+  proficiency: string | null;
+  order: number;
 };
 
 function toIsoDate(d: Date | null): string | undefined {
@@ -67,6 +70,8 @@ function mapSkill(s: DbSkill): Skill {
   return {
     id: s.id,
     name: s.name,
+    category: s.category ?? "",
+    proficiency: s.proficiency ?? "",
   };
 }
 
@@ -127,6 +132,7 @@ type ProfilePatchInput = {
 
 function buildUpdateFields(data: ProfilePatchInput): Record<string, unknown> {
   const fields: Record<string, unknown> = {};
+
   if (data.firstName !== undefined) fields.firstName = data.firstName ?? null;
   if (data.lastName !== undefined) fields.lastName = data.lastName ?? null;
   if (data.email !== undefined) fields.email = data.email ?? null;
@@ -145,6 +151,7 @@ function buildUpdateFields(data: ProfilePatchInput): Record<string, unknown> {
   if (data.professionalLinks !== undefined) {
     fields.professionalLinks = data.professionalLinks ?? null;
   }
+
   return fields;
 }
 
@@ -158,7 +165,9 @@ export async function getProfile(userId: string): Promise<ProfileData | null> {
       educations: {
         orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
       },
-      skills: { orderBy: { name: "asc" } },
+      skills: {
+        orderBy: { order: "asc" },
+      },
     },
   });
 
@@ -242,14 +251,23 @@ async function syncEducations(
     };
 
     if (e.id && existingIds.has(e.id)) {
-      await tx.education.update({ where: { id: e.id }, data });
+      await tx.education.update({
+        where: { id: e.id },
+        data,
+      });
     } else {
-      await tx.education.create({ data });
+      await tx.education.create({
+        data,
+      });
     }
   }
 }
 
-async function syncSkills(tx: Prisma.TransactionClient, profileId: string, incoming: Skill[]) {
+async function syncSkills(
+  tx: Prisma.TransactionClient,
+  profileId: string,
+  incoming: Skill[]
+) {
   const existing = await tx.skill.findMany({
     where: { profileId },
     select: { id: true },
@@ -263,21 +281,54 @@ async function syncSkills(tx: Prisma.TransactionClient, profileId: string, incom
     await tx.skill.deleteMany({ where: { id: { in: toDelete } } });
   }
 
-  for (const s of incoming) {
-    const data = {
+  for (let index = 0; index < incoming.length; index++) {
+    const s = incoming[index];
+
+    const data: {
+      profileId: string;
+      name: string;
+      category?: string | null;
+      proficiency?: string | null;
+      order?: number;
+    } = {
       profileId,
       name: s.name,
     };
 
+    if (s.category !== undefined) {
+      data.category = s.category || null;
+    }
+
+    if (s.proficiency !== undefined) {
+      data.proficiency = s.proficiency || null;
+    }
+
+    if (incoming.length > 1) {
+      data.order = index;
+    }
+
     if (s.id && existingIds.has(s.id)) {
-      await tx.skill.update({ where: { id: s.id }, data });
+      await tx.skill.update({
+        where: { id: s.id },
+        data,
+      });
     } else {
-      await tx.skill.create({ data });
+      await tx.skill.create({
+        data: {
+          ...data,
+          order: index,
+          category: s.category || null,
+          proficiency: s.proficiency || null,
+        },
+      });
     }
   }
 }
 
-export async function upsertProfile(userId: string, data: ProfilePatchInput): Promise<ProfileData> {
+export async function upsertProfile(
+  userId: string,
+  data: ProfilePatchInput
+): Promise<ProfileData> {
   const fields = buildUpdateFields(data);
 
   return await prisma.$transaction(async (tx) => {
@@ -311,7 +362,9 @@ export async function upsertProfile(userId: string, data: ProfilePatchInput): Pr
           orderBy: { order: "asc" },
         },
         educations: true,
-        skills: true,
+        skills: {
+          orderBy: { order: "asc" },
+        },
       },
     });
 

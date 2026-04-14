@@ -29,6 +29,8 @@ export const EducationSchema = z.object({
 export const SkillSchema = z.object({
   id: z.string().optional(),
   name: z.string().trim().min(1).max(100),
+  category: z.string().trim().max(100).optional(),
+  proficiency: z.string().trim().max(50).optional(),
 });
 
 const NullableString = z.string().trim().max(200).nullish();
