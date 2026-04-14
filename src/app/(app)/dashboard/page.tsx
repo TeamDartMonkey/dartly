@@ -13,7 +13,6 @@ import { useViewMode } from "@/hooks/use-view-mode";
 import type { Job, JobStage } from "@/types/job";
 import { searchJobs } from "@/utils/search-jobs";
 import { ConfirmArchiveModal } from "@/components/ui/confirm-archive-modal";
-import { Select } from "@/components/ui/select";
 
 const STAGES: JobStage[] = ["Interested", "Applied", "Interview", "Offer", "Rejected"];
 
@@ -24,9 +23,6 @@ export default function DashboardPage() {
   const [showForm, setShowForm] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
-  const [search, setSearch] = useState("");
-  const [stageFilter, setStageFilter] = useState<Exclude<JobStage, "Archived"> | "">("");
-  const [sortBy, setSortBy] = useState<"recent" | "company" | "priority">("recent");
   const [pendingDeleteJob, setPendingDeleteJob] = useState<Job | null>(null);
   const [pendingArchiveJob, setPendingArchiveJob] = useState<Job | null>(null);
   const [isArchiving, setIsArchiving] = useState(false);
@@ -241,19 +237,6 @@ export default function DashboardPage() {
     setEditingJob(null);
   }
 
-  const displayedJobs = searchJobs(jobs, search)
-    .filter((job) => {
-      if (showArchived) return job.stage === "Archived";
-      if (job.stage === "Archived") return false;
-      if (stageFilter) return job.stage === stageFilter;
-      return true;
-    })
-    .sort((a, b) => {
-      if (sortBy === "company") return a.company.localeCompare(b.company);
-      if (sortBy === "priority") return (b.priority ? 1 : 0) - (a.priority ? 1 : 0);
-      return b.lastActivityDate.localeCompare(a.lastActivityDate);
-    });
-
   return (
     <>
       {/* Header */}
@@ -274,84 +257,14 @@ export default function DashboardPage() {
       {/* Metrics */}
       <MetricsPanel />
 
-      {/* Toolbar: Search, Filter, Sort */}
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Search jobs..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-md pl-9 pr-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-          />
-        </div>
-
-        <Select
-          value={stageFilter}
-          onChange={(val) => setStageFilter(val as Exclude<JobStage, "Archived"> | "")}
-          options={[
-            { value: "", label: "All stages" },
-            ...STAGES.map((stage) => ({ value: stage, label: stage })),
-          ]}
-          className="sm:w-36"
-          disabled={showArchived}
-        />
-
-        <button
-          type="button"
-          onClick={() => {
-            setShowArchived((prev) => !prev);
-            setStageFilter("");
-          }}
-          className={`px-4 py-2 rounded-md text-sm font-medium border ${showArchived
-            ? "bg-indigo-500 border-indigo-500 text-zinc-50"
-            : "bg-zinc-800 border-zinc-700 hover:bg-zinc-700 text-zinc-50"
-            }`}
-        >
-          Archived
-        </button>
-
-        <Select
-          value={sortBy}
-          onChange={(val) => setSortBy(val as "recent" | "company" | "priority")}
-          options={[
-            { value: "recent", label: "Most recent" },
-            { value: "company", label: "Company A-Z" },
-            { value: "priority", label: "Priority first" },
-          ]}
-          className="sm:w-36"
-        />
-      </div>
-
-      {/* Job count */}
-      {!loading && (
-        <p className="mb-4 text-xs text-zinc-500">
-          {displayedJobs.length} {displayedJobs.length === 1 ? "job" : "jobs"}
-          {stageFilter ? ` in ${stageFilter}` : ""}
-          {search ? ` matching "${search}"` : ""}
-        </p>
-      )}
       {/* Filter bar */}
       <FilterBar
         jobs={jobs}
         onFilteredChange={onFilteredChange}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
+        showArchived={showArchived}
+        onShowArchivedChange={setShowArchived}
       />
 
       {/* Job board */}
@@ -359,7 +272,7 @@ export default function DashboardPage() {
         <DashboardSkeleton />
       ) : (
         <JobList
-          jobs={displayedJobs}
+          jobs={filtered}
           viewMode={viewMode}
           onEdit={handleEditClick}
           onDelete={(id) => {

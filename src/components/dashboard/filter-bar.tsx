@@ -14,6 +14,8 @@ type FilterBarProps = {
   onFilteredChange: (filtered: Job[]) => void;
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
+  showArchived: boolean;
+  onShowArchivedChange: (show: boolean) => void;
 };
 
 export default function FilterBar({
@@ -21,6 +23,8 @@ export default function FilterBar({
   onFilteredChange,
   viewMode,
   onViewModeChange,
+  showArchived,
+  onShowArchivedChange,
 }: FilterBarProps) {
   const [search, setSearch] = useState("");
   const [stageFilter, setStageFilter] = useState<JobStage | "">("");
@@ -39,9 +43,13 @@ export default function FilterBar({
   }, [jobs]);
 
   const filtered = useMemo(() => {
-    let result = searchJobs(jobs, search);
+    let result = showArchived
+      ? jobs.filter((j) => j.stage === "Archived")
+      : jobs.filter((j) => j.stage !== "Archived");
 
-    if (stageFilter) {
+    result = searchJobs(result, search);
+
+    if (stageFilter && !showArchived) {
       result = result.filter((job) => job.stage === stageFilter);
     }
 
@@ -64,7 +72,7 @@ export default function FilterBar({
     result = sortJobs(result, sortBy);
 
     return result;
-  }, [jobs, search, stageFilter, locationFilter, deadlineFilter, sortBy]);
+  }, [jobs, search, stageFilter, locationFilter, deadlineFilter, sortBy, showArchived]);
 
   useEffect(() => {
     onFilteredChange(filtered);
@@ -136,9 +144,13 @@ export default function FilterBar({
           onChange={(val) => setStageFilter(val as JobStage | "")}
           options={[
             { value: "", label: "All stages" },
-            ...STAGES.map((s) => ({ value: s, label: s })),
+            ...STAGES.filter((s) => s !== "Archived").map((s) => ({
+              value: s,
+              label: s,
+            }))
           ]}
           className="sm:w-36"
+          disabled={showArchived}
         />
 
         <Select
@@ -167,6 +179,20 @@ export default function FilterBar({
           ]}
           className="sm:w-36"
         />
+
+        <button
+          type="button"
+          onClick={() => {
+            onShowArchivedChange(!showArchived);
+            setStageFilter("");
+          }}
+          className={`px-4 py-2 rounded-md text-sm font-medium border ${showArchived
+            ? "bg-indigo-500 border-indigo-500 text-zinc-50"
+            : "bg-zinc-800 border-zinc-700 hover:bg-zinc-700 text-zinc-50"
+            }`}
+        >
+          Archived
+        </button>
 
         {/* Spacer pushes toggle right */}
         <div className="flex-1" />
@@ -274,6 +300,7 @@ export default function FilterBar({
       <p className="mt-3 text-xs text-zinc-500">
         {filtered.length} {filtered.length === 1 ? "job" : "jobs"}
         {stageFilter ? ` in ${stageFilter}` : ""}
+        {showArchived ? " in Archived" : ""}
         {search ? ` matching "${search}"` : ""}
       </p>
     </div>
