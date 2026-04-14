@@ -6,9 +6,11 @@ type JobCardListProps = {
   onEdit?: (job: Job) => void;
   onDelete?: (id: string) => void;
   onStageChange?: (id: string, stage: JobStage) => void;
+  onArchive?: (id: string) => void;
+  onRestore?: (id: string) => Promise<void>;
 };
 
-export default function JobCardList({ jobs, onEdit, onDelete, onStageChange }: JobCardListProps) {
+export default function JobCardList({ jobs, onEdit, onDelete, onStageChange, onArchive, onRestore }: JobCardListProps) {
   if (!jobs || jobs.length === 0) {
     return (
       <div className="bg-zinc-900 border border-dashed border-zinc-700 rounded-lg p-10 text-center">
@@ -44,6 +46,8 @@ export default function JobCardList({ jobs, onEdit, onDelete, onStageChange }: J
           onEdit={onEdit}
           onDelete={onDelete}
           onStageChange={onStageChange}
+          onArchive={onArchive}
+          onRestore={onRestore}
         />
       ))}
     </div>

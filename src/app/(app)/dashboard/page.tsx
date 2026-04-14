@@ -11,19 +11,24 @@ import { DashboardSkeleton } from "@/components/ui/skeletons/dashboard-skeleton"
 import { showToast } from "@/components/ui/toast";
 import type { Job, JobStage } from "@/types/job";
 import { searchJobs } from "@/utils/search-jobs";
+import { ConfirmArchiveModal } from "@/components/ui/confirm-archive-modal";
 
-const STAGES: JobStage[] = ["Interested", "Applied", "Interview", "Offer", "Rejected", "Archived"];
+const STAGES: JobStage[] = ["Interested", "Applied", "Interview", "Offer", "Rejected"];
 
 export default function DashboardPage() {
   const router = useRouter();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [search, setSearch] = useState("");
-  const [stageFilter, setStageFilter] = useState<JobStage | "">("");
+  const [stageFilter, setStageFilter] = useState<Exclude<JobStage, "Archived"> | "">("");
   const [sortBy, setSortBy] = useState<"recent" | "company" | "priority">("recent");
   const [pendingDeleteJob, setPendingDeleteJob] = useState<Job | null>(null);
+  const [pendingArchiveJob, setPendingArchiveJob] = useState<Job | null>(null);
+  const [isArchiving, setIsArchiving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetch("/api/jobs")
@@ -77,6 +82,55 @@ export default function DashboardPage() {
     }
   }
 
+  async function handleArchive(id: string) {
+    const res = await fetch(`/api/jobs/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stage: "Archived" }),
+    });
+    if (res.status === 401) {
+      router.push("/login");
+      return;
+    }
+    if (res.ok) {
+      const updated: Job = await res.json();
+      setJobs((current) => current.map((j) => (j.id === updated.id ? updated : j)));
+      showToast("Job archived");
+    } else {
+      showToast("Failed to archive job", "error");
+    }
+  }
+
+  async function confirmArchiveJob() {
+    if (!pendingArchiveJob) return;
+    setIsArchiving(true);
+    try {
+      await handleArchive(pendingArchiveJob.id);
+      setPendingArchiveJob(null);
+    } finally {
+      setIsArchiving(false);
+    }
+  }
+
+  async function handleRestore(id: string) {
+    const res = await fetch(`/api/jobs/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stage: "Interested" }),
+    });
+    if (res.status === 401) {
+      router.push("/login");
+      return;
+    }
+    if (res.ok) {
+      const updated: Job = await res.json();
+      setJobs((current) => current.map((j) => (j.id === updated.id ? updated : j)));
+      showToast("Job restored");
+    } else {
+      showToast("Failed to restore job", "error");
+    }
+  }
+
   async function handleDelete(id: string) {
     const res = await fetch(`/api/jobs/${id}`, { method: "DELETE" });
     if (res.status === 401) {
@@ -93,8 +147,13 @@ export default function DashboardPage() {
 
   async function confirmDeleteJob() {
     if (!pendingDeleteJob) return;
-    await handleDelete(pendingDeleteJob.id);
-    setPendingDeleteJob(null);
+    setIsDeleting(true);
+    try {
+      await handleDelete(pendingDeleteJob.id);
+      setPendingDeleteJob(null);
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   async function handleSave(job: Omit<Job, "id"> & { id?: string }) {
@@ -176,6 +235,8 @@ export default function DashboardPage() {
 
   const filtered = searchJobs(jobs, search)
     .filter((job) => {
+      if (showArchived) return job.stage === "Archived";
+      if (job.stage === "Archived") return false;
       if (stageFilter) return job.stage === stageFilter;
       return true;
     })
@@ -234,13 +295,28 @@ export default function DashboardPage() {
 
         <Select
           value={stageFilter}
-          onChange={(val) => setStageFilter(val as JobStage | "")}
+          onChange={(val) => setStageFilter(val as Exclude<JobStage, "Archived"> | "")}
           options={[
             { value: "", label: "All stages" },
             ...STAGES.map((stage) => ({ value: stage, label: stage })),
           ]}
           className="sm:w-36"
+          disabled={showArchived}
         />
+
+        <button
+          type="button"
+          onClick={() => {
+            setShowArchived((prev) => !prev);
+            setStageFilter("");
+          }}
+          className={`px-4 py-2 rounded-md text-sm font-medium border ${showArchived
+            ? "bg-indigo-500 border-indigo-500 text-zinc-50"
+            : "bg-zinc-800 border-zinc-700 hover:bg-zinc-700 text-zinc-50"
+            }`}
+        >
+          Archived
+        </button>
 
         <Select
           value={sortBy}
@@ -275,6 +351,11 @@ export default function DashboardPage() {
             if (job) setPendingDeleteJob(job);
           }}
           onStageChange={handleStageChange}
+          onArchive={(id) => {
+            const job = jobs.find((j) => j.id === id);
+            if (job) setPendingArchiveJob(job);
+          }}
+          onRestore={handleRestore}
         />
       )}
 
@@ -291,8 +372,19 @@ export default function DashboardPage() {
         open={pendingDeleteJob !== null}
         onClose={() => setPendingDeleteJob(null)}
         onConfirm={confirmDeleteJob}
+        isSubmitting={isDeleting}
         itemName={
           pendingDeleteJob ? `${pendingDeleteJob.title} at ${pendingDeleteJob.company}` : undefined
+        }
+      />
+
+      <ConfirmArchiveModal
+        open={pendingArchiveJob !== null}
+        onClose={() => setPendingArchiveJob(null)}
+        onConfirm={confirmArchiveJob}
+        isSubmitting={isArchiving}
+        itemName={
+          pendingArchiveJob ? `${pendingArchiveJob.title} at ${pendingArchiveJob.company}` : undefined
         }
       />
     </>
