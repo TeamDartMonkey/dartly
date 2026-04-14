@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { showToast } from "@/components/ui/toast";
 import type { JobActivity } from "@/types/activity";
 
@@ -20,9 +22,7 @@ export function FollowUpsSection({ activities, jobId, onActivitiesChanged }: Pro
   const emptyForm = { title: "", scheduledAt: "", description: "" };
   const [form, setForm] = useState(emptyForm);
 
-  function handleChange(
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) {
+  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   }
 
@@ -43,7 +43,10 @@ export function FollowUpsSection({ activities, jobId, onActivitiesChanged }: Pro
   }
 
   async function handleSave() {
-    if (!form.title.trim()) { showToast("Follow-up title is required", "error"); return; }
+    if (!form.title.trim()) {
+      showToast("Follow-up title is required", "error");
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -123,8 +126,11 @@ export function FollowUpsSection({ activities, jobId, onActivitiesChanged }: Pro
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-base font-medium text-zinc-50">Follow-ups</h2>
         {!showForm && (
-          <button type="button" onClick={() => setShowForm(true)}
-            className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors">
+          <button
+            type="button"
+            onClick={() => setShowForm(true)}
+            className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
+          >
             + Add follow-up
           </button>
         )}
@@ -135,29 +141,46 @@ export function FollowUpsSection({ activities, jobId, onActivitiesChanged }: Pro
           <h3 className="text-sm font-medium text-zinc-200">
             {editingId ? "Edit follow-up" : "Add follow-up"}
           </h3>
-          <div>
-            <label htmlFor="fu-title" className="block text-xs font-medium text-zinc-400 mb-1">Task *</label>
-            <input id="fu-title" name="title" type="text" value={form.title} onChange={handleChange}
-              placeholder="e.g. Send thank-you email to recruiter"
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-          </div>
-          <div>
-            <label htmlFor="fu-due" className="block text-xs font-medium text-zinc-400 mb-1">Due date</label>
-            <input id="fu-due" name="scheduledAt" type="datetime-local" value={form.scheduledAt}
-              onChange={handleChange}
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-          </div>
-          <div>
-            <label htmlFor="fu-notes" className="block text-xs font-medium text-zinc-400 mb-1">Notes</label>
-            <textarea id="fu-notes" name="description" value={form.description} onChange={handleChange}
-              placeholder="Optional notes..." rows={2}
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y" />
-          </div>
+          <Input
+            id="fu-title"
+            label="Task *"
+            name="title"
+            type="text"
+            value={form.title}
+            onChange={handleChange}
+            placeholder="e.g. Send thank-you email to recruiter"
+          />
+          <Input
+            id="fu-due"
+            label="Due date"
+            name="scheduledAt"
+            type="datetime-local"
+            value={form.scheduledAt}
+            onChange={handleChange}
+          />
+          <Textarea
+            id="fu-notes"
+            label="Notes"
+            name="description"
+            value={form.description}
+            onChange={handleChange}
+            placeholder="Optional notes..."
+            rows={2}
+          />
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={handleCancel}
-              className="bg-zinc-700 hover:bg-zinc-600 text-zinc-300 px-3 py-1.5 rounded-md text-sm">Cancel</button>
-            <button type="button" onClick={handleSave} disabled={saving}
-              className="bg-indigo-500 hover:bg-indigo-600 text-zinc-50 px-3 py-1.5 rounded-md text-sm font-medium disabled:opacity-50">
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="bg-zinc-700 hover:bg-zinc-600 text-zinc-300 px-3 py-1.5 rounded-md text-sm"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              className="bg-indigo-500 hover:bg-indigo-600 text-zinc-50 px-3 py-1.5 rounded-md text-sm font-medium disabled:opacity-50"
+            >
               {saving ? "Saving..." : editingId ? "Save changes" : "Add follow-up"}
             </button>
           </div>
@@ -173,11 +196,16 @@ export function FollowUpsSection({ activities, jobId, onActivitiesChanged }: Pro
           {incomplete.length > 0 && (
             <div className="space-y-2">
               {incomplete.map((activity) => (
-                <FollowUpRow key={activity.id} activity={activity} overdue={isOverdue(activity)}
-                  toggling={toggling === activity.id} deleting={deleting === activity.id}
+                <FollowUpRow
+                  key={activity.id}
+                  activity={activity}
+                  overdue={isOverdue(activity)}
+                  toggling={toggling === activity.id}
+                  deleting={deleting === activity.id}
                   onToggle={() => handleToggleComplete(activity)}
                   onEdit={() => startEdit(activity)}
-                  onDelete={() => handleDelete(activity.id)} />
+                  onDelete={() => handleDelete(activity.id)}
+                />
               ))}
             </div>
           )}
@@ -186,11 +214,16 @@ export function FollowUpsSection({ activities, jobId, onActivitiesChanged }: Pro
               <p className="text-xs font-medium text-zinc-500 mb-2 mt-4">Completed</p>
               <div className="space-y-2 opacity-60">
                 {completed.map((activity) => (
-                  <FollowUpRow key={activity.id} activity={activity} overdue={false}
-                    toggling={toggling === activity.id} deleting={deleting === activity.id}
+                  <FollowUpRow
+                    key={activity.id}
+                    activity={activity}
+                    overdue={false}
+                    toggling={toggling === activity.id}
+                    deleting={deleting === activity.id}
                     onToggle={() => handleToggleComplete(activity)}
                     onEdit={() => startEdit(activity)}
-                    onDelete={() => handleDelete(activity.id)} />
+                    onDelete={() => handleDelete(activity.id)}
+                  />
                 ))}
               </div>
             </div>
@@ -201,34 +234,67 @@ export function FollowUpsSection({ activities, jobId, onActivitiesChanged }: Pro
   );
 }
 
-function FollowUpRow({ activity, overdue, toggling, deleting, onToggle, onEdit, onDelete }: {
-  activity: JobActivity; overdue: boolean; toggling: boolean; deleting: boolean;
-  onToggle: () => void; onEdit: () => void; onDelete: () => void;
+function FollowUpRow({
+  activity,
+  overdue,
+  toggling,
+  deleting,
+  onToggle,
+  onEdit,
+  onDelete,
+}: {
+  activity: JobActivity;
+  overdue: boolean;
+  toggling: boolean;
+  deleting: boolean;
+  onToggle: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
 }) {
   return (
-    <div className={`flex items-start gap-3 bg-zinc-800 border rounded-lg px-4 py-3 ${overdue ? "border-red-900/60" : "border-zinc-700"}`}>
-      <button type="button" onClick={onToggle} disabled={toggling}
+    <div
+      className={`flex items-start gap-3 bg-zinc-800 border rounded-lg px-4 py-3 ${overdue ? "border-red-900/60" : "border-zinc-700"}`}
+    >
+      <button
+        type="button"
+        onClick={onToggle}
+        disabled={toggling}
         aria-label={activity.completed ? "Mark incomplete" : "Mark complete"}
         className={`mt-0.5 w-4 h-4 shrink-0 rounded border flex items-center justify-center transition-colors ${
-          activity.completed ? "bg-indigo-500 border-indigo-500" : "border-zinc-500 hover:border-indigo-400"
-        } disabled:opacity-50`}>
+          activity.completed
+            ? "bg-indigo-500 border-indigo-500"
+            : "border-zinc-500 hover:border-indigo-400"
+        } disabled:opacity-50`}
+      >
         {activity.completed && (
-          <svg width="10" height="10" viewBox="0 0 12 12" fill="none"
-  stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-  aria-hidden="true">
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 12 12"
+            fill="none"
+            stroke="white"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
             <polyline points="2 6 5 9 10 3" />
           </svg>
         )}
       </button>
       <div className="flex-1 min-w-0">
-        <p className={`text-sm font-medium ${activity.completed ? "line-through text-zinc-500" : "text-zinc-200"}`}>
+        <p
+          className={`text-sm font-medium ${activity.completed ? "line-through text-zinc-500" : "text-zinc-200"}`}
+        >
           {activity.title}
         </p>
         {activity.scheduledAt && (
           <p className={`text-xs mt-0.5 ${overdue ? "text-red-400" : "text-zinc-400"}`}>
             {overdue ? "Overdue · " : "Due "}
             {new Date(activity.scheduledAt).toLocaleDateString("en-US", {
-              month: "short", day: "numeric", year: "numeric",
+              month: "short",
+              day: "numeric",
+              year: "numeric",
             })}
           </p>
         )}
@@ -237,10 +303,19 @@ function FollowUpRow({ activity, overdue, toggling, deleting, onToggle, onEdit, 
         )}
       </div>
       <div className="flex items-center gap-1 shrink-0">
-        <button type="button" onClick={onEdit}
-          className="text-xs text-zinc-400 hover:text-zinc-50 px-2 py-1 rounded hover:bg-zinc-700 transition-colors">Edit</button>
-        <button type="button" onClick={onDelete} disabled={deleting}
-          className="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded hover:bg-zinc-700 transition-colors disabled:opacity-50">
+        <button
+          type="button"
+          onClick={onEdit}
+          className="text-xs text-zinc-400 hover:text-zinc-50 px-2 py-1 rounded hover:bg-zinc-700 transition-colors"
+        >
+          Edit
+        </button>
+        <button
+          type="button"
+          onClick={onDelete}
+          disabled={deleting}
+          className="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded hover:bg-zinc-700 transition-colors disabled:opacity-50"
+        >
           {deleting ? "..." : "Delete"}
         </button>
       </div>

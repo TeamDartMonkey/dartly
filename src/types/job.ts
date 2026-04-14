@@ -16,3 +16,5 @@ export type Job = {
   customNotes?: string;
   priority?: boolean;
 };
+
+export type ViewMode = "card" | "list";

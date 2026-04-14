@@ -1,6 +1,7 @@
 "use client";
 
 import { type SyntheticEvent, useEffect, useState } from "react";
+import { Input } from "@/components/ui/input";
 import { createClient } from "@/services/supabase";
 import type { ResetPasswordFormData } from "@/types";
 
@@ -116,31 +117,20 @@ export function ResetPasswordForm() {
         </div>
       )}
 
-      <div>
-        <label htmlFor="password" className="mb-1 block text-xs font-medium text-zinc-400">
-          New Password
-        </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          placeholder="••••••••"
-          className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-        />
-      </div>
-
-      <div>
-        <label htmlFor="confirmPassword" className="mb-1 block text-xs font-medium text-zinc-400">
-          Confirm New Password
-        </label>
-        <input
-          id="confirmPassword"
-          name="confirmPassword"
-          type="password"
-          placeholder="••••••••"
-          className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-        />
-      </div>
+      <Input
+        id="password"
+        label="New Password"
+        name="password"
+        type="password"
+        placeholder="••••••••"
+      />
+      <Input
+        id="confirmPassword"
+        label="Confirm New Password"
+        name="confirmPassword"
+        type="password"
+        placeholder="••••••••"
+      />
 
       <button
         type="submit"

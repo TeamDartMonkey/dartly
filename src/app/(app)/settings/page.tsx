@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { LogoutButton } from "@/components/dashboard/logout-button";
 import { AccountSection } from "@/components/settings/account-section";
 import { AppPreferencesSection } from "@/components/settings/app-preferences-section";
+import { SettingsSkeleton } from "@/components/ui/skeletons/settings-skeleton";
 import { showToast } from "@/components/ui/toast";
 import type { UserPreferences } from "@/types/settings";
 import { DEFAULT_PREFERENCES } from "@/types/settings";
@@ -41,17 +42,7 @@ export default function SettingsPage() {
   );
 
   if (loading) {
-    return (
-      <>
-        <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-zinc-50">Settings</h1>
-          <p className="mt-1 text-sm text-zinc-400">
-            Manage your account, notifications, and preferences.
-          </p>
-        </div>
-        <div className="text-sm text-zinc-500">Loading...</div>
-      </>
-    );
+    return <SettingsSkeleton />;
   }
 
   return (

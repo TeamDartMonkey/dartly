@@ -17,3 +17,21 @@ export const STAGE_PRISMA_TO_UI: Record<string, JobStage> = {
   REJECTED: "Rejected",
   ARCHIVED: "Archived",
 };
+
+export const STAGES: JobStage[] = [
+  "Interested",
+  "Applied",
+  "Interview",
+  "Offer",
+  "Rejected",
+  "Archived",
+];
+
+export const STAGE_TEXT_STYLES: Record<JobStage, string> = {
+  Interested: "text-zinc-400",
+  Applied: "text-blue-400",
+  Interview: "text-yellow-400",
+  Offer: "text-green-400",
+  Rejected: "text-red-400",
+  Archived: "text-zinc-500",
+};

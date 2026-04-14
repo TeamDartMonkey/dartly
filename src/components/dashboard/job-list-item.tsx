@@ -1,8 +1,4 @@
-// S2-005: Added click-to-navigate to /dashboard/[jobId].
-// Changes from original:
-//   - imports useRouter
-//   - card container gets onClick + cursor-pointer + hover border
-//   - Edit and Delete buttons get e.stopPropagation() so they don't also trigger the card navigation
+"use client";
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -11,14 +7,14 @@ import { STAGE_TEXT_STYLES, STAGES } from "@/constants/job-stages";
 import type { Job, JobStage } from "@/types/job";
 import { isOverdue } from "@/utils/deadline";
 
-type JobCardProps = {
+type JobListItemProps = {
   job: Job;
   onEdit?: (job: Job) => void;
   onDelete?: (id: string) => void;
   onStageChange?: (id: string, stage: JobStage) => void;
 };
 
-export default function JobCard({ job, onEdit, onDelete, onStageChange }: JobCardProps) {
+export default function JobListItem({ job, onEdit, onDelete, onStageChange }: JobListItemProps) {
   const router = useRouter();
   const [isChangingStage, setIsChangingStage] = useState(false);
 
@@ -34,28 +30,21 @@ export default function JobCard({ job, onEdit, onDelete, onStageChange }: JobCar
   }
 
   return (
-    <div className="bg-zinc-900 border border-zinc-700 hover:border-zinc-500 rounded-lg shadow-sm p-6 transition-colors">
-      <div className="flex items-start justify-between gap-3">
+    <div className="bg-zinc-900 border border-zinc-700 hover:border-zinc-500 rounded-lg px-4 py-3 transition-colors">
+      <div className="flex items-center gap-3">
         <button
           type="button"
           className="flex-1 min-w-0 text-left"
           onClick={() => router.push(`/dashboard/${job.id}`)}
           aria-label={`View details for ${job.title} at ${job.company}`}
         >
-          <div className="min-w-0">
-            <h2 className="text-base font-medium text-zinc-50 truncate">{job.title}</h2>
-            <p className="text-sm text-zinc-400">{job.company}</p>
-          </div>
-          <div className="mt-4 space-y-1 text-sm text-zinc-500">
-            {job.location && <p>{job.location}</p>}
-            {job.deadline && (
-              <p className={isOverdue(job.deadline) ? "text-red-400" : ""}>
-                Deadline: {job.deadline}
-              </p>
-            )}
-            <p>Last activity: {job.lastActivityDate}</p>
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-sm font-medium text-zinc-50 truncate">{job.title}</span>
+            <span className="text-sm text-zinc-500 shrink-0">at</span>
+            <span className="text-sm text-zinc-400 truncate">{job.company}</span>
           </div>
         </button>
+
         <div className="shrink-0 flex items-center gap-1.5">
           {isChangingStage && (
             <svg
@@ -79,27 +68,28 @@ export default function JobCard({ job, onEdit, onDelete, onStageChange }: JobCar
             textClassName={STAGE_TEXT_STYLES[job.stage]}
           />
         </div>
-      </div>
 
-      {/* Bottom: Priority + Actions */}
-      <div className="mt-4 flex items-center justify-between">
-        {job.priority ? (
-          <span className="bg-yellow-950 text-yellow-400 rounded-md px-2 py-1 text-xs font-medium">
+        <span
+          className={`shrink-0 w-20 text-xs text-right ${job.deadline ? (isOverdue(job.deadline) ? "text-red-400" : "text-zinc-500") : "invisible"}`}
+        >
+          {job.deadline}
+        </span>
+
+        <span className={`shrink-0 w-16 text-center ${job.priority ? "" : "invisible"}`}>
+          <span className="bg-yellow-950 text-yellow-400 rounded px-1.5 py-0.5 text-xs font-medium">
             Priority
           </span>
-        ) : (
-          <div />
-        )}
+        </span>
 
-        <div className="flex gap-2">
+        <div className="shrink-0 flex gap-1.5">
           {onEdit && (
             <button
               type="button"
               onClick={(e) => {
-                e.stopPropagation(); // don't navigate to detail page
+                e.stopPropagation();
                 onEdit(job);
               }}
-              className="bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-zinc-50 rounded-md px-3 py-1 text-xs font-medium"
+              className="bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-zinc-50 rounded-md px-2 py-1 text-xs font-medium"
               aria-label={`Edit ${job.title}`}
             >
               <svg
@@ -123,10 +113,10 @@ export default function JobCard({ job, onEdit, onDelete, onStageChange }: JobCar
             <button
               type="button"
               onClick={(e) => {
-                e.stopPropagation(); // don't navigate to detail page
+                e.stopPropagation();
                 onDelete(job.id);
               }}
-              className="bg-red-600 hover:bg-red-700 text-zinc-50 rounded-md px-3 py-1 text-xs font-medium"
+              className="bg-red-600 hover:bg-red-700 text-zinc-50 rounded-md px-2 py-1 text-xs font-medium"
               aria-label={`Delete ${job.title}`}
             >
               <svg

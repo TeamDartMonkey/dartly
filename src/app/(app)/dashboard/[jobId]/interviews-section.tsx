@@ -1,12 +1,20 @@
 "use client";
 
 import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { showToast } from "@/components/ui/toast";
 import type { JobActivity } from "@/types/activity";
 
 const ROUND_TYPES = [
-  "Phone Screen", "Technical Screen", "Hiring Manager",
-  "Panel", "Take-Home", "On-Site", "Final Round", "Other",
+  "Phone Screen",
+  "Technical Screen",
+  "Hiring Manager",
+  "Panel",
+  "Take-Home",
+  "On-Site",
+  "Final Round",
+  "Other",
 ];
 
 interface Props {
@@ -48,7 +56,10 @@ export function InterviewsSection({ activities, jobId, onActivitiesChanged }: Pr
   }
 
   async function handleSave() {
-    if (!form.title.trim()) { showToast("Interview title is required", "error"); return; }
+    if (!form.title.trim()) {
+      showToast("Interview title is required", "error");
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -102,8 +113,11 @@ export function InterviewsSection({ activities, jobId, onActivitiesChanged }: Pr
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-base font-medium text-zinc-50">Interviews</h2>
         {!showForm && (
-          <button type="button" onClick={() => setShowForm(true)}
-            className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors">
+          <button
+            type="button"
+            onClick={() => setShowForm(true)}
+            className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
+          >
             + Add interview
           </button>
         )}
@@ -116,37 +130,65 @@ export function InterviewsSection({ activities, jobId, onActivitiesChanged }: Pr
           </h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="roundType" className="block text-xs font-medium text-zinc-400 mb-1">Round type</label>
-              <select id="roundType" name="roundType" value={form.roundType} onChange={handleChange}
-                className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <label htmlFor="roundType" className="block text-xs font-medium text-zinc-400 mb-1">
+                Round type
+              </label>
+              <select
+                id="roundType"
+                name="roundType"
+                value={form.roundType}
+                onChange={handleChange}
+                className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
                 <option value="">Select round type</option>
-                {ROUND_TYPES.map((r) => <option key={r} value={r}>{r}</option>)}
+                {ROUND_TYPES.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
               </select>
             </div>
-            <div>
-              <label htmlFor="scheduledAt" className="block text-xs font-medium text-zinc-400 mb-1">Date &amp; time</label>
-              <input id="scheduledAt" name="scheduledAt" type="datetime-local" value={form.scheduledAt}
-                onChange={handleChange}
-                className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-            </div>
+            <Input
+              id="scheduledAt"
+              label="Date & time"
+              name="scheduledAt"
+              type="datetime-local"
+              value={form.scheduledAt}
+              onChange={handleChange}
+            />
           </div>
-          <div>
-            <label htmlFor="int-title" className="block text-xs font-medium text-zinc-400 mb-1">Title *</label>
-            <input id="int-title" name="title" type="text" value={form.title} onChange={handleChange}
-              placeholder="e.g. Technical screen with eng team"
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-          </div>
-          <div>
-            <label htmlFor="int-notes" className="block text-xs font-medium text-zinc-400 mb-1">Notes</label>
-            <textarea id="int-notes" name="description" value={form.description} onChange={handleChange}
-              placeholder="Interviewer names, topics covered, how it went..." rows={3}
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y" />
-          </div>
+          <Input
+            id="int-title"
+            label="Title *"
+            name="title"
+            type="text"
+            value={form.title}
+            onChange={handleChange}
+            placeholder="e.g. Technical screen with eng team"
+          />
+          <Textarea
+            id="int-notes"
+            label="Notes"
+            name="description"
+            value={form.description}
+            onChange={handleChange}
+            placeholder="Interviewer names, topics covered, how it went..."
+            rows={3}
+          />
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={handleCancel}
-              className="bg-zinc-700 hover:bg-zinc-600 text-zinc-300 px-3 py-1.5 rounded-md text-sm">Cancel</button>
-            <button type="button" onClick={handleSave} disabled={saving}
-              className="bg-indigo-500 hover:bg-indigo-600 text-zinc-50 px-3 py-1.5 rounded-md text-sm font-medium disabled:opacity-50">
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="bg-zinc-700 hover:bg-zinc-600 text-zinc-300 px-3 py-1.5 rounded-md text-sm"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              className="bg-indigo-500 hover:bg-indigo-600 text-zinc-50 px-3 py-1.5 rounded-md text-sm font-medium disabled:opacity-50"
+            >
               {saving ? "Saving..." : editingId ? "Save changes" : "Add interview"}
             </button>
           </div>
@@ -158,7 +200,10 @@ export function InterviewsSection({ activities, jobId, onActivitiesChanged }: Pr
       ) : (
         <div className="space-y-3">
           {sorted.map((activity) => (
-            <div key={activity.id} className="bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3">
+            <div
+              key={activity.id}
+              className="bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3"
+            >
               <div className="flex items-start justify-between gap-2">
                 <div>
                   {activity.roundType && (
@@ -170,20 +215,34 @@ export function InterviewsSection({ activities, jobId, onActivitiesChanged }: Pr
                   {activity.scheduledAt && (
                     <p className="text-xs text-zinc-400 mt-0.5">
                       {new Date(activity.scheduledAt).toLocaleString("en-US", {
-                        month: "short", day: "numeric", year: "numeric",
-                        hour: "numeric", minute: "2-digit",
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
                       })}
                     </p>
                   )}
                   {activity.description && (
-                    <p className="text-xs text-zinc-400 mt-1 whitespace-pre-wrap">{activity.description}</p>
+                    <p className="text-xs text-zinc-400 mt-1 whitespace-pre-wrap">
+                      {activity.description}
+                    </p>
                   )}
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <button type="button" onClick={() => startEdit(activity)}
-                    className="text-xs text-zinc-400 hover:text-zinc-50 px-2 py-1 rounded hover:bg-zinc-700 transition-colors">Edit</button>
-                  <button type="button" onClick={() => handleDelete(activity.id)} disabled={deleting === activity.id}
-                    className="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded hover:bg-zinc-700 transition-colors disabled:opacity-50">
+                  <button
+                    type="button"
+                    onClick={() => startEdit(activity)}
+                    className="text-xs text-zinc-400 hover:text-zinc-50 px-2 py-1 rounded hover:bg-zinc-700 transition-colors"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(activity.id)}
+                    disabled={deleting === activity.id}
+                    className="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded hover:bg-zinc-700 transition-colors disabled:opacity-50"
+                  >
                     {deleting === activity.id ? "..." : "Delete"}
                   </button>
                 </div>

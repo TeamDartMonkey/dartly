@@ -2,30 +2,26 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { showToast } from "@/components/ui/toast";
+import type { JobActivity } from "@/types/activity";
+import type { Job } from "@/types/job";
+import { FollowUpsSection } from "./followups-section";
+import { InterviewsSection } from "./interviews-section";
 import { OverviewSection } from "./overview-section";
 import { TimelineSection } from "./timeline-section";
-import { InterviewsSection } from "./interviews-section";
-import { FollowUpsSection } from "./followups-section";
-import { showToast } from "@/components/ui/toast";
-import type { Job } from "@/types/job";
-import type { JobActivity } from "@/types/activity";
 
 type Tab = "overview" | "timeline" | "interviews" | "followups";
 
 const STAGE_STYLES: Record<string, string> = {
-  Interested: "bg-zinc-800 text-zinc-300",
-  Applied:    "bg-blue-950 text-blue-400",
-  Interview:  "bg-amber-950 text-amber-400",
-  Offer:      "bg-green-950 text-green-400",
-  Rejected:   "bg-red-950 text-red-400",
-  Archived:   "bg-zinc-900 text-zinc-500",
+  Interested: "bg-zinc-800 text-zinc-400",
+  Applied: "bg-blue-950 text-blue-400",
+  Interview: "bg-yellow-950 text-yellow-400",
+  Offer: "bg-green-950 text-green-400",
+  Rejected: "bg-red-950 text-red-400",
+  Archived: "bg-zinc-900 text-zinc-500",
 };
 
-export default function JobDetailPage({
-  params,
-}: {
-  params: Promise<{ jobId: string }>;
-}) {
+export default function JobDetailPage({ params }: { params: Promise<{ jobId: string }> }) {
   const router = useRouter();
   const [jobId, setJobId] = useState<string | null>(null);
   const [job, setJob] = useState<Job | null>(null);
@@ -41,8 +37,14 @@ export default function JobDetailPage({
     if (!jobId) return;
     try {
       const res = await fetch(`/api/jobs/${jobId}`);
-      if (res.status === 401) { router.push("/login"); return; }
-      if (res.status === 404) { router.push("/dashboard"); return; }
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
+      if (res.status === 404) {
+        router.push("/dashboard");
+        return;
+      }
       if (!res.ok) throw new Error();
       setJob(await res.json());
     } catch {
@@ -69,7 +71,7 @@ export default function JobDetailPage({
 
   if (loading) {
     return (
-      <div className="animate-pulse space-y-4">
+      <div className="animate-pulse space-y-4" role="status" aria-label="Loading job details">
         <div className="h-4 w-24 bg-zinc-800 rounded" />
         <div className="h-8 w-64 bg-zinc-800 rounded" />
         <div className="h-4 w-40 bg-zinc-800 rounded" />
@@ -88,11 +90,22 @@ export default function JobDetailPage({
 
   return (
     <div>
-      <button type="button" onClick={() => router.push("/dashboard")}
-        className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-50 mb-6 transition-colors">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-          strokeLinejoin="round" aria-hidden="true">
+      <button
+        type="button"
+        onClick={() => router.push("/dashboard")}
+        className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-50 mb-6 transition-colors"
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
           <polyline points="15 18 9 12 15 6" />
         </svg>
         Back to dashboard
@@ -103,33 +116,81 @@ export default function JobDetailPage({
           <div>
             <h1 className="text-2xl font-semibold text-zinc-50">{job.title}</h1>
             <p className="mt-1 text-sm text-zinc-400">
-              {job.company}{job.location ? ` · ${job.location}` : ""}
+              {job.company}
+              {job.location ? ` · ${job.location}` : ""}
             </p>
           </div>
-          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STAGE_STYLES[job.stage] ?? "bg-zinc-800 text-zinc-300"}`}>
+          <span
+            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STAGE_STYLES[job.stage] ?? "bg-zinc-800 text-zinc-300"}`}
+          >
             {job.stage}
           </span>
         </div>
       </div>
 
-      <div className="flex gap-1 border-b border-zinc-800 mb-6">
+      <div
+        role="tablist"
+        aria-label="Job sections"
+        className="flex gap-1 border-b border-zinc-800 mb-6"
+      >
         {TABS.map((tab) => (
-          <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)}
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === tab.id}
+            aria-controls={`panel-${tab.id}`}
+            id={`tab-${tab.id}`}
+            onClick={() => setActiveTab(tab.id)}
             className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
               activeTab === tab.id
                 ? "border-indigo-500 text-indigo-400"
                 : "border-transparent text-zinc-400 hover:text-zinc-50"
-            }`}>
+            }`}
+          >
             {tab.label}
           </button>
         ))}
       </div>
 
       {activeTab === "overview" && (
-        <OverviewSection job={job} onJobUpdated={(updated) => setJob(updated)} />
+        <div role="tabpanel" id="panel-overview" aria-labelledby="tab-overview">
+          <OverviewSection job={job} onJobUpdated={(updated) => setJob(updated)} />
+        </div>
       )}
       {activeTab === "timeline" && (
-        <TimelineSection activities={activities} jobId={job.id} onActivitiesChanged={fetchActivities} />
+        <div role="tabpanel" id="panel-timeline" aria-labelledby="tab-timeline">
+          <TimelineSection
+            activities={activities}
+            jobId={job.id}
+            onActivitiesChanged={fetchActivities}
+          />
+        </div>
+      )}
+      {activeTab === "interviews" && (
+        <div role="tabpanel" id="panel-interviews" aria-labelledby="tab-interviews">
+          <InterviewsSection
+            activities={activities.filter((a) => a.type === "INTERVIEW")}
+            jobId={job.id}
+            onActivitiesChanged={fetchActivities}
+          />
+        </div>
+      )}
+      {activeTab === "followups" && (
+        <div role="tabpanel" id="panel-followups" aria-labelledby="tab-followups">
+          <FollowUpsSection
+            activities={activities.filter((a) => a.type === "FOLLOWUP")}
+            jobId={job.id}
+            onActivitiesChanged={fetchActivities}
+          />
+        </div>
+      )}
+      {activeTab === "timeline" && (
+        <TimelineSection
+          activities={activities}
+          jobId={job.id}
+          onActivitiesChanged={fetchActivities}
+        />
       )}
       {activeTab === "interviews" && (
         <InterviewsSection

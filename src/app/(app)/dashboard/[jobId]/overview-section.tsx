@@ -1,15 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { showToast } from "@/components/ui/toast";
+import { STAGES } from "@/constants/job-stages";
 import type { Job, JobStage } from "@/types/job";
 
 interface Props {
   job: Job;
   onJobUpdated: (job: Job) => void;
 }
-
-const STAGES: JobStage[] = ["Interested", "Applied", "Interview", "Offer", "Rejected", "Archived"];
 
 export function OverviewSection({ job, onJobUpdated }: Props) {
   const [editing, setEditing] = useState(false);
@@ -27,9 +29,7 @@ export function OverviewSection({ job, onJobUpdated }: Props) {
     stage: job.stage,
   });
 
-  function handleChange(
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) {
+  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   }
 
@@ -53,8 +53,14 @@ export function OverviewSection({ job, onJobUpdated }: Props) {
   }
 
   async function handleSave() {
-    if (!form.title.trim()) { showToast("Job title is required", "error"); return; }
-    if (!form.company.trim()) { showToast("Company is required", "error"); return; }
+    if (!form.title.trim()) {
+      showToast("Job title is required", "error");
+      return;
+    }
+    if (!form.company.trim()) {
+      showToast("Company is required", "error");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -73,7 +79,10 @@ export function OverviewSection({ job, onJobUpdated }: Props) {
           stage: form.stage,
         }),
       });
-      if (!res.ok) { showToast("Failed to save changes", "error"); return; }
+      if (!res.ok) {
+        showToast("Failed to save changes", "error");
+        return;
+      }
       const updated: Job = await res.json();
       onJobUpdated(updated);
       setEditing(false);
@@ -90,18 +99,29 @@ export function OverviewSection({ job, onJobUpdated }: Props) {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-base font-medium text-zinc-50">Overview</h2>
         {!editing ? (
-          <button type="button" onClick={() => setEditing(true)}
-            className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors">
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
+          >
             Edit
           </button>
         ) : (
           <div className="flex items-center gap-2">
-            <button type="button" onClick={handleCancel} disabled={saving}
-              className="bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-zinc-300 px-3 py-1.5 rounded-md text-sm disabled:opacity-50 transition-colors">
+            <button
+              type="button"
+              onClick={handleCancel}
+              disabled={saving}
+              className="bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-zinc-300 px-3 py-1.5 rounded-md text-sm disabled:opacity-50 transition-colors"
+            >
               Cancel
             </button>
-            <button type="button" onClick={handleSave} disabled={saving}
-              className="bg-indigo-500 hover:bg-indigo-600 text-zinc-50 px-3 py-1.5 rounded-md text-sm font-medium disabled:opacity-50 transition-colors">
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              className="bg-indigo-500 hover:bg-indigo-600 text-zinc-50 px-3 py-1.5 rounded-md text-sm font-medium disabled:opacity-50 transition-colors"
+            >
               {saving ? "Saving..." : "Save"}
             </button>
           </div>
@@ -109,91 +129,192 @@ export function OverviewSection({ job, onJobUpdated }: Props) {
       </div>
 
       <div className="space-y-5">
-        <div className="grid grid-cols-3 gap-4">
-          <Field label="Job title *" id="title" name="title" value={form.title}
-            editing={editing} onChange={handleChange} />
-          <Field label="Company *" id="company" name="company" value={form.company}
-            editing={editing} onChange={handleChange} />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Field
+            label="Job title *"
+            id="title"
+            name="title"
+            value={form.title}
+            editing={editing}
+            onChange={handleChange}
+          />
+          <Field
+            label="Company *"
+            id="company"
+            name="company"
+            value={form.company}
+            editing={editing}
+            onChange={handleChange}
+          />
           <div>
-            <label htmlFor="stage" className="block text-xs font-medium text-zinc-400 mb-1">Stage</label>
+            <label htmlFor="stage" className="block text-xs font-medium text-zinc-400 mb-1">
+              Stage
+            </label>
             {editing ? (
-              <select id="stage" value={form.stage} onChange={(e) => handleStageChange(e.target.value as JobStage)}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                {STAGES.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
+              <Select
+                id="stage"
+                value={form.stage}
+                onChange={(val) => handleStageChange(val as JobStage)}
+                options={STAGES.map((s) => ({ value: s, label: s }))}
+              />
             ) : (
               <p className="text-sm text-zinc-300 py-2 min-h-[36px]">{form.stage}</p>
             )}
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Location" id="location" name="location" value={form.location}
-            editing={editing} onChange={handleChange} placeholder="City, State or Remote" />
-          <Field label="Application date" id="applicationDate" name="applicationDate"
-            value={form.applicationDate} editing={editing} onChange={handleChange} type="date" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field
+            label="Location"
+            id="location"
+            name="location"
+            value={form.location}
+            editing={editing}
+            onChange={handleChange}
+            placeholder="City, State or Remote"
+          />
+          <Field
+            label="Application date"
+            id="applicationDate"
+            name="applicationDate"
+            value={form.applicationDate}
+            editing={editing}
+            onChange={handleChange}
+            type="date"
+          />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Deadline" id="deadline" name="deadline" value={form.deadline}
-            editing={editing} onChange={handleChange} type="date" />
-          <Field label="Compensation notes" id="compensationNotes" name="compensationNotes"
-            value={form.compensationNotes} editing={editing} onChange={handleChange}
-            placeholder="e.g. $120k + equity" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field
+            label="Deadline"
+            id="deadline"
+            name="deadline"
+            value={form.deadline}
+            editing={editing}
+            onChange={handleChange}
+            type="date"
+          />
+          <Field
+            label="Compensation notes"
+            id="compensationNotes"
+            name="compensationNotes"
+            value={form.compensationNotes}
+            editing={editing}
+            onChange={handleChange}
+            placeholder="e.g. $120k + equity"
+          />
         </div>
 
-        <TextareaField label="Job description" id="description" name="description"
-          value={form.description} editing={editing} onChange={handleChange}
-          placeholder="Paste the job description here..." rows={6} />
+        <TextareaField
+          label="Job description"
+          id="description"
+          name="description"
+          value={form.description}
+          editing={editing}
+          onChange={handleChange}
+          placeholder="Paste the job description here..."
+          rows={6}
+        />
 
-        <TextareaField label="Recruiter / contact notes" id="recruiterNotes" name="recruiterNotes"
-          value={form.recruiterNotes} editing={editing} onChange={handleChange}
-          placeholder="Recruiter name, email, phone, LinkedIn..." rows={3} />
+        <TextareaField
+          label="Recruiter / contact notes"
+          id="recruiterNotes"
+          name="recruiterNotes"
+          value={form.recruiterNotes}
+          editing={editing}
+          onChange={handleChange}
+          placeholder="Recruiter name, email, phone, LinkedIn..."
+          rows={3}
+        />
       </div>
     </div>
   );
 }
 
-function Field({ label, id, name, value, editing, onChange, type = "text", placeholder = "" }: {
-  label: string; id: string; name: string; value: string;
-  editing: boolean; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  type?: string; placeholder?: string;
+function Field({
+  label,
+  id,
+  name,
+  value,
+  editing,
+  onChange,
+  type = "text",
+  placeholder = "",
+}: {
+  label: string;
+  id: string;
+  name: string;
+  value: string;
+  editing: boolean;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  type?: string;
+  placeholder?: string;
 }) {
-  return (
-    <div>
-      <label htmlFor={id} className="block text-xs font-medium text-zinc-400 mb-1">{label}</label>
-      {editing ? (
-        <input id={id} name={name} type={type} value={value} onChange={onChange}
-          placeholder={placeholder}
-          className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
-      ) : (
+  if (!editing) {
+    return (
+      <div>
+        <label htmlFor={id} className="block text-xs font-medium text-zinc-400 mb-1">
+          {label}
+        </label>
         <p className="text-sm text-zinc-300 py-2 min-h-[36px]">
           {value || <span className="text-zinc-600 italic">Not set</span>}
         </p>
-      )}
-    </div>
+      </div>
+    );
+  }
+  return (
+    <Input
+      id={id}
+      label={label}
+      name={name}
+      type={type}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+    />
   );
 }
 
-function TextareaField({ label, id, name, value, editing, onChange, placeholder = "", rows = 4 }: {
-  label: string; id: string; name: string; value: string;
-  editing: boolean; onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  placeholder?: string; rows?: number;
+function TextareaField({
+  label,
+  id,
+  name,
+  value,
+  editing,
+  onChange,
+  placeholder = "",
+  rows = 4,
+}: {
+  label: string;
+  id: string;
+  name: string;
+  value: string;
+  editing: boolean;
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  placeholder?: string;
+  rows?: number;
 }) {
-  return (
-    <div>
-      <label htmlFor={id} className="block text-xs font-medium text-zinc-400 mb-1">{label}</label>
-      {editing ? (
-        <textarea id={id} name={name} value={value} onChange={onChange}
-          placeholder={placeholder} rows={rows}
-          className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-y" />
-      ) : (
+  if (!editing) {
+    return (
+      <div>
+        <label htmlFor={id} className="block text-xs font-medium text-zinc-400 mb-1">
+          {label}
+        </label>
         <p className="text-sm text-zinc-300 whitespace-pre-wrap min-h-[36px] py-1">
           {value || <span className="text-zinc-600 italic">Not set</span>}
         </p>
-      )}
-    </div>
+      </div>
+    );
+  }
+  return (
+    <Textarea
+      id={id}
+      label={label}
+      name={name}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      rows={rows}
+    />
   );
 }
