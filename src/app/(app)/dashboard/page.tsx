@@ -4,11 +4,12 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import AddJobModal from "@/components/dashboard/add-job-modal";
 import FilterBar from "@/components/dashboard/filter-bar";
-import JobCardList from "@/components/dashboard/job-card-list";
+import JobList from "@/components/dashboard/job-list";
 import { MetricsPanel } from "@/components/dashboard/metrics-panel";
 import { ConfirmDeleteModal } from "@/components/ui/confirm-delete-modal";
 import { DashboardSkeleton } from "@/components/ui/skeletons/dashboard-skeleton";
 import { showToast } from "@/components/ui/toast";
+import { useViewMode } from "@/hooks/use-view-mode";
 import type { Job, JobStage } from "@/types/job";
 
 export default function DashboardPage() {
@@ -20,6 +21,7 @@ export default function DashboardPage() {
   const [filtered, setFiltered] = useState<Job[]>([]);
   const [pendingDeleteJob, setPendingDeleteJob] = useState<Job | null>(null);
   const onFilteredChange = useCallback((f: Job[]) => setFiltered(f), []);
+  const [viewMode, setViewMode] = useViewMode();
 
   useEffect(() => {
     fetch("/api/jobs")
@@ -194,14 +196,20 @@ export default function DashboardPage() {
       <MetricsPanel />
 
       {/* Filter bar */}
-      <FilterBar jobs={jobs} onFilteredChange={onFilteredChange} />
+      <FilterBar
+        jobs={jobs}
+        onFilteredChange={onFilteredChange}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+      />
 
       {/* Job board */}
       {loading ? (
         <DashboardSkeleton />
       ) : (
-        <JobCardList
+        <JobList
           jobs={filtered}
+          viewMode={viewMode}
           onEdit={handleEditClick}
           onDelete={(id) => {
             const job = jobs.find((j) => j.id === id);
