@@ -25,6 +25,7 @@ export function Input({ id, label, error, required, className = "", ...props }: 
         ].join(" ")}
         aria-invalid={error ? "true" : undefined}
         aria-describedby={error ? `${id}-error` : undefined}
+        required={required}
         {...props}
       />
       {error && (
