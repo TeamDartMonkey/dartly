@@ -217,6 +217,13 @@ export function ExperienceSection({ experiences, onUpdate }: ExperienceSectionPr
                 );
               })}
             </ul>
+            <button
+              type="button"
+              onClick={handleAdd}
+              className="w-full border border-dashed border-zinc-700 rounded-lg py-3 text-sm text-indigo-400 hover:text-indigo-300 hover:border-zinc-600 transition-colors"
+            >
+              + Add experience
+            </button>
           </div>
         )}
       </div>
