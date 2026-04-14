@@ -69,19 +69,17 @@ export default function JobListItem({ job, onEdit, onDelete, onStageChange }: Jo
           />
         </div>
 
-        {job.deadline && (
-          <span
-            className={`shrink-0 text-xs ${isOverdue(job.deadline) ? "text-red-400" : "text-zinc-500"}`}
-          >
-            {job.deadline}
-          </span>
-        )}
+        <span
+          className={`shrink-0 w-20 text-xs text-right ${job.deadline ? (isOverdue(job.deadline) ? "text-red-400" : "text-zinc-500") : "invisible"}`}
+        >
+          {job.deadline}
+        </span>
 
-        {job.priority && (
-          <span className="shrink-0 bg-yellow-950 text-yellow-400 rounded px-1.5 py-0.5 text-xs font-medium">
+        <span className={`shrink-0 w-16 text-center ${job.priority ? "" : "invisible"}`}>
+          <span className="bg-yellow-950 text-yellow-400 rounded px-1.5 py-0.5 text-xs font-medium">
             Priority
           </span>
-        )}
+        </span>
 
         <div className="shrink-0 flex gap-1.5">
           {onEdit && (
