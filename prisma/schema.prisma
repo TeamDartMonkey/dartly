@@ -169,6 +169,14 @@ model JobDocumentLink {
   @@unique([jobId, documentVersionId])
 }
 
+model UserSettings {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  preferences Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 // ---------------------------------------------------------------------------
 // Enums
 // ---------------------------------------------------------------------------
