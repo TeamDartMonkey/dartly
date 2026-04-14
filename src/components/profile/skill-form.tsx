@@ -14,8 +14,17 @@ type FormErrors = {
   name?: string;
 };
 
+const PROFICIENCY_OPTIONS = [
+  "Beginner",
+  "Intermediate",
+  "Advanced",
+  "Expert",
+] as const;
+
 export function SkillForm({ skill, onSave, onCancel }: SkillFormProps) {
   const [name, setName] = useState(skill?.name ?? "");
+  const [category, setCategory] = useState(skill?.category ?? "");
+  const [proficiency, setProficiency] = useState(skill?.proficiency ?? "");
   const [errors, setErrors] = useState<FormErrors>({});
 
   function validate(): FormErrors {
@@ -32,6 +41,8 @@ export function SkillForm({ skill, onSave, onCancel }: SkillFormProps) {
     onSave({
       id: skill?.id ?? "",
       name: name.trim(),
+      category: category.trim(),
+      proficiency: proficiency.trim(),
     });
   }
 
@@ -48,11 +59,42 @@ export function SkillForm({ skill, onSave, onCancel }: SkillFormProps) {
         error={errors.name}
         required
       />
+
+      <Input
+        id="skill-category"
+        label="Category"
+        placeholder="e.g. Frontend, Backend, Design"
+        value={category}
+        onChange={(e) => setCategory(e.target.value)}
+      />
+
+      <div className="space-y-1">
+        <label
+          htmlFor="skill-proficiency"
+          className="text-sm font-medium text-zinc-200"
+        >
+          Proficiency
+        </label>
+        <select
+          id="skill-proficiency"
+          value={proficiency}
+          onChange={(e) => setProficiency(e.target.value)}
+          className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-50 outline-none transition-colors focus:border-indigo-500"
+        >
+          <option value="">Select proficiency (optional)</option>
+          {PROFICIENCY_OPTIONS.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div className="flex justify-end gap-3 pt-2">
         <button
           type="button"
           onClick={onCancel}
-          className="bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-zinc-50 px-4 py-2 rounded-md text-sm font-medium"
+          className="rounded-md border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm font-medium text-zinc-50 hover:bg-zinc-700"
         >
           Cancel
         </button>
@@ -60,7 +102,7 @@ export function SkillForm({ skill, onSave, onCancel }: SkillFormProps) {
           type="button"
           onClick={handleSave}
           disabled={!isValid}
-          className="bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-50 px-4 py-2 rounded-md text-sm font-medium"
+          className="rounded-md bg-indigo-500 px-4 py-2 text-sm font-medium text-zinc-50 hover:bg-indigo-600 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Save
         </button>

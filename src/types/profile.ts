@@ -7,6 +7,7 @@ export type Experience = {
   endDate?: string;
   isCurrent: boolean;
   description: string;
+  order?: number;
 };
 
 export type Education = {
@@ -22,6 +23,9 @@ export type Education = {
 export type Skill = {
   id?: string;
   name: string;
+  category?: string;
+  proficiency?: string;
+  order?: number;
 };
 
 export type ProfileData = {
