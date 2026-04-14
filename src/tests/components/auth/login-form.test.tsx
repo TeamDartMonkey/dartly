@@ -13,8 +13,8 @@ describe("LoginForm", () => {
   // Rendering
   it("renders all fields", () => {
     render(<LoginForm />);
-    expect(screen.getByLabelText("Email")).toBeInTheDocument();
-    expect(screen.getByLabelText("Password")).toBeInTheDocument();
+    expect(screen.getByLabelText(/Email/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Password/)).toBeInTheDocument();
   });
 
   it("renders the submit button", () => {
@@ -26,13 +26,13 @@ describe("LoginForm", () => {
   //
   it("uses type=email for email input", () => {
     render(<LoginForm />);
-    expect(screen.getByLabelText("Email")).toHaveAttribute("type", "email");
+    expect(screen.getByLabelText(/Email/)).toHaveAttribute("type", "email");
   });
 
   it("marks email and password as required", () => {
     render(<LoginForm />);
-    expect(screen.getByLabelText("Email")).toHaveAttribute("required");
-    expect(screen.getByLabelText("Password")).toHaveAttribute("required");
+    expect(screen.getByLabelText(/Email/)).toHaveAttribute("required");
+    expect(screen.getByLabelText(/Password/)).toHaveAttribute("required");
   });
 
   //invalid credentials
@@ -43,8 +43,8 @@ describe("LoginForm", () => {
     });
 
     render(<LoginForm />);
-    await userEvent.type(screen.getByLabelText("Email"), "test@test.com");
-    await userEvent.type(screen.getByLabelText("Password"), "wrongpassword");
+    await userEvent.type(screen.getByLabelText(/Email/), "test@test.com");
+    await userEvent.type(screen.getByLabelText(/Password/), "wrongpassword");
     await userEvent.click(screen.getByRole("button", { name: /login/i }));
     expect(screen.getByText("Invalid email or password.")).toBeInTheDocument();
   });
@@ -58,8 +58,8 @@ describe("LoginForm", () => {
     });
 
     render(<LoginForm />);
-    await userEvent.type(screen.getByLabelText("Email"), "test@test.com");
-    await userEvent.type(screen.getByLabelText("Password"), "Password1!");
+    await userEvent.type(screen.getByLabelText(/Email/), "test@test.com");
+    await userEvent.type(screen.getByLabelText(/Password/), "Password1!");
     await userEvent.click(screen.getByRole("button", { name: /login/i }));
     expect(mockPush).toHaveBeenCalledWith("/dashboard");
   });
