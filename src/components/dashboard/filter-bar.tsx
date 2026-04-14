@@ -123,6 +123,7 @@ export default function FilterBar({
             placeholder="Search jobs..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            aria-label="Search jobs"
             className="w-full bg-zinc-800 border border-zinc-700 rounded-md pl-9 pr-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           />
         </div>
