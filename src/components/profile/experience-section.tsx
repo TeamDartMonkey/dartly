@@ -122,7 +122,7 @@ export function ExperienceSection({ experiences, onUpdate }: ExperienceSectionPr
             </button>
           </div>
         ) : (
-          <div>
+          <div className="space-y-3">
             <ul className="space-y-3">
               {experiences.map((exp, index) => {
                 const isDragging = draggedIndex === index;

@@ -178,18 +178,9 @@ export default function DashboardPage() {
   return (
     <>
       {/* Header */}
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-zinc-50">Dashboard</h1>
-          <p className="mt-1 text-sm text-zinc-400">Track and manage your job applications.</p>
-        </div>
-        <button
-          type="button"
-          onClick={handleAddClick}
-          className="bg-indigo-500 hover:bg-indigo-600 text-zinc-50 px-4 py-2 rounded-md text-sm font-medium"
-        >
-          Add Job
-        </button>
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold text-zinc-50">Dashboard</h1>
+        <p className="mt-1 text-sm text-zinc-400">Track and manage your job applications.</p>
       </div>
 
       {/* Metrics */}
@@ -210,6 +201,7 @@ export default function DashboardPage() {
         <JobList
           jobs={filtered}
           viewMode={viewMode}
+          onAdd={handleAddClick}
           onEdit={handleEditClick}
           onDelete={(id) => {
             const job = jobs.find((j) => j.id === id);
