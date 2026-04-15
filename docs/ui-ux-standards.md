@@ -147,7 +147,7 @@ The active/current route link should be visually distinguished:
 ### Rules
 
 - Navigation must be identical on every page — do not hide or change nav items per page.
-- Navigation is implemented in the root `layout.tsx` so it renders automatically everywhere.
+- Navigation is implemented in `src/app/(app)/layout.tsx` (the shared protected layout) via the `Sidebar` component.
 - Do not add page-specific items to the global nav. Secondary navigation (tabs, sub-nav) lives inside the page.
 
 ---

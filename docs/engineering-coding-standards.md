@@ -15,7 +15,7 @@ These choices are locked. Do not suggest alternatives or migrations.
 | Language | TypeScript | Strict mode | `@/*` path alias maps to `src/` |
 | Package Manager | Bun | Latest | All scripts run via `bun` or `bun run` |
 | Database | PostgreSQL | Supabase-managed | No self-hosted Postgres |
-| ORM | Prisma | 7 | Type-safe client, no raw SQL in app code |
+| ORM | Prisma | 6 | Type-safe client, no raw SQL in app code |
 | Auth | Supabase Auth | Email/password | OAuth planned, not yet implemented |
 | CSS | Tailwind CSS | v4 | `@theme` API, PostCSS plugin (`@tailwindcss/postcss`) |
 | Linting/Format | Biome | Latest | All-in-one linter + formatter; replaces ESLint/Prettier |
@@ -34,45 +34,98 @@ These choices are locked. Do not suggest alternatives or migrations.
 ```
 src/
 ├── app/                  # Next.js App Router (pages + API routes)
+│   ├── (auth)/           # Public route group
+│   │   ├── login/        # Login page
+│   │   ├── register/     # Registration page
+│   │   ├── forgot-password/
+│   │   └── reset-password/
+│   ├── (app)/            # Protected route group
+│   │   ├── layout.tsx    # Shared auth check + sidebar layout
+│   │   ├── dashboard/
+│   │   ├── documents/
+│   │   ├── profile/
+│   │   └── settings/
 │   ├── api/              # API route handlers
+│   │   ├── ai/           # AI generation endpoints
 │   │   ├── auth/         # Auth endpoints (register, login)
-│   │   └── health/       # Health check endpoint
-│   ├── dashboard/        # Protected pages
-│   ├── login/            # Public auth pages
-│   ├── register/
+│   │   ├── documents/    # Document CRUD endpoints
+│   │   ├── health/       # Health check endpoint
+│   │   ├── jobs/         # Job CRUD endpoints
+│   │   ├── metrics/      # Metrics endpoints
+│   │   ├── profile/      # Profile endpoints
+│   │   └── settings/     # User settings endpoints
 │   ├── layout.tsx        # Root layout (server component)
 │   ├── page.tsx          # Home page
 │   ├── error.tsx         # Error boundary (client component)
+│   ├── loading.tsx       # Root loading state
 │   └── not-found.tsx     # 404 page
 ├── components/           # React components (organized by feature)
-│   ├── auth/             # Auth-related components (login-form, register-form)
-│   ├── dashboard/        # Dashboard components (sidebar)
-│   └── ui/               # Shared UI primitives
+│   ├── auth/             # Auth forms (login, register, forgot/reset password)
+│   ├── dashboard/        # Dashboard components (job-card, filter-bar, metrics-panel, etc.)
+│   ├── documents/        # Document components (generate buttons, rewrite panel)
+│   ├── profile/          # Profile sections (identity, experience, education, skills)
+│   ├── settings/         # Settings sections (account, preferences, notifications)
+│   └── ui/               # Shared UI primitives (button, input, modal, sidebar, toast, etc.)
 ├── lib/                  # Server-only infrastructure
 │   ├── api-error.ts      # ApiError class + error response helpers
 │   ├── api-wrapper.ts    # withHttpLogging higher-order function
 │   ├── env.ts            # Zod-validated environment variables
 │   ├── logger.ts         # Winston logger with redaction
-│   ├── rate-limit.ts     # In-memory rate limiter
-│   ├── supabase-server.ts # Server-side Supabase client
+│   ├── rate-limit.ts     # Rate limiter (rate-limiter-flexible)
+│   ├── requireAuth.ts    # Auth guard — extracts user from session, throws 401 if missing
+│   ├── supabase-server.ts # Server-side Supabase client (SSR)
+│   ├── validate-body.ts  # Zod-based request body validation helper
 │   └── index.ts          # Barrel export with "server-only" import
 ├── services/             # Business logic and external API clients
+│   ├── activities.ts     # Job activity service
+│   ├── ai.ts             # AI generation service (placeholder)
 │   ├── auth.ts           # Auth service (signUp, signIn, signOut)
+│   ├── documents.ts      # Document CRUD service
+│   ├── jobs.ts           # Job CRUD service
+│   ├── metrics.ts        # Metrics/aggregation service
 │   ├── prisma.ts         # Prisma client singleton
-│   └── supabase.ts       # Browser-side Supabase client
+│   ├── profile.ts        # Profile CRUD service
+│   ├── settings.ts       # User settings service
+│   ├── supabase.ts       # Browser-side Supabase client
+│   └── index.ts          # Barrel export (prisma)
 ├── types/                # Shared TypeScript type definitions
+│   ├── activity.ts
+│   ├── document.ts
+│   ├── job.ts
+│   ├── profile.ts
+│   ├── settings.ts
+│   ├── schemas/          # Zod validation schemas
+│   │   ├── activity.ts
+│   │   ├── auth.ts
+│   │   ├── document.ts
+│   │   ├── job.ts
+│   │   ├── profile.ts
+│   │   └── settings.ts
+│   └── index.ts          # Barrel export (form data interfaces)
 ├── utils/                # Client+server safe utilities
-│   └── cn.ts             # clsx + tailwind-merge utility
+│   ├── cn.ts             # clsx + tailwind-merge utility
+│   ├── search-jobs.ts    # Job search/filter utility
+│   ├── sort-jobs.ts      # Job sorting utility
+│   ├── deadline.ts       # Deadline formatting utility
+│   └── index.ts          # Barrel export (cn, searchJobs)
 ├── constants/            # App-wide constants
+│   ├── job-stages.ts     # Job stage definitions
+│   └── job-filters.ts    # Job filter constants
 ├── hooks/                # Custom React hooks
+│   └── use-view-mode.ts  # Card/list view toggle hook
+├── scripts/              # Database utility scripts
+│   ├── seed.ts           # Database seeding
+│   └── clean-seed.ts     # Clean and re-seed
 ├── tests/                # Test suites organized by module
+│   ├── __mocks__/        # Shared mock factories
 │   ├── api/              # API route tests
+│   ├── components/       # Component tests (organized by feature)
+│   ├── hooks/            # Hook tests
 │   ├── lib/              # Infrastructure tests
 │   ├── services/         # Service tests
 │   ├── utils/            # Utility tests
-│   ├── mocks/            # Shared mock factories
 │   └── setup.ts          # Test setup (Testing Library matchers)
-└── proxy.ts              # Middleware (Next.js 16 convention)
+└── proxy.ts              # Edge proxy for auth session checks
 ```
 
 ### 2.2 File Organization Rules
@@ -83,8 +136,8 @@ src/
 | `src/utils/` is universal | Safe for both client and server imports |
 | `src/services/` holds business logic | Services throw `ApiError`; route handlers catch and respond |
 | No empty files in `src/app/` or `src/lib/` | Every file must have content |
-| Placeholder `index.ts` files | `components/`, `hooks/`, `constants/`, `types/`, `services/` have empty `index.ts` for git tracking — do not add barrel exports until there is content |
-| Barrel exports with content | `lib/`, `utils/` have barrel exports re-exporting their modules |
+| Placeholder `index.ts` files | `components/`, `hooks/`, `constants/` have empty `index.ts` for git tracking — do not add barrel exports until there is content |
+| Barrel exports with content | `lib/`, `utils/`, `services/`, `types/` have barrel exports re-exporting their modules |
 
 ---
 
@@ -108,7 +161,7 @@ Biome handles both linting and formatting. No ESLint or Prettier.
 | Line width | 100 characters |
 | Quotes | Double quotes |
 | Semicolons | Always |
-| Trailing commas | All |
+| Trailing commas | ES5 (`es5`) |
 | Unused variables | Warning (not error) |
 | Unused imports | Warning (not error) |
 
@@ -126,8 +179,8 @@ import { registerUser } from "@/services/auth";
 import { logger } from "@/lib/logger";    // PREFERRED
 import { logger } from "@/lib";           // ACCEPTABLE (barrel re-exports)
 
-// Barrel exports exist in: lib/, utils/, services/, types/, constants/
-// Do NOT add barrel exports to: components/, hooks/ (until content exists)
+// Barrel exports exist in: lib/, utils/, services/, types/
+// Do NOT add barrel exports to: components/, hooks/, constants/
 ```
 
 ### 3.4 Naming Conventions
@@ -178,9 +231,12 @@ All files in `src/lib/` enforce the server-only boundary:
 ```typescript
 // src/lib/index.ts
 import "server-only";
-export { logger } from "./logger";
+export { ApiError, createErrorResponse, handleApiError } from "./api-error";
+export { withHttpLogging } from "./api-wrapper";
 export { env } from "./env";
-// ...
+export { childLogger, default as logger, logError, logHttp } from "./logger";
+export { checkRateLimit, getRateLimiter } from "./rate-limit";
+export { requireAuth } from "./requireAuth";
 ```
 
 If a client component accidentally imports from `@/lib`, the build will fail with a clear error. This is intentional — it prevents server secrets from leaking to the browser.
@@ -197,32 +253,32 @@ Every API route handler follows the same structure. Do not deviate from this pat
 import { NextRequest, NextResponse } from "next/server";
 import { withHttpLogging } from "@/lib/api-wrapper";
 import { handleApiError } from "@/lib/api-error";
+import { requireAuth } from "@/lib/requireAuth";
+import { validateBody } from "@/lib/validate-body";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
+import { someSchema } from "@/types/schemas/some";
 
 export async function POST(request: NextRequest) {
   return withHttpLogging(request, async () => {
-    // 1. Rate limiting (public endpoints only)
-    const limited = await checkRateLimit(request, {
-      id: "api/example",
-      limit: 10,
-      windowSecs: 60,
-    });
-    if (limited) return limited;
-
-    // 2. Parse and validate input
-    const body = await request.json();
-    if (!body.requiredField) {
-      return NextResponse.json(
-        { error: "Missing required field" },
-        { status: 400 },
-      );
-    }
-
-    // 3. Business logic (delegated to services)
     try {
-      const result = await someService(body);
-      logger.info("Operation succeeded", { metadata });
+      // 1. Auth check (every protected route must call requireAuth)
+      const user = await requireAuth();
+
+      // 2. Rate limiting (public endpoints only — auth endpoints)
+      const limited = await checkRateLimit(request, {
+        id: "api/example",
+        limit: 10,
+        windowSecs: 60,
+      });
+      if (limited) return limited;
+
+      // 3. Parse and validate input with Zod schema
+      const body = await validateBody(request, someSchema);
+
+      // 4. Business logic (delegated to services, scoped to user.id)
+      const result = await someService(user.id, body);
+      logger.info("Operation succeeded", { userId: user.id });
       return NextResponse.json(result, { status: 201 });
     } catch (error) {
       return handleApiError(error);
@@ -231,13 +287,20 @@ export async function POST(request: NextRequest) {
 }
 ```
 
+For public endpoints (no auth required), skip `requireAuth()` and add a comment explaining why:
+
+```typescript
+// No auth check — this is a public endpoint
+```
+
 ### 5.2 Route Requirements
 
 | Requirement | Detail |
 |-------------|--------|
+| Call `requireAuth()` | Every protected route — returns authenticated `user`, throws `ApiError(401)` if missing |
 | Wrap with `withHttpLogging` | Every handler, no exceptions — logs method, URL, status, duration |
 | Rate limit public endpoints | Registration, login, health — use `checkRateLimit` |
-| Validate input | Check required fields, return `400` for invalid requests |
+| Validate input with `validateBody` | Use `validateBody(request, schema)` with Zod schemas from `@/types/schemas/` |
 | Delegate to services | Routes handle HTTP; services handle business logic |
 | Use `handleApiError` | Catches `ApiError` and unknown errors consistently |
 | Consistent error format | Always return `{ error: string }` on failure |
@@ -375,22 +438,43 @@ Production file transports:
 
 ```
 src/tests/
-├── api/
-│   └── health.test.ts        # API route handler tests
-├── lib/
-│   ├── api-error.test.ts     # Error handling tests
-│   ├── env.test.ts           # Environment validation tests
-│   ├── logger.test.ts        # Logger tests
-│   └── rate-limit.test.ts    # Rate limiter tests
-├── services/
-│   └── prisma.test.ts        # Prisma singleton tests
-├── utils/
-│   └── cn.test.ts            # Utility function tests
-├── mocks/                    # Shared mock factories
-└── setup.ts                  # Test setup (imports jest-dom matchers)
+├── __mocks__/                 # Shared mock factories (e.g. server-only mock)
+├── api/                       # API route handler tests
+│   ├── ai-resume.test.ts
+│   ├── documents.test.ts
+│   ├── health.test.ts
+│   ├── jobs-id.test.ts
+│   ├── metrics.test.ts
+│   ├── profile.test.ts
+│   └── settings.test.ts
+├── components/                # Component tests (organized by feature)
+│   └── auth/
+│       ├── forgot-password-form.test.tsx
+│       ├── login-form.test.tsx
+│       ├── logout-button.test.tsx
+│       ├── register-form.test.tsx
+│       └── reset-password-form.test.tsx
+├── hooks/                     # Hook tests
+│   └── use-view-mode.test.ts
+├── lib/                       # Infrastructure tests
+│   └── requireAuth.test.ts
+├── services/                  # Service tests
+│   ├── ai.test.ts
+│   ├── documents.test.ts
+│   ├── metrics.test.ts
+│   ├── prisma.test.ts
+│   ├── profile.test.ts
+│   ├── settings.test.ts
+│   └── to-job-response.test.ts
+├── utils/                     # Utility function tests
+│   ├── cn.test.ts
+│   ├── deadline.test.ts
+│   ├── search-jobs.test.ts
+│   └── sort-jobs.test.ts
+└── setup.ts                   # Test setup (imports jest-dom matchers)
 ```
 
-Component tests live next to the component: `src/components/auth/login-form.test.tsx`.
+Component tests can also live next to the component (e.g., `src/components/auth/login-form.test.tsx`).
 
 ### 9.3 Testing Patterns
 
@@ -492,8 +576,8 @@ if (process.env.NODE_ENV !== "production") {
 | `userId` foreign key | Every user-owned entity references the auth user |
 | `onDelete: Cascade` | Deleting a parent removes all children |
 | Timestamps | `createdAt` and `updatedAt` on all models |
-| Migrations via CLI | `bun prisma migrate dev` to create and apply |
-| Regenerate client | `bun prisma generate` after any schema change |
+| Migrations via CLI | `bun run prisma:migrate` to create and apply |
+| Regenerate client | `bun run prisma:generate` after any schema change |
 
 ### 10.3 Database Rules
 
@@ -591,3 +675,4 @@ test(auth): add login form component tests
 | Date | Author | Change |
 |------|--------|--------|
 | 2026-04-01 | Ethan Yucetepe | Initial version |
+| 2026-04-14 | Justin Cordova | Updated to reflect current codebase: route groups, all services/lib/utils/types files, requireAuth/validateBody patterns, Prisma v6, accurate test file listing, barrel export rules |

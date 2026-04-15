@@ -20,16 +20,17 @@ User (Supabase Auth)
 │   ├── JobStageHistory[]  (via jobId → Job.userId)
 │   ├── JobActivity[]      (via jobId → Job.userId)
 │   └── JobDocumentLink[]  (via jobId → Job.userId)
-└── Document[]       (1:N, userId)
-    ├── DocumentVersion[]  (via documentId → Document.userId)
-    └── JobDocumentLink[]  (via documentId → Document.userId)
+├── Document[]       (1:N, userId)
+│   ├── DocumentVersion[]  (via documentId → Document.userId)
+│   └── JobDocumentLink[]  (via documentId → Document.userId)
+└── UserSettings     (1:1, userId)
 ```
 
 ### 1.2 Ownership Rules
 
 | Rule | Detail |
 |------|--------|
-| Direct ownership | `Profile`, `Job`, `Document` have a `userId` column referencing `User.id` |
+| Direct ownership | `Profile`, `Job`, `Document`, `UserSettings` have a `userId` column referencing `User.id` |
 | Indirect ownership | `Experience`, `Education`, `Skill` are owned through `Profile`. `JobStageHistory`, `JobActivity` are owned through `Job`. `DocumentVersion` is owned through `Document` |
 | Cascade deletes | All relations use `onDelete: Cascade` — deleting a user removes all their data |
 | No shared entities | There are no shared or team-owned records. Every record belongs to exactly one user |
@@ -55,40 +56,41 @@ RLS is the primary data isolation mechanism. Supabase RLS policies run at the da
 **RLS policy pattern for all user-owned tables:**
 
 ```sql
--- Enable RLS on the table
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+-- Enable RLS on the table (Prisma creates tables using model names — use quoted identifiers)
+ALTER TABLE "Profile" ENABLE ROW LEVEL SECURITY;
 
 -- Users can only see their own rows
+-- Note: auth.uid() returns UUID; cast to text because Prisma stores userId as String
 CREATE POLICY "Users can view own data"
-  ON profiles FOR SELECT
-  USING (user_id = auth.uid());
+  ON "Profile" FOR SELECT
+  USING ("userId" = auth.uid()::text);
 
 -- Users can only insert rows they own
 CREATE POLICY "Users can insert own data"
-  ON profiles FOR INSERT
-  WITH CHECK (user_id = auth.uid());
+  ON "Profile" FOR INSERT
+  WITH CHECK ("userId" = auth.uid()::text);
 
 -- Users can only update their own rows
 CREATE POLICY "Users can update own data"
-  ON profiles FOR UPDATE
-  USING (user_id = auth.uid());
+  ON "Profile" FOR UPDATE
+  USING ("userId" = auth.uid()::text);
 
 -- Users can only delete their own rows
 CREATE POLICY "Users can delete own data"
-  ON profiles FOR DELETE
-  USING (user_id = auth.uid());
+  ON "Profile" FOR DELETE
+  USING ("userId" = auth.uid()::text);
 ```
 
-**Apply this pattern to every user-owned table:** `profiles`, `jobs`, `documents`, `job_stage_history`, `job_activities`, `document_versions`, `job_document_links`.
+**Apply this pattern to every user-owned table:** `"Profile"`, `"Job"`, `"Document"`, `"UserSettings"`, `"JobStageHistory"`, `"JobActivity"`, `"DocumentVersion"`, `"JobDocumentLink"`.
 
-For indirectly owned tables (e.g. `experiences` owned through `profiles`), the RLS policy should join through the parent:
+For indirectly owned tables (e.g. `"Experience"` owned through `"Profile"`), the RLS policy should join through the parent:
 
 ```sql
 CREATE POLICY "Users can view own experiences"
-  ON experiences FOR SELECT
+  ON "Experience" FOR SELECT
   USING (
-    profile_id IN (
-      SELECT id FROM profiles WHERE user_id = auth.uid()
+    "profileId" IN (
+      SELECT id FROM "Profile" WHERE "userId" = auth.uid()::text
     )
   );
 ```
@@ -103,33 +105,33 @@ While RLS is the safety net, API routes must still verify authentication before 
 import { NextRequest, NextResponse } from "next/server";
 import { withHttpLogging } from "@/lib/api-wrapper";
 import { handleApiError } from "@/lib/api-error";
-import { supabase } from "@/services/supabase";
+import { requireAuth } from "@/lib/requireAuth";
 
 export async function GET(request: NextRequest) {
   return withHttpLogging(request, async () => {
-    // 1. Extract and verify session
-    const { data: { user }, error } = await supabase.auth.getUser();
+    try {
+      // 1. Auth check — throws ApiError(401) if not authenticated
+      const user = await requireAuth();
 
-    if (error || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      // 2. Query using the authenticated user's ID
+      //    RLS enforces scoping, but always pass userId for clarity
+      const data = await prisma.job.findMany({
+        where: { userId: user.id },
+      });
+
+      return NextResponse.json(data);
+    } catch (error) {
+      return handleApiError(error);
     }
-
-    // 2. Query using the authenticated user's ID
-    //    RLS enforces scoping, but always pass userId for clarity
-    const data = await prisma.job.findMany({
-      where: { userId: user.id },
-    });
-
-    return NextResponse.json(data);
   });
 }
 ```
 
 **Key points:**
-- Always verify the session before any database operation
-- Return `401 Unauthorized` for missing/invalid sessions
-- Return `403 Forbidden` when a user tries to access a resource they don't own
-- Never trust client-supplied user IDs — always use the session's `user.id`
+- `requireAuth()` extracts the user from the Supabase session and throws `ApiError(401)` if missing
+- Use `validateBody(request, schema)` from `@/lib/validate-body` for input validation with Zod schemas
+- Return `404 Not Found` when a user tries to access a resource they don't own
+- Never trust client-supplied user IDs — always use `user.id` from `requireAuth()`
 
 ---
 
@@ -139,22 +141,24 @@ export async function GET(request: NextRequest) {
 
 | Route Type | Examples | Auth Required | Behavior |
 |------------|----------|---------------|----------|
-| Public | `/`, `/register`, `/login` | No | Accessible to anyone |
-| Protected | `/dashboard`, `/profile`, `/documents`, `/settings` | Yes | Redirect to `/login` if unauthenticated |
+| Public | `/`, `/register`, `/login`, `/forgot-password`, `/reset-password` | No | Accessible to anyone |
+| Protected | `/dashboard`, `/documents`, `/profile`, `/settings` | Yes | Redirect to `/login` if unauthenticated (enforced by `(app)/layout.tsx`) |
 | API (public) | `POST /api/auth/register`, `GET /api/health` | No | Rate limited, no session check |
-| API (protected) | `GET /api/jobs`, `PUT /api/profile` | Yes | Return `401` if unauthenticated |
+| API (protected) | `GET /api/jobs`, `PUT /api/profile` | Yes | Return `401` if unauthenticated (enforced by `requireAuth()`) |
 
-### 3.2 Middleware Route Protection
+### 3.2 Route Protection
 
-The middleware (`src/proxy.ts`) handles route protection for frontend pages. It checks Supabase session and redirects unauthenticated users.
+Route protection is handled at two levels:
 
-**Protected route behavior:**
+1. **Page routes** — `src/app/(app)/layout.tsx` checks the Supabase session and redirects unauthenticated users to `/login`. Authenticated users on public routes (`/login`, `/register`, etc.) are redirected to `/dashboard` via `src/proxy.ts`.
+
+2. **API routes** — Each route handler calls `requireAuth()` directly. There is no middleware wrapping API routes.
+
+**Protected page route behavior:**
 1. User navigates to a protected page (e.g. `/dashboard`)
-2. Middleware checks for a valid Supabase session
+2. `(app)/layout.tsx` checks for a valid Supabase session via `@supabase/ssr`
 3. If no session: redirect to `/login`
-4. If valid session: allow the request through
-
-**API routes are excluded from middleware** (see the matcher pattern in `proxy.ts`). API routes handle their own auth checks directly in the route handler.
+4. If valid session: render the page with the shared sidebar layout
 
 ### 3.3 Security Headers
 
@@ -164,6 +168,7 @@ Security headers are defined in `next.config.ts` via `headers()`, not in middlew
 - **X-Frame-Options: DENY** — prevents clickjacking
 - **X-Content-Type-Options: nosniff** — prevents MIME sniffing
 - **Referrer-Policy: strict-origin-when-cross-origin** — limits referrer leakage
+- **Permissions-Policy** — disables camera, microphone, geolocation
 
 ---
 
@@ -179,7 +184,8 @@ const { userId, title } = await request.json();
 await prisma.job.create({ data: { userId, title, company } });
 
 // CORRECT — always use the session's authenticated user ID
-const { data: { user } } = await supabase.auth.getUser();
+const user = await requireAuth();
+const { title } = await validateBody(request, someSchema);
 await prisma.job.create({ data: { userId: user.id, title, company } });
 ```
 
@@ -190,6 +196,7 @@ await prisma.job.create({ data: { userId: user.id, title, company } });
 const jobs = await prisma.job.findMany();
 
 // CORRECT — scoped to the authenticated user
+const user = await requireAuth();
 const jobs = await prisma.job.findMany({
   where: { userId: user.id },
 });
@@ -202,6 +209,7 @@ const jobs = await prisma.job.findMany({
 const job = await prisma.job.findUnique({ where: { id: jobId } });
 
 // CORRECT — verify ownership in the query
+const user = await requireAuth();
 const job = await prisma.job.findFirst({
   where: { id: jobId, userId: user.id },
 });
@@ -219,8 +227,11 @@ if (!job) {
 const adminClient = createClient(url, SERVICE_ROLE_KEY);
 const { data } = await adminClient.from("jobs").select("*");
 
-// CORRECT — use the user's session-scoped client
-const { data } = await supabase.from("jobs").select("*");
+// CORRECT — use Prisma with user-scoped queries
+const user = await requireAuth();
+const jobs = await prisma.job.findMany({
+  where: { userId: user.id },
+});
 ```
 
 The Supabase service role key should only be used for:
@@ -267,9 +278,9 @@ Every API route must satisfy these checks before merge:
 
 ### 5.1 Authentication
 
-- [ ] Session verified before any database operation
-- [ ] Returns `401` for missing/invalid sessions
-- [ ] User ID sourced from session, never from request body or URL
+- [ ] `requireAuth()` called before any database operation
+- [ ] Returns `401` for missing/invalid sessions (handled by `requireAuth` throwing `ApiError`)
+- [ ] User ID sourced from `requireAuth()`, never from request body or URL
 
 ### 5.2 Authorization
 
@@ -279,7 +290,7 @@ Every API route must satisfy these checks before merge:
 
 ### 5.3 Input Validation
 
-- [ ] Request body validated with Zod schemas (`zod/v4`)
+- [ ] Request body validated with `validateBody(request, schema)` using Zod schemas from `@/types/schemas/`
 - [ ] IDs validated as proper format before database queries
 - [ ] No raw SQL — all queries through Prisma typed client
 
@@ -319,10 +330,6 @@ Every API route must satisfy these checks before merge:
 | `NEXT_PUBLIC_SUPABASE_URL` | Client OK | Public project URL |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY` | Client OK | Publishable key, safe for client use with RLS |
 
-### 6.3 Logger Redaction
-
-The Winston logger (`src/lib/logger.ts`) automatically redacts sensitive keys from log output: `password`, `token`, `authorization`, `secret`, `apikey`. This prevents accidental credential leaks in log files.
-
 ---
 
 ## 7. Revision History
@@ -330,3 +337,4 @@ The Winston logger (`src/lib/logger.ts`) automatically redacts sensitive keys fr
 | Date | Author | Change |
 |------|--------|--------|
 | 2026-03-30 | Ethan Yucetepe | Initial version |
+| 2026-04-14 | Justin Cordova | Updated to reflect current codebase: requireAuth pattern, Prisma RLS identifiers, UserSettings model, route protection via (app)/layout.tsx, Permissions-Policy header, corrected code examples |
