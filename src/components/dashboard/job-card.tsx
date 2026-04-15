@@ -1,14 +1,9 @@
-// S2-005: Added click-to-navigate to /dashboard/[jobId].
-// Changes from original:
-//   - imports useRouter
-//   - card container gets onClick + cursor-pointer + hover border
-//   - Edit and Delete buttons get e.stopPropagation() so they don't also trigger the card navigation
-
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Select } from "@/components/ui/select";
+import { BadgePicker } from "@/components/ui/badge-picker";
+import { ACTIVE_STAGES, STAGE_STYLES } from "@/constants/job-stages";
 import type { Job, JobStage } from "@/types/job";
-import { isOverdue } from "@/utils/deadline";
+import { getUrgency, URGENCY_STYLES } from "@/utils/deadline";
 
 type JobCardProps = {
   job: Job;
@@ -19,16 +14,10 @@ type JobCardProps = {
   onRestore?: (id: string) => Promise<void>;
 };
 
-const STAGES: JobStage[] = ["Interested", "Applied", "Interview", "Offer", "Rejected"];
-
-const STAGE_TEXT_STYLES: Record<JobStage, string> = {
-  Interested: "text-zinc-400",
-  Applied: "text-blue-400",
-  Interview: "text-yellow-400",
-  Offer: "text-green-400",
-  Rejected: "text-red-400",
-  Archived: "text-zinc-500",
-};
+const STAGE_OPTIONS = ACTIVE_STAGES.map((s) => {
+  const style = STAGE_STYLES[s];
+  return { value: s, label: s, badge: style.badge, dot: style.dot };
+});
 
 export default function JobCard({
   job,
@@ -42,6 +31,9 @@ export default function JobCard({
   const [isChangingStage, setIsChangingStage] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const isArchived = job.stage === "Archived";
+
+  const urgency = getUrgency(job.deadline);
+  const urgencyStyle = URGENCY_STYLES[urgency];
 
   async function handleStageChange(val: string) {
     const newStage = val as JobStage;
@@ -205,55 +197,97 @@ export default function JobCard({
       >
         <div className="mt-4 space-y-1 text-sm text-zinc-500">
           {job.location && <p>{job.location}</p>}
-          {job.deadline && (
-            <p className={`whitespace-nowrap${isOverdue(job.deadline) ? " text-red-400" : ""}`}>
-              Deadline: {job.deadline}
-            </p>
-          )}
+          {job.deadline && <p className="whitespace-nowrap">Deadline: {job.deadline}</p>}
           <p className="whitespace-nowrap">Last activity: {job.lastActivityDate}</p>
         </div>
       </button>
 
       <div className="mt-auto flex items-center justify-between pt-4">
         <div className="flex items-center gap-1.5">
-          {!isArchived && (
-            <>
-              {isChangingStage && (
-                <svg
-                  className="animate-spin text-zinc-500"
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  aria-hidden="true"
-                >
-                  <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                </svg>
-              )}
-              <Select
-                value={job.stage}
-                onChange={handleStageChange}
-                options={STAGES.map((s) => ({ value: s, label: s }))}
-                className="text-xs font-medium"
-                textClassName={STAGE_TEXT_STYLES[job.stage]}
-              />
-            </>
+          {isChangingStage && (
+            <svg
+              className="animate-spin text-zinc-500"
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              aria-hidden="true"
+            >
+              <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+            </svg>
           )}
 
-          {isArchived && (
-            <span className="rounded-md px-2.5 py-1 text-xs font-medium bg-zinc-900 text-zinc-500">
-              Archived
+          {!isArchived && onStageChange && (
+            <BadgePicker
+              value={job.stage}
+              options={STAGE_OPTIONS}
+              onChange={(val) => handleStageChange(val)}
+              disabled={isChangingStage}
+            />
+          )}
+
+          {(isArchived || !onStageChange) && (
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium ${STAGE_STYLES[job.stage].badge}`}
+            >
+              <span
+                className={`inline-block h-1.5 w-1.5 rounded-full ${STAGE_STYLES[job.stage].dot}`}
+              />
+              {job.stage}
             </span>
           )}
         </div>
 
-        {job.priority && (
-          <span className="bg-yellow-950 text-yellow-400 rounded-md px-2 py-1 text-xs font-medium">
-            Priority
-          </span>
-        )}
+        <div className="flex items-center gap-1.5">
+          {urgency !== "none" && (
+            <span
+              className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium ${urgencyStyle.badge}`}
+            >
+              {urgency === "overdue" && (
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              )}
+              {urgency === "due-soon" && (
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+              )}
+              {urgencyStyle.label}
+            </span>
+          )}
+
+          {job.priority && (
+            <span className="bg-yellow-950 text-yellow-400 rounded-md px-2 py-1 text-xs font-medium">
+              Priority
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
