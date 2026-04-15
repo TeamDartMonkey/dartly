@@ -2,7 +2,7 @@
 
 import { Modal } from "@/components/ui/modal";
 
-type ConfirmDeleteModalProps = {
+type ConfirmArchiveModalProps = {
   open: boolean;
   onClose: () => void;
   onConfirm: () => void;
@@ -11,18 +11,18 @@ type ConfirmDeleteModalProps = {
   isSubmitting?: boolean;
 };
 
-export function ConfirmDeleteModal({
+export function ConfirmArchiveModal({
   open,
   onClose,
   onConfirm,
   itemName,
-  message = "This action cannot be undone.",
+  message = "You can restore this later.",
   isSubmitting = false,
-}: ConfirmDeleteModalProps) {
+}: ConfirmArchiveModalProps) {
   return (
     <Modal open={open} onClose={onClose}>
       <div className="flex flex-col items-center text-center">
-        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-400/10 mb-4">
+        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-orange-400/10 mb-4">
           <svg
             width="24"
             height="24"
@@ -32,23 +32,22 @@ export function ConfirmDeleteModal({
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="text-red-400"
+            className="text-orange-400"
             aria-hidden="true"
           >
-            <polyline points="3 6 5 6 21 6" />
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-            <line x1="10" y1="11" x2="10" y2="17" />
-            <line x1="14" y1="11" x2="14" y2="17" />
+            <polyline points="21 8 21 21 3 21 3 8" />
+            <rect x="1" y="3" width="22" height="5" />
+            <line x1="10" y1="12" x2="14" y2="12" />
           </svg>
         </div>
 
         <h2 className="text-lg font-semibold text-zinc-50 mb-1">
           {itemName ? (
             <>
-              Delete <span className="text-zinc-300">&ldquo;{itemName}&rdquo;</span>?
+              Archive <span className="text-zinc-300">&ldquo;{itemName}&rdquo;</span>?
             </>
           ) : (
-            "Delete this item?"
+            "Archive this item?"
           )}
         </h2>
 
@@ -67,9 +66,9 @@ export function ConfirmDeleteModal({
             type="button"
             onClick={onConfirm}
             disabled={isSubmitting}
-            className="flex-1 bg-red-600 hover:bg-red-700 text-zinc-50 px-4 py-2.5 rounded-md text-sm font-medium transition-colors"
+            className="flex-1 bg-orange-600 hover:bg-orange-700 text-zinc-50 px-4 py-2.5 rounded-md text-sm font-medium transition-colors"
           >
-            { isSubmitting ? "Saving..." : "Delete" }
+            { isSubmitting ? "Saving..." : "Archive" }
           </button>
         </div>
       </div>

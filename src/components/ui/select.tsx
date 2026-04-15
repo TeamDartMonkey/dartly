@@ -15,6 +15,7 @@ type SelectProps = {
   id?: string;
   className?: string;
   textClassName?: string;
+  disabled?: boolean;
 };
 
 export function Select({
@@ -25,6 +26,7 @@ export function Select({
   id,
   className = "",
   textClassName = "",
+  disabled = false,
 }: SelectProps) {
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -110,9 +112,12 @@ export function Select({
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-controls={listboxId}
-        onClick={() => setOpen((prev) => !prev)}
+        disabled={disabled}
+        onClick={() => !disabled && setOpen((prev) => !prev)}
         onKeyDown={handleTriggerKey}
-        className="min-w-[100px] w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-left text-zinc-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent flex items-center justify-between gap-2"
+        className={`min-w-[100px] w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-left text-zinc-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent flex items-center justify-between gap-2 ${
+          disabled ? "opacity-50 cursor-not-allowed" : ""
+        }`}
       >
         <span className={selected ? textClassName || "text-zinc-50" : "text-zinc-500"}>
           {selected ? selected.label : (placeholder ?? "Select...")}
@@ -133,7 +138,7 @@ export function Select({
         </svg>
       </button>
 
-      {open && (
+      {open && !disabled && (
         <div
           id={listboxId}
           role="listbox"

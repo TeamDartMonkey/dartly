@@ -9,6 +9,8 @@ type JobListProps = {
   onEdit?: (job: Job) => void;
   onDelete?: (id: string) => void;
   onStageChange?: (id: string, stage: JobStage) => void;
+  onArchive?: (id: string) => void;
+  onRestore?: (id: string) => Promise<void>;
 };
 
 function AddJobCard({ onClick }: { onClick?: () => void }) {
@@ -56,6 +58,8 @@ export default function JobList({
   onEdit,
   onDelete,
   onStageChange,
+  onArchive,
+  onRestore,
 }: JobListProps) {
   if (!jobs || jobs.length === 0) {
     return (
@@ -114,6 +118,8 @@ export default function JobList({
           onEdit={onEdit}
           onDelete={onDelete}
           onStageChange={onStageChange}
+          onArchive={onArchive}
+          onRestore={onRestore}
         />
       ))}
     </div>

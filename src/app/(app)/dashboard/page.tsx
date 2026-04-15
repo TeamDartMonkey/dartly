@@ -6,6 +6,7 @@ import AddJobModal from "@/components/dashboard/add-job-modal";
 import FilterBar from "@/components/dashboard/filter-bar";
 import JobList from "@/components/dashboard/job-list";
 import { MetricsPanel } from "@/components/dashboard/metrics-panel";
+import { ConfirmArchiveModal } from "@/components/ui/confirm-archive-modal";
 import { ConfirmDeleteModal } from "@/components/ui/confirm-delete-modal";
 import { DashboardSkeleton } from "@/components/ui/skeletons/dashboard-skeleton";
 import { showToast } from "@/components/ui/toast";
@@ -17,9 +18,13 @@ export default function DashboardPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
-  const [filtered, setFiltered] = useState<Job[]>([]);
   const [pendingDeleteJob, setPendingDeleteJob] = useState<Job | null>(null);
+  const [pendingArchiveJob, setPendingArchiveJob] = useState<Job | null>(null);
+  const [isArchiving, setIsArchiving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [filtered, setFiltered] = useState<Job[]>([]);
   const onFilteredChange = useCallback((f: Job[]) => setFiltered(f), []);
   const [viewMode, setViewMode] = useViewMode();
 
@@ -75,6 +80,55 @@ export default function DashboardPage() {
     }
   }
 
+  async function handleArchive(id: string) {
+    const res = await fetch(`/api/jobs/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stage: "Archived" }),
+    });
+    if (res.status === 401) {
+      router.push("/login");
+      return;
+    }
+    if (res.ok) {
+      const updated: Job = await res.json();
+      setJobs((current) => current.map((j) => (j.id === updated.id ? updated : j)));
+      showToast("Job archived");
+    } else {
+      showToast("Failed to archive job", "error");
+    }
+  }
+
+  async function confirmArchiveJob() {
+    if (!pendingArchiveJob) return;
+    setIsArchiving(true);
+    try {
+      await handleArchive(pendingArchiveJob.id);
+      setPendingArchiveJob(null);
+    } finally {
+      setIsArchiving(false);
+    }
+  }
+
+  async function handleRestore(id: string) {
+    const res = await fetch(`/api/jobs/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stage: "Interested" }),
+    });
+    if (res.status === 401) {
+      router.push("/login");
+      return;
+    }
+    if (res.ok) {
+      const updated: Job = await res.json();
+      setJobs((current) => current.map((j) => (j.id === updated.id ? updated : j)));
+      showToast("Job restored");
+    } else {
+      showToast("Failed to restore job", "error");
+    }
+  }
+
   async function handleDelete(id: string) {
     const res = await fetch(`/api/jobs/${id}`, { method: "DELETE" });
     if (res.status === 401) {
@@ -91,8 +145,13 @@ export default function DashboardPage() {
 
   async function confirmDeleteJob() {
     if (!pendingDeleteJob) return;
-    await handleDelete(pendingDeleteJob.id);
-    setPendingDeleteJob(null);
+    setIsDeleting(true);
+    try {
+      await handleDelete(pendingDeleteJob.id);
+      setPendingDeleteJob(null);
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   async function handleSave(job: Omit<Job, "id" | "createdAt"> & { id?: string }) {
@@ -192,6 +251,8 @@ export default function DashboardPage() {
         onFilteredChange={onFilteredChange}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
+        showArchived={showArchived}
+        onShowArchivedChange={setShowArchived}
       />
 
       {/* Job board */}
@@ -208,6 +269,11 @@ export default function DashboardPage() {
             if (job) setPendingDeleteJob(job);
           }}
           onStageChange={handleStageChange}
+          onArchive={(id) => {
+            const job = jobs.find((j) => j.id === id);
+            if (job) setPendingArchiveJob(job);
+          }}
+          onRestore={handleRestore}
         />
       )}
 
@@ -224,8 +290,21 @@ export default function DashboardPage() {
         open={pendingDeleteJob !== null}
         onClose={() => setPendingDeleteJob(null)}
         onConfirm={confirmDeleteJob}
+        isSubmitting={isDeleting}
         itemName={
           pendingDeleteJob ? `${pendingDeleteJob.title} at ${pendingDeleteJob.company}` : undefined
+        }
+      />
+
+      <ConfirmArchiveModal
+        open={pendingArchiveJob !== null}
+        onClose={() => setPendingArchiveJob(null)}
+        onConfirm={confirmArchiveJob}
+        isSubmitting={isArchiving}
+        itemName={
+          pendingArchiveJob
+            ? `${pendingArchiveJob.title} at ${pendingArchiveJob.company}`
+            : undefined
         }
       />
     </>
