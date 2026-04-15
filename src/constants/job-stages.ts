@@ -27,11 +27,47 @@ export const STAGES: JobStage[] = [
   "Archived",
 ];
 
-export const STAGE_TEXT_STYLES: Record<JobStage, string> = {
-  Interested: "text-zinc-400",
-  Applied: "text-blue-400",
-  Interview: "text-yellow-400",
-  Offer: "text-green-400",
-  Rejected: "text-red-400",
-  Archived: "text-zinc-500",
+export const ACTIVE_STAGES: JobStage[] = STAGES.filter((s) => s !== "Archived");
+
+type StageStyle = {
+  badge: string;
+  dot: string;
+  text: string;
 };
+
+export const STAGE_STYLES: Record<JobStage, StageStyle> = {
+  Interested: {
+    badge: "bg-zinc-800 text-zinc-400 border-zinc-700",
+    dot: "bg-zinc-400",
+    text: "text-zinc-400",
+  },
+  Applied: {
+    badge: "bg-blue-950 text-blue-400 border-blue-800",
+    dot: "bg-blue-400",
+    text: "text-blue-400",
+  },
+  Interview: {
+    badge: "bg-yellow-950 text-yellow-400 border-yellow-800",
+    dot: "bg-yellow-400",
+    text: "text-yellow-400",
+  },
+  Offer: {
+    badge: "bg-green-950 text-green-400 border-green-800",
+    dot: "bg-green-400",
+    text: "text-green-400",
+  },
+  Rejected: {
+    badge: "bg-red-950 text-red-400 border-red-800",
+    dot: "bg-red-400",
+    text: "text-red-400",
+  },
+  Archived: {
+    badge: "bg-zinc-900 text-zinc-500 border-zinc-800",
+    dot: "bg-zinc-500",
+    text: "text-zinc-500",
+  },
+};
+
+export const STAGE_TEXT_STYLES: Record<JobStage, string> = Object.fromEntries(
+  Object.entries(STAGE_STYLES).map(([stage, style]) => [stage, style.text])
+) as Record<JobStage, string>;

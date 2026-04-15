@@ -2,10 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Select } from "@/components/ui/select";
-import { STAGE_TEXT_STYLES, STAGES } from "@/constants/job-stages";
+import { BadgePicker } from "@/components/ui/badge-picker";
+import { ACTIVE_STAGES, STAGE_STYLES } from "@/constants/job-stages";
 import type { Job, JobStage } from "@/types/job";
-import { isOverdue } from "@/utils/deadline";
+import { getUrgency, URGENCY_STYLES } from "@/utils/deadline";
 
 type JobListItemProps = {
   job: Job;
@@ -14,9 +14,17 @@ type JobListItemProps = {
   onStageChange?: (id: string, stage: JobStage) => void;
 };
 
+const STAGE_OPTIONS = ACTIVE_STAGES.map((s) => {
+  const style = STAGE_STYLES[s];
+  return { value: s, label: s, badge: style.badge, dot: style.dot };
+});
+
 export default function JobListItem({ job, onEdit, onDelete, onStageChange }: JobListItemProps) {
   const router = useRouter();
   const [isChangingStage, setIsChangingStage] = useState(false);
+
+  const urgency = getUrgency(job.deadline);
+  const urgencyStyle = URGENCY_STYLES[urgency];
 
   async function handleStageChange(val: string) {
     const newStage = val as JobStage;
@@ -50,41 +58,87 @@ export default function JobListItem({ job, onEdit, onDelete, onStageChange }: Jo
           </div>
           <div className="mt-1 flex items-center gap-3 text-xs text-zinc-500">
             {job.location && <span>{job.location}</span>}
-            {job.deadline && (
-              <span
-                className={`whitespace-nowrap${isOverdue(job.deadline) ? " text-red-400" : ""}`}
-              >
-                Deadline: {job.deadline}
-              </span>
-            )}
+            {job.deadline && <span className="whitespace-nowrap">Deadline: {job.deadline}</span>}
             <span className="whitespace-nowrap">Last activity: {job.lastActivityDate}</span>
           </div>
         </button>
 
-        <div className="shrink-0 flex items-center gap-3 pt-0.5">
-          <div className="flex items-center gap-1.5">
-            {isChangingStage && (
-              <svg
-                className="animate-spin text-zinc-500"
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                aria-hidden="true"
-              >
-                <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-              </svg>
-            )}
-            <Select
+        <div className="shrink-0 flex items-center gap-2 pt-0.5">
+          {isChangingStage && (
+            <svg
+              className="animate-spin text-zinc-500"
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              aria-hidden="true"
+            >
+              <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+            </svg>
+          )}
+
+          {onStageChange && !isChangingStage && (
+            <BadgePicker
               value={job.stage}
-              onChange={handleStageChange}
-              options={STAGES.map((s) => ({ value: s, label: s }))}
-              className="w-[110px] text-xs font-medium"
-              textClassName={STAGE_TEXT_STYLES[job.stage]}
+              options={STAGE_OPTIONS}
+              onChange={(val) => handleStageChange(val)}
+              disabled={isChangingStage}
             />
-          </div>
+          )}
+
+          {(isChangingStage || !onStageChange) && (
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium ${STAGE_STYLES[job.stage].badge}`}
+            >
+              <span
+                className={`inline-block h-1.5 w-1.5 rounded-full ${STAGE_STYLES[job.stage].dot}`}
+              />
+              {job.stage}
+            </span>
+          )}
+
+          {urgency !== "none" && (
+            <span
+              className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium ${urgencyStyle.badge}`}
+            >
+              {urgency === "overdue" && (
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              )}
+              {urgency === "due-soon" && (
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+              )}
+              {urgencyStyle.label}
+            </span>
+          )}
 
           {onEdit && (
             <button
