@@ -185,27 +185,6 @@ export default function JobDetailPage({ params }: { params: Promise<{ jobId: str
           />
         </div>
       )}
-      {activeTab === "timeline" && (
-        <TimelineSection
-          activities={activities}
-          jobId={job.id}
-          onActivitiesChanged={fetchActivities}
-        />
-      )}
-      {activeTab === "interviews" && (
-        <InterviewsSection
-          activities={activities.filter((a) => a.type === "INTERVIEW")}
-          jobId={job.id}
-          onActivitiesChanged={fetchActivities}
-        />
-      )}
-      {activeTab === "followups" && (
-        <FollowUpsSection
-          activities={activities.filter((a) => a.type === "FOLLOWUP")}
-          jobId={job.id}
-          onActivitiesChanged={fetchActivities}
-        />
-      )}
     </div>
   );
 }

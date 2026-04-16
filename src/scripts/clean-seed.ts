@@ -12,17 +12,62 @@ async function main() {
     ["User A", USER_A],
     ["User B", USER_B],
   ]) {
-    console.log(`\n🧹 Cleaning jobs for ${label} (${userId.slice(0, 8)}...)`);
+    console.log(`\n🧹 Cleaning data for ${label} (${userId.slice(0, 8)}...)`);
 
-    const result = await prisma.job.deleteMany({
+    const skills = await prisma.skill.deleteMany({
+      where: { profile: { userId } },
+    });
+    totalDeleted += skills.count;
+
+    const educations = await prisma.education.deleteMany({
+      where: { profile: { userId } },
+    });
+    totalDeleted += educations.count;
+
+    const experiences = await prisma.experience.deleteMany({
+      where: { profile: { userId } },
+    });
+    totalDeleted += experiences.count;
+
+    const profile = await prisma.profile.deleteMany({
       where: { userId },
     });
+    totalDeleted += profile.count;
 
-    totalDeleted += result.count;
-    console.log(`  ✅ Deleted ${result.count} jobs`);
+    const docLinks = await prisma.jobDocumentLink.deleteMany({
+      where: { job: { userId } },
+    });
+    totalDeleted += docLinks.count;
+
+    const docVersions = await prisma.documentVersion.deleteMany({
+      where: { document: { userId } },
+    });
+    totalDeleted += docVersions.count;
+
+    const documents = await prisma.document.deleteMany({
+      where: { userId },
+    });
+    totalDeleted += documents.count;
+
+    const activities = await prisma.jobActivity.deleteMany({
+      where: { job: { userId } },
+    });
+    totalDeleted += activities.count;
+
+    const stageHistory = await prisma.jobStageHistory.deleteMany({
+      where: { job: { userId } },
+    });
+    totalDeleted += stageHistory.count;
+
+    const jobs = await prisma.job.deleteMany({
+      where: { userId },
+    });
+    totalDeleted += jobs.count;
+
+    console.log(`  ✅ Deleted all data for ${label}`);
   }
 
-  console.log(`\n✨ Clean complete! Total deleted: ${totalDeleted} jobs`);
+  console.log(`\n✨ Clean complete! Total records deleted: ${totalDeleted}`);
 }
 
 main()
