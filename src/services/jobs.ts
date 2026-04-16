@@ -3,6 +3,15 @@ import { STAGE_PRISMA_TO_UI, STAGE_UI_TO_PRISMA } from "@/constants/job-stages";
 import { prisma } from "@/services/prisma";
 import type { Job, JobStage } from "@/types/job";
 
+const STAGE_LABELS: Record<string, string> = {
+  INTERESTED: "Interested",
+  APPLIED: "Applied",
+  INTERVIEW: "Interview",
+  OFFER: "Offer",
+  REJECTED: "Rejected",
+  ARCHIVED: "Archived",
+};
+
 type CreateJobInput = {
   userId: string;
   title: string;
@@ -120,7 +129,6 @@ export async function updateJob(id: string, userId: string, data: UpdateJobInput
         ...(data.customNotes !== undefined && { customNotes: data.customNotes }),
         ...(prismaStage !== undefined && { stage: prismaStage }),
         ...(data.priority !== undefined && { priority: data.priority }),
-        ...(data.customNotes !== undefined && { customNotes: data.customNotes }),
         // Bumped on every save to surface "recently touched" jobs at the top of the
         // dashboard. Intentionally not gated on field changes.
         lastActivityAt: new Date(),
@@ -133,6 +141,16 @@ export async function updateJob(id: string, userId: string, data: UpdateJobInput
           jobId: id,
           fromStage: existing.stage,
           toStage: prismaStage,
+        },
+      });
+
+      const fromLabel = STAGE_LABELS[existing.stage] ?? existing.stage;
+      const toLabel = STAGE_LABELS[prismaStage] ?? prismaStage;
+      await tx.jobActivity.create({
+        data: {
+          jobId: id,
+          type: "STAGE",
+          title: `Stage changed: ${fromLabel} → ${toLabel}`,
         },
       });
     }
