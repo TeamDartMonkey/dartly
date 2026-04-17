@@ -161,7 +161,12 @@ export function ExperienceSection({ experiences, onUpdate }: ExperienceSectionPr
                           )}
                         </p>
 
-                        <p className="mt-0.5 text-xs text-zinc-500">{formatDateRange(exp)}</p>
+                        <p className="mt-0.5 text-xs text-zinc-500">
+                          {formatDateRange(exp)}
+                          {exp.type === "EMPLOYMENT" && exp.location && (
+                            <span className="ml-2">{exp.location}</span>
+                          )}
+                        </p>
 
                         {exp.description && (
                           <p className="mt-2 line-clamp-2 text-sm text-zinc-400">

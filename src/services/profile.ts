@@ -7,6 +7,7 @@ type DbExperience = {
   type: "EMPLOYMENT" | "PROJECT";
   title: string;
   organization: string | null;
+  location: string | null;
   startDate: Date | null;
   endDate: Date | null;
   isCurrent: boolean;
@@ -47,6 +48,7 @@ function mapExperience(e: DbExperience): Experience {
     type: e.type,
     title: e.title,
     organization: e.organization ?? "",
+    location: e.location ?? undefined,
     startDate: toIsoDate(e.startDate) ?? "",
     endDate: toIsoDate(e.endDate),
     isCurrent: e.isCurrent,
@@ -201,6 +203,7 @@ async function syncExperiences(
       type: e.type,
       title: e.title,
       organization: e.organization || null,
+      location: e.type === "EMPLOYMENT" ? e.location || null : null,
       startDate: fromIsoDate(e.startDate),
       endDate: e.isCurrent ? null : fromIsoDate(e.endDate),
       isCurrent: e.isCurrent,
@@ -263,11 +266,7 @@ async function syncEducations(
   }
 }
 
-async function syncSkills(
-  tx: Prisma.TransactionClient,
-  profileId: string,
-  incoming: Skill[]
-) {
+async function syncSkills(tx: Prisma.TransactionClient, profileId: string, incoming: Skill[]) {
   const existing = await tx.skill.findMany({
     where: { profileId },
     select: { id: true },
@@ -325,10 +324,7 @@ async function syncSkills(
   }
 }
 
-export async function upsertProfile(
-  userId: string,
-  data: ProfilePatchInput
-): Promise<ProfileData> {
+export async function upsertProfile(userId: string, data: ProfilePatchInput): Promise<ProfileData> {
   const fields = buildUpdateFields(data);
 
   return await prisma.$transaction(async (tx) => {

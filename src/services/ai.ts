@@ -1,3 +1,6 @@
+import "server-only";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { env } from "@/lib/env";
 import type { ProfileData } from "@/types/profile";
 
 type JobContext = {
@@ -10,119 +13,199 @@ type GenerateResult = {
   content: string;
 };
 
-/**
- * Generates a resume draft using profile data and job context.
- *
- * Placeholder implementation — returns a structured Markdown resume.
- * Swap in a real AI provider (OpenAI, Anthropic, etc.) when decided.
- */
-export async function generateResumeDraft(
-  profile: ProfileData,
-  job: JobContext
-): Promise<GenerateResult> {
-  const name = [profile.firstName, profile.lastName].filter(Boolean).join(" ") || "Your Name";
-  const contact = [profile.email, profile.phone, profile.location].filter(Boolean).join(" | ");
+const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY ?? "");
+const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-  const lines: string[] = [];
-  lines.push(`# ${name}`);
-  if (contact) lines.push(contact);
-  lines.push("");
+const MAX_RETRIES = 1;
 
-  if (profile.summary) {
-    lines.push("## Summary");
-    lines.push(profile.summary);
-    lines.push("");
+function parseRetryDelay(error: unknown): number | null {
+  if (error instanceof Error) {
+    const match = error.message.match(/retryDelay["':\s]+(\d+)s/i);
+    if (match) return Number.parseInt(match[1], 10) * 1000;
   }
+  return null;
+}
 
-  lines.push(`> Tailored for **${job.title}** at **${job.company}**`);
-  lines.push("");
+function isRetryable(error: unknown): boolean {
+  if (error instanceof Error) {
+    const msg = error.message.toLowerCase();
+    return msg.includes("503") || msg.includes("429") || msg.includes("overloaded");
+  }
+  return false;
+}
+
+async function generateWithRetry(prompt: string): Promise<string> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const result = await model.generateContent(prompt);
+      const text = result.response.text();
+      if (!text || text.trim().length === 0) {
+        throw new Error("AI generation returned empty response");
+      }
+      return text.trim();
+    } catch (error) {
+      lastError = error;
+      if (error instanceof Error && error.message === "AI generation returned empty response") {
+        throw error;
+      }
+      if (attempt < MAX_RETRIES && isRetryable(error)) {
+        const delay = parseRetryDelay(error) ?? 2000 * (attempt + 1);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+      throw new Error(
+        `AI generation failed: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
+    }
+  }
+  throw new Error(
+    `AI generation failed after ${MAX_RETRIES + 1} attempts: ${lastError instanceof Error ? lastError.message : "Unknown error"}`
+  );
+}
+
+function serializeProfile(profile: ProfileData): string {
+  const name = [profile.firstName, profile.lastName].filter(Boolean).join(" ") || "Unknown";
+  const contactParts = [
+    profile.email,
+    profile.phone,
+    profile.location,
+    ...(profile.professionalLinks ? Object.values(profile.professionalLinks) : []),
+  ].filter(Boolean);
+
+  let out = `Name: ${name}\n`;
+  if (contactParts.length > 0) out += `Contact: ${contactParts.join(" | ")}\n`;
+  if (profile.headline) out += `Headline: ${profile.headline}\n`;
+  if (profile.summary) out += `Summary: ${profile.summary}\n`;
 
   if (profile.experiences.length > 0) {
-    lines.push("## Experience");
+    out += "\nExperiences:\n";
     for (const exp of profile.experiences) {
       const dates = [exp.startDate, exp.isCurrent ? "Present" : exp.endDate]
         .filter(Boolean)
         .join(" - ");
-      lines.push(`### ${exp.title}${exp.organization ? ` — ${exp.organization}` : ""}`);
-      if (dates) lines.push(dates);
-      if (exp.description) lines.push(exp.description);
-      lines.push("");
+      out += `- [${exp.type}] ${exp.title} at ${exp.organization}${exp.location ? ` (${exp.location})` : ""} (${dates})\n`;
+      if (exp.description) out += `  ${exp.description}\n`;
     }
   }
 
   if (profile.educations.length > 0) {
-    lines.push("## Education");
+    out += "\nEducation:\n";
     for (const edu of profile.educations) {
       const degree = [edu.degree, edu.fieldOfStudy].filter(Boolean).join(", ");
-      lines.push(`### ${edu.institution}`);
-      if (degree) lines.push(degree);
-      const dates = [edu.startDate, edu.endDate].filter(Boolean).join(" - ");
-      if (dates) lines.push(dates);
-      if (edu.gpa) lines.push(`GPA: ${edu.gpa}`);
-      lines.push("");
+      out += `- ${degree} at ${edu.institution} (${edu.startDate} - ${edu.endDate})\n`;
+      if (edu.gpa) out += `  GPA: ${edu.gpa}\n`;
     }
   }
 
   if (profile.skills.length > 0) {
-    lines.push("## Skills");
-    lines.push(profile.skills.map((s) => s.name).join(", "));
-    lines.push("");
+    out += `\nSkills: ${profile.skills.map((s) => s.name).join(", ")}\n`;
   }
 
-  return { content: lines.join("\n") };
+  return out;
 }
 
-/**
- * Generates a cover letter draft using profile data and job context.
- *
- * Placeholder implementation — returns a structured cover letter template.
- */
+const RESUME_FORMAT_EXAMPLE = `# John Doe
+<div class="section headerInfo">
+
+[john.doe@gmail.com](mailto:john.doe@gmail.com) | (123) 456-7890 | [LinkedIn](https://linkedin.com/in/johndoe) | [GitHub](https://github.com/johndoe)
+
+</div>
+
+### Education
+
+### Massachusetts Institute of Technology <span class="spacer"></span><span class="normal">Cambridge, MA</span>
+*Bachelor of Science in Computer Science | GPA: 3.9/4.0* <span class="spacer"></span><span class="normal">*Aug 2019 - May 2023*</span>
+- Relevant Coursework: Data Structures & Algorithms, Operating Systems, Database Systems, Computer Networks
+
+### Experience
+
+### Software Engineer <span class="spacer"></span><span class="normal">May 2023 - Present</span>
+*Google* <span class="tech-stack">| Python, Go, Kubernetes, Apache Kafka, GCP</span> <span class="spacer"></span><span class="normal">*New York, NY*</span>
+- Led development of a real-time data processing pipeline, improving throughput by 40%
+- Architected and deployed microservices handling 10M+ requests per day
+
+### Projects
+
+### Open Source CLI Tool <span class="tech-stack">| Rust, Docker, GitHub Actions</span> <span class="spacer"></span><span class="normal">Jan 2023 - Apr 2023</span>
+- Built a command-line tool for automating deployment workflows with 500+ GitHub stars
+- Implemented plugin system for extensible workflow customization
+
+### Technical Skills
+**Languages & Databases:** Python, JavaScript, TypeScript, Go, Rust, MySQL, PostgreSQL<br>
+**Frameworks & Libraries:** React, Node.js, Express, Next.js, Docker, Kubernetes, GraphQL<br>
+**Developer Tools:** Git, Postman, Jupyter Notebook<br>
+**Concepts:** RESTful APIs, Microservices, CI/CD, Agile/Scrum, OOP, Design Patterns, System Design`;
+
+const RESUME_FORMAT_RULES = `- Sections must appear in this order: Education, Experience, Projects, Technical Skills
+- Every section heading (Education, Experience, Projects, Technical Skills) MUST be "### " (three hashes + space)
+- Education entries: "### Institution <span class="spacer"></span><span class="normal">Location</span>" on the first line, then the next line "*Degree | GPA: X.X* <span class="spacer"></span><span class="normal">*Date*</span>" using italic — the degree line must be a separate paragraph below the institution title
+- Education entries can include bullet points for Relevant Coursework or Awards below the degree line
+- Experience entries: "### Job Title <span class="spacer"></span><span class="normal">Date Range</span>" on the first line, then "*Company* <span class="tech-stack">| Tech, Stack</span> <span class="spacer"></span><span class="normal">*Location*</span>" on the second line using italic
+- Project entries: "### Project Name <span class="tech-stack">| Tech, Stack</span> <span class="spacer"></span><span class="normal">Date Range</span>" — tech stack goes inline with the project title, no second line
+- Technical Skills: group skills into exactly these 4 categories using bold labels, each separated by <br> tags: "**Languages & Databases:** ..." then "**Frameworks & Libraries:** ..." then "**Developer Tools:** ..." then "**Concepts:** ..."
+- Use "- " bullet points for descriptions
+- Contact info goes in <div class="section headerInfo"> block after the name
+- Do NOT wrap output in markdown code fences
+- Output ONLY valid Markdown with inline HTML — no plain text headings`;
+
+export async function generateResumeDraft(
+  profile: ProfileData,
+  job: JobContext
+): Promise<GenerateResult> {
+  const prompt = `You are an expert resume writer. Generate a professional resume tailored to the target job using Jake's Resume format.
+
+TARGET JOB:
+Title: ${job.title}
+Company: ${job.company}${job.description ? `\nDescription: ${job.description}` : ""}
+
+CANDIDATE PROFILE:
+${serializeProfile(profile)}
+
+FORMAT EXAMPLE (Jake's Resume — hybrid Markdown + HTML):
+${RESUME_FORMAT_EXAMPLE}
+
+FORMAT RULES:
+${RESUME_FORMAT_RULES}
+
+Tailor the resume content to highlight the candidate's most relevant experience and skills for the target job. Rewrite and rephrase descriptions to emphasize impact and relevance. Output ONLY the resume content in Jake's format. No preamble, no explanation, no markdown code fences.`;
+
+  const content = await generateWithRetry(prompt);
+  return { content };
+}
+
 export async function generateCoverLetterDraft(
   profile: ProfileData,
   job: JobContext
 ): Promise<GenerateResult> {
   const name = [profile.firstName, profile.lastName].filter(Boolean).join(" ") || "Your Name";
 
-  const lines: string[] = [];
-  lines.push(name);
-  if (profile.email) lines.push(profile.email);
-  if (profile.phone) lines.push(profile.phone);
-  if (profile.location) lines.push(profile.location);
-  lines.push("");
-  lines.push(`Dear Hiring Manager at ${job.company},`);
-  lines.push("");
-  lines.push(
-    `I am writing to express my interest in the **${job.title}** position at **${job.company}**.${
-      profile.summary ? ` ${profile.summary}` : ""
-    }`
-  );
-  lines.push("");
+  const prompt = `You are an expert cover letter writer. Generate a professional, compelling cover letter in clean Markdown format.
 
-  if (profile.experiences.length > 0) {
-    const recent = profile.experiences[0];
-    lines.push(
-      `In my role as ${recent.title}${recent.organization ? ` at ${recent.organization}` : ""}, I developed skills and experience directly relevant to this position.${
-        recent.description ? ` ${recent.description}` : ""
-      }`
-    );
-    lines.push("");
-  }
+TARGET JOB:
+Title: ${job.title}
+Company: ${job.company}${job.description ? `\nDescription: ${job.description}` : ""}
 
-  if (job.description) {
-    lines.push(
-      "Based on the job description, I believe my background aligns well with your team's needs. I am eager to bring my skills to this role and contribute to your organization's goals."
-    );
-    lines.push("");
-  }
+CANDIDATE PROFILE:
+${serializeProfile(profile)}
 
-  lines.push(
-    "I would welcome the opportunity to discuss how my experience can contribute to your team. Thank you for considering my application."
-  );
-  lines.push("");
-  lines.push("Sincerely,");
-  lines.push(name);
+FORMAT:
+- Start with the candidate's name, then contact info (email, phone, location) each on its own line
+- A blank line, then today's date placeholder: [Current Date]
+- A blank line, then the company name
+- Salutation (Dear Hiring Manager, or specific name if known)
+- 3-4 body paragraphs that:
+  - Open with enthusiasm for the role and company
+  - Connect the candidate's experience and skills to the job requirements
+  - Highlight specific achievements and quantify impact when possible
+  - Close with a call to action and appreciation
+- Professional closing (Sincerely, followed by the candidate's name)
+- Use **bold** for key terms or company names sparingly
+- Output ONLY the cover letter, no preamble or explanation
+- Candidate's name to use: ${name}`;
 
-  return { content: lines.join("\n") };
+  const content = await generateWithRetry(prompt);
+  return { content };
 }
 
 type RewriteInput = {
@@ -130,31 +213,21 @@ type RewriteInput = {
   instruction: string;
 };
 
-/**
- * Rewrites/improves document content based on an instruction.
- *
- * Placeholder implementation — prepends the instruction as a note
- * and returns lightly restructured content. Replace with AI call.
- */
 export async function rewriteContent(input: RewriteInput): Promise<GenerateResult> {
-  const { content, instruction } = input;
+  const prompt = `You are an expert editor. Rewrite the following content based on the user's instruction.
 
-  // Placeholder: apply simple transformations based on common instructions
-  let rewritten = content;
+USER INSTRUCTION: ${input.instruction}
 
-  const lower = instruction.toLowerCase();
-  if (lower.includes("concise") || lower.includes("shorter") || lower.includes("brief")) {
-    // Trim lines that are empty or very short filler
-    rewritten = content
-      .split("\n")
-      .filter((line) => line.trim().length > 0)
-      .join("\n");
-  } else if (lower.includes("formal") || lower.includes("professional")) {
-    rewritten = content.replace(/!\s*/g, ". ").replace(/\.\.\./g, ".");
-  }
+IMPORTANT RULES:
+- Preserve the original format exactly (if it contains HTML spans like Jake's Resume format, keep them; if it's Markdown, keep it as Markdown)
+- Apply the user's instruction faithfully (e.g., more concise, formal tone, add metrics, etc.)
+- Output ONLY the rewritten content, no explanation, no preamble, no markdown code fences
 
-  // Always prepend instruction note so user knows what was requested
-  rewritten = `<!-- Rewrite instruction: ${instruction} -->\n${rewritten}`;
+ORIGINAL CONTENT:
+${input.content}`;
 
-  return { content: rewritten };
+  const content = await generateWithRetry(prompt);
+  return { content };
 }
+
+export type { GenerateResult, JobContext, RewriteInput };

@@ -15,6 +15,7 @@ const envSchema = z.object({
   AUTH_SECRET: z.string().min(1).optional(),
   AUTH_GOOGLE_ID: z.string().min(1).optional(),
   AUTH_GOOGLE_SECRET: z.string().min(1).optional(),
+  GEMINI_API_KEY: z.string().min(1).optional(),
 });
 // safeParse allows us to provide a custom error message and exit gracefully
 // instead of throwing an unhandled exception on invalid env vars.

@@ -6,7 +6,7 @@ const {
   mockValidateBody,
   mockGetProfile,
   mockGenerateResumeDraft,
-  mockCreateDocument,
+  mockCreateOrUpdate,
   mockToDocumentResponse,
   mockJobFindFirst,
 } = vi.hoisted(() => ({
@@ -14,7 +14,7 @@ const {
   mockValidateBody: vi.fn(),
   mockGetProfile: vi.fn(),
   mockGenerateResumeDraft: vi.fn(),
-  mockCreateDocument: vi.fn(),
+  mockCreateOrUpdate: vi.fn(),
   mockToDocumentResponse: vi.fn(),
   mockJobFindFirst: vi.fn(),
 }));
@@ -29,6 +29,7 @@ vi.mock("@/lib/requireAuth", () => ({
 
 vi.mock("@/lib/logger", () => ({
   default: { info: vi.fn(), error: vi.fn() },
+  logError: vi.fn(),
 }));
 
 vi.mock("@/lib/validate-body", () => ({
@@ -40,7 +41,7 @@ vi.mock("@/services/ai", () => ({
 }));
 
 vi.mock("@/services/documents", () => ({
-  createDocument: mockCreateDocument,
+  createOrUpdateDocumentForJob: mockCreateOrUpdate,
   toDocumentResponse: mockToDocumentResponse,
 }));
 
@@ -95,7 +96,7 @@ describe("POST /api/ai/resume", () => {
     mockGetProfile.mockResolvedValue(mockProfile);
     mockJobFindFirst.mockResolvedValue(mockJob);
     mockGenerateResumeDraft.mockResolvedValue({ content: "Generated resume" });
-    mockCreateDocument.mockResolvedValue({ doc: mockDoc, version: mockVersion });
+    mockCreateOrUpdate.mockResolvedValue({ doc: mockDoc, version: mockVersion, isNew: true });
     mockToDocumentResponse.mockReturnValue(mockDocResponse);
   });
 
@@ -105,7 +106,7 @@ describe("POST /api/ai/resume", () => {
 
     expect(res.status).toBe(201);
     expect(body).toEqual(mockDocResponse);
-    expect(mockCreateDocument).toHaveBeenCalledWith("user-123", {
+    expect(mockCreateOrUpdate).toHaveBeenCalledWith("user-123", {
       type: "RESUME",
       name: "Resume - Acme",
       content: "Generated resume",

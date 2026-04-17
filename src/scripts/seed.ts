@@ -158,6 +158,7 @@ const PROFILES: Record<
       endDate: Date | null;
       isCurrent: boolean;
       description: string | null;
+      location: string | null;
       order: number;
     }[];
     educations: {
@@ -172,9 +173,9 @@ const PROFILES: Record<
   }
 > = {
   [USER_A]: {
-    firstName: "Alex",
-    lastName: "Rivera",
-    email: "alex.rivera@email.com",
+    firstName: "John",
+    lastName: "Doe",
+    email: "john.doe@email.com",
     phone: "(555) 123-4567",
     location: "San Francisco, CA",
     headline: "Full Stack Software Engineer",
@@ -189,6 +190,7 @@ const PROFILES: Record<
         type: "EMPLOYMENT",
         title: "Software Engineer",
         organization: "TechNova Inc.",
+        location: "San Francisco, CA",
         startDate: new Date("2022-06-01"),
         endDate: null,
         isCurrent: true,
@@ -200,6 +202,7 @@ const PROFILES: Record<
         type: "EMPLOYMENT",
         title: "Junior Developer",
         organization: "WebForge LLC",
+        location: "New York, NY",
         startDate: new Date("2020-08-01"),
         endDate: new Date("2022-05-01"),
         isCurrent: false,
@@ -211,6 +214,7 @@ const PROFILES: Record<
         type: "PROJECT",
         title: "Open Source CLI Tool",
         organization: null,
+        location: null,
         startDate: new Date("2023-01-01"),
         endDate: new Date("2023-06-01"),
         isCurrent: false,
@@ -264,6 +268,7 @@ const PROFILES: Record<
         type: "EMPLOYMENT",
         title: "Senior Backend Engineer",
         organization: "CloudScale Systems",
+        location: "Seattle, WA",
         startDate: new Date("2021-03-01"),
         endDate: null,
         isCurrent: true,
@@ -275,6 +280,7 @@ const PROFILES: Record<
         type: "EMPLOYMENT",
         title: "Backend Developer",
         organization: "DataPipe Corp",
+        location: "Austin, TX",
         startDate: new Date("2018-07-01"),
         endDate: new Date("2021-02-01"),
         isCurrent: false,

@@ -10,6 +10,7 @@ export const ExperienceSchema = z.object({
   type: z.enum(["EMPLOYMENT", "PROJECT"]),
   title: z.string().trim().min(1).max(200),
   organization: z.string().trim().max(200),
+  location: z.string().trim().max(200).optional(),
   startDate: IsoDateString,
   endDate: IsoDateString.optional(),
   isCurrent: z.boolean(),

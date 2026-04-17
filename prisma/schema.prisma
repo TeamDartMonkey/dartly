@@ -42,6 +42,7 @@ model Experience {
   type         ExperienceType
   title        String
   organization String?
+  location     String?
   startDate    DateTime?
   endDate      DateTime?
   isCurrent    Boolean        @default(false)

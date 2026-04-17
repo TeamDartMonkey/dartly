@@ -65,6 +65,7 @@ export function ExperienceForm({ experience, onSave, onCancel }: ExperienceFormP
   const [type, setType] = useState<Experience["type"]>(experience?.type ?? "EMPLOYMENT");
   const [title, setTitle] = useState(experience?.title ?? "");
   const [organization, setOrganization] = useState(experience?.organization ?? "");
+  const [location, setLocation] = useState(experience?.location ?? "");
   const [startDate, setStartDate] = useState(experience?.startDate ?? "");
   const [endDate, setEndDate] = useState(experience?.endDate ?? "");
   const [isCurrent, setIsCurrent] = useState(experience?.isCurrent ?? false);
@@ -92,6 +93,7 @@ export function ExperienceForm({ experience, onSave, onCancel }: ExperienceFormP
       type,
       title: title.trim(),
       organization: organization.trim(),
+      location: type === "EMPLOYMENT" ? location.trim() : undefined,
       startDate: startDate,
       endDate: isCurrent ? undefined : endDate,
       isCurrent,
@@ -139,6 +141,16 @@ export function ExperienceForm({ experience, onSave, onCancel }: ExperienceFormP
         error={errors.organization}
         required
       />
+
+      {type === "EMPLOYMENT" && (
+        <Input
+          id="experience-location"
+          label="Location"
+          placeholder="e.g. San Francisco, CA"
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+        />
+      )}
 
       <div>
         <label

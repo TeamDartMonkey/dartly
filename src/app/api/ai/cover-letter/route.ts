@@ -5,7 +5,7 @@ import logger from "@/lib/logger";
 import { requireAuth } from "@/lib/requireAuth";
 import { validateBody } from "@/lib/validate-body";
 import { generateCoverLetterDraft } from "@/services/ai";
-import { createDocument, toDocumentResponse } from "@/services/documents";
+import { createOrUpdateDocumentForJob, toDocumentResponse } from "@/services/documents";
 import { prisma } from "@/services/prisma";
 import { getProfile } from "@/services/profile";
 import { GenerateDocumentSchema } from "@/types/schemas";
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
         description: job.description ?? undefined,
       });
 
-      const { doc, version } = await createDocument(user.id, {
+      const { doc, version } = await createOrUpdateDocumentForJob(user.id, {
         type: "COVER_LETTER",
         name: `Cover Letter - ${job.company}`,
         content: result.content,
