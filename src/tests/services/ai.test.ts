@@ -1,4 +1,23 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const { mockGenerateContent } = vi.hoisted(() => ({
+  mockGenerateContent: vi.fn(),
+}));
+
+vi.mock("@google/generative-ai", () => {
+  return {
+    GoogleGenerativeAI: vi.fn().mockImplementation(() => ({
+      getGenerativeModel: vi.fn().mockReturnValue({
+        generateContent: mockGenerateContent,
+      }),
+    })),
+  };
+});
+
+vi.mock("@/lib/env", () => ({
+  env: { GEMINI_API_KEY: "test-key" },
+}));
+
 import { generateCoverLetterDraft, generateResumeDraft, rewriteContent } from "@/services/ai";
 import type { ProfileData } from "@/types/profile";
 
@@ -40,72 +59,150 @@ const jobContext = {
   description: "Build amazing UIs",
 };
 
+beforeEach(() => {
+  mockGenerateContent.mockReset();
+});
+
 describe("generateResumeDraft", () => {
-  it("generates a resume with profile data", async () => {
+  it("calls Gemini and returns resume content", async () => {
+    mockGenerateContent.mockResolvedValue({
+      response: { text: () => "# Jane Doe\n\n### Experience\n\nGenerated resume content" },
+    });
+
     const result = await generateResumeDraft(baseProfile, jobContext);
 
     expect(result.content).toContain("Jane Doe");
-    expect(result.content).toContain("Frontend Engineer");
-    expect(result.content).toContain("StartupCo");
-    expect(result.content).toContain("Senior Developer");
-    expect(result.content).toContain("MIT");
-    expect(result.content).toContain("TypeScript");
+    expect(result.content).toContain("Experience");
+    expect(mockGenerateContent).toHaveBeenCalledTimes(1);
   });
 
-  it("handles empty profile gracefully", async () => {
-    const emptyProfile: ProfileData = {
-      targetRoles: [],
-      targetLocations: [],
-      experiences: [],
-      educations: [],
-      skills: [],
-    };
+  it("includes profile data in the prompt", async () => {
+    mockGenerateContent.mockResolvedValue({
+      response: { text: () => "# Jane Doe" },
+    });
 
-    const result = await generateResumeDraft(emptyProfile, jobContext);
+    await generateResumeDraft(baseProfile, jobContext);
 
-    expect(result.content).toContain("Your Name");
-    expect(result.content).toContain("StartupCo");
+    const call = mockGenerateContent.mock.calls[0][0];
+    expect(call).toContain("Jane Doe");
+    expect(call).toContain("Frontend Engineer");
+    expect(call).toContain("StartupCo");
+    expect(call).toContain("TypeScript");
+  });
+
+  it("throws on empty response", async () => {
+    mockGenerateContent.mockResolvedValue({
+      response: { text: () => "" },
+    });
+
+    await expect(generateResumeDraft(baseProfile, jobContext)).rejects.toThrow(
+      "AI generation returned empty response"
+    );
+  });
+
+  it("retries on 503 and eventually succeeds", async () => {
+    mockGenerateContent
+      .mockRejectedValueOnce(new Error("503 Service Unavailable"))
+      .mockResolvedValueOnce({
+        response: { text: () => "# Jane Doe\n\n### Experience\n\nContent" },
+      });
+
+    const result = await generateResumeDraft(baseProfile, jobContext);
+
+    expect(result.content).toContain("Jane Doe");
+    expect(mockGenerateContent).toHaveBeenCalledTimes(2);
+  });
+
+  it("throws on non-retryable API error", async () => {
+    mockGenerateContent.mockRejectedValue(new Error("Internal server error"));
+
+    await expect(generateResumeDraft(baseProfile, jobContext)).rejects.toThrow(
+      "AI generation failed"
+    );
   });
 });
 
 describe("generateCoverLetterDraft", () => {
-  it("generates a cover letter with profile and job data", async () => {
+  it("calls Gemini and returns cover letter content", async () => {
+    mockGenerateContent.mockResolvedValue({
+      response: { text: () => "Jane Doe\n\nDear Hiring Manager,\n\nCover letter body" },
+    });
+
     const result = await generateCoverLetterDraft(baseProfile, jobContext);
 
     expect(result.content).toContain("Jane Doe");
-    expect(result.content).toContain("Frontend Engineer");
-    expect(result.content).toContain("StartupCo");
-    expect(result.content).toContain("Dear Hiring Manager");
+    expect(result.content).toContain("Hiring Manager");
+    expect(mockGenerateContent).toHaveBeenCalledTimes(1);
   });
 
-  it("handles profile without experience", async () => {
-    const profile: ProfileData = {
-      ...baseProfile,
-      experiences: [],
-    };
+  it("includes job context in the prompt", async () => {
+    mockGenerateContent.mockResolvedValue({
+      response: { text: () => "Cover letter" },
+    });
 
-    const result = await generateCoverLetterDraft(profile, jobContext);
-    expect(result.content).toContain("StartupCo");
+    await generateCoverLetterDraft(baseProfile, jobContext);
+
+    const call = mockGenerateContent.mock.calls[0][0];
+    expect(call).toContain("StartupCo");
+    expect(call).toContain("Frontend Engineer");
+  });
+
+  it("throws on empty response", async () => {
+    mockGenerateContent.mockResolvedValue({
+      response: { text: () => "   " },
+    });
+
+    await expect(generateCoverLetterDraft(baseProfile, jobContext)).rejects.toThrow(
+      "AI generation returned empty response"
+    );
   });
 });
 
 describe("rewriteContent", () => {
-  it("returns rewritten content with instruction comment", async () => {
-    const result = await rewriteContent({
-      content: "My original resume content",
-      instruction: "Make it more formal",
+  it("calls Gemini with content and instruction", async () => {
+    mockGenerateContent.mockResolvedValue({
+      response: { text: () => "Rewritten content that is more concise" },
     });
 
-    expect(result.content).toContain("Make it more formal");
-    expect(result.content).toContain("My original resume content");
-  });
-
-  it("applies concise transformation", async () => {
     const result = await rewriteContent({
-      content: "Line one\n\n\nLine two\n\n",
+      content: "Original content here",
       instruction: "Make more concise",
     });
 
-    expect(result.content).not.toContain("\n\n\n");
+    expect(result.content).toContain("Rewritten content");
+    expect(mockGenerateContent).toHaveBeenCalledTimes(1);
+  });
+
+  it("includes original content and instruction in prompt", async () => {
+    mockGenerateContent.mockResolvedValue({
+      response: { text: () => "Rewritten" },
+    });
+
+    await rewriteContent({
+      content: "My original text",
+      instruction: "Make formal",
+    });
+
+    const call = mockGenerateContent.mock.calls[0][0];
+    expect(call).toContain("My original text");
+    expect(call).toContain("Make formal");
+  });
+
+  it("throws on empty response", async () => {
+    mockGenerateContent.mockResolvedValue({
+      response: { text: () => "" },
+    });
+
+    await expect(rewriteContent({ content: "test", instruction: "rewrite" })).rejects.toThrow(
+      "AI generation returned empty response"
+    );
+  });
+
+  it("throws on API error with descriptive message", async () => {
+    mockGenerateContent.mockRejectedValue(new Error("Internal server error"));
+
+    await expect(rewriteContent({ content: "test", instruction: "rewrite" })).rejects.toThrow(
+      "AI generation failed"
+    );
   });
 });

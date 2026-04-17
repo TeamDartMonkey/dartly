@@ -1,11 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import Markdown from "react-markdown";
+import rehypeRaw from "rehype-raw";
 import { RewritePanel } from "@/components/documents/rewrite-panel";
 import { ConfirmDeleteModal } from "@/components/ui/confirm-delete-modal";
 import { Select } from "@/components/ui/select";
 import { showToast } from "@/components/ui/toast";
+import "@/styles/jakes-resume.css";
 import type { DocumentResponse, DocumentVersionResponse } from "@/types/document";
 
 const TYPE_STYLES: Record<string, string> = {
@@ -26,18 +29,28 @@ const STATUS_STYLES: Record<string, string> = {
   ARCHIVED: "bg-zinc-700 text-zinc-400",
 };
 
+type ViewMode = "preview" | "markdown" | "edit";
+
+const VIEW_OPTIONS: { value: ViewMode; label: string }[] = [
+  { value: "preview", label: "Preview" },
+  { value: "markdown", label: "Markdown" },
+  { value: "edit", label: "Edit" },
+];
+
 export default function DocumentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
+  const previewRef = useRef<HTMLDivElement>(null);
   const [id, setId] = useState<string | null>(null);
   const [doc, setDoc] = useState<DocumentResponse | null>(null);
   const [versions, setVersions] = useState<DocumentVersionResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("preview");
   const [editContent, setEditContent] = useState("");
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     params.then((p) => setId(p.id));
@@ -105,7 +118,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
       if (res.ok) {
         const updated = await res.json();
         setDoc(updated);
-        setEditing(false);
+        setViewMode("preview");
         showToast("Document saved");
         const verRes = await fetch(`/api/documents/${doc.id}/versions`);
         if (verRes.ok) {
@@ -207,9 +220,39 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
       });
   }
 
+  const handleDownloadPdf = useCallback(async () => {
+    if (!previewRef.current || !doc) return;
+    setDownloading(true);
+    try {
+      const html2pdfModule = await import("html2pdf.js");
+      const html2pdf = html2pdfModule.default ?? html2pdfModule;
+      const element = previewRef.current;
+      await html2pdf()
+        .set({
+          margin: 0.5,
+          filename: `${doc.name}.pdf`,
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
+        })
+        .from(element)
+        .save();
+    } catch (err) {
+      showToast("Failed to generate PDF", "error");
+    } finally {
+      setDownloading(false);
+    }
+  }, [doc]);
+
+  function handleViewModeChange(mode: ViewMode) {
+    if (mode === "edit") {
+      setEditContent(displayContent);
+    }
+    setViewMode(mode);
+  }
+
   const isViewingOldVersion = doc && versions.length > 0 && selectedVersionId !== versions[0]?.id;
   const displayContent = (() => {
-    if (editing) return editContent;
     const v = versions.find((ver) => ver.id === selectedVersionId);
     if (v) return v.content ?? "";
     return doc?.content ?? "";
@@ -266,7 +309,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               value={selectedVersionId ?? ""}
               onChange={(val) => {
                 setSelectedVersionId(val);
-                setEditing(false);
+                if (viewMode === "edit") setViewMode("preview");
               }}
               options={versions.map((v) => ({
                 value: v.id,
@@ -289,22 +332,35 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
 
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-medium text-zinc-400">Content</h2>
-            {!editing && (
+            <div className="flex items-center gap-2">
+              {VIEW_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => handleViewModeChange(opt.value)}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium ${
+                    viewMode === opt.value
+                      ? "bg-indigo-500 text-zinc-50"
+                      : "bg-zinc-800 border border-zinc-700 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-50"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {viewMode === "preview" && (
               <button
                 type="button"
-                onClick={() => {
-                  setEditContent(displayContent);
-                  setEditing(true);
-                }}
-                className="bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-zinc-50 px-3 py-1.5 rounded-md text-sm font-medium"
+                onClick={handleDownloadPdf}
+                disabled={downloading}
+                className="bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-zinc-50 px-3 py-1.5 rounded-md text-sm font-medium disabled:opacity-50"
               >
-                Edit
+                {downloading ? "Generating..." : "Download PDF"}
               </button>
             )}
           </div>
 
-          {editing ? (
+          {viewMode === "edit" ? (
             <div className="space-y-4">
               <textarea
                 value={editContent}
@@ -322,10 +378,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    setEditing(false);
-                    setEditContent(doc.content ?? "");
-                  }}
+                  onClick={() => setViewMode("preview")}
                   disabled={saving}
                   className="bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-zinc-50 px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50"
                 >
@@ -333,9 +386,25 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                 </button>
               </div>
             </div>
+          ) : viewMode === "preview" ? (
+            <div className="bg-zinc-950 rounded-md p-4 overflow-auto">
+              {displayContent ? (
+                <div ref={previewRef} className="jakes-resume-preview">
+                  <Markdown rehypePlugins={[rehypeRaw]}>{displayContent}</Markdown>
+                </div>
+              ) : (
+                <span className="text-zinc-500 italic">No content</span>
+              )}
+            </div>
           ) : (
-            <div className="text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed">
-              {displayContent || <span className="text-zinc-500 italic">No content</span>}
+            <div className="bg-zinc-950 rounded-md p-4 overflow-auto">
+              {displayContent ? (
+                <pre className="text-sm text-zinc-300 whitespace-pre-wrap font-mono leading-relaxed">
+                  {displayContent}
+                </pre>
+              ) : (
+                <span className="text-zinc-500 italic">No content</span>
+              )}
             </div>
           )}
         </div>
