@@ -172,9 +172,9 @@ const PROFILES: Record<
   }
 > = {
   [USER_A]: {
-    firstName: "Alex",
-    lastName: "Rivera",
-    email: "alex.rivera@email.com",
+    firstName: "John",
+    lastName: "Doe",
+    email: "john.doe@email.com",
     phone: "(555) 123-4567",
     location: "San Francisco, CA",
     headline: "Full Stack Software Engineer",
