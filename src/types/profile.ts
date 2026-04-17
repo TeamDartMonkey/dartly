@@ -3,6 +3,7 @@ export type Experience = {
   type: "EMPLOYMENT" | "PROJECT";
   title: string;
   organization: string;
+  location?: string;
   startDate: string;
   endDate?: string;
   isCurrent: boolean;

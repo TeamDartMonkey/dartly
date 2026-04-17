@@ -77,7 +77,7 @@ function serializeProfile(profile: ProfileData): string {
       const dates = [exp.startDate, exp.isCurrent ? "Present" : exp.endDate]
         .filter(Boolean)
         .join(" - ");
-      out += `- [${exp.type}] ${exp.title} at ${exp.organization} (${dates})\n`;
+      out += `- [${exp.type}] ${exp.title} at ${exp.organization}${exp.location ? ` (${exp.location})` : ""} (${dates})\n`;
       if (exp.description) out += `  ${exp.description}\n`;
     }
   }
