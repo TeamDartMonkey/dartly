@@ -15,7 +15,7 @@ export function AccountSection() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetch("/api/profile")
+    fetch("/api/auth/me")
       .then((res) => res.json())
       .then((data) => {
         if (data.email) setEmail(data.email);

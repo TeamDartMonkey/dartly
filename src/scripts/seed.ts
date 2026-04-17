@@ -146,6 +146,10 @@ const PROFILES: Record<
     location: string;
     headline: string;
     summary: string;
+    targetRoles: string[];
+    targetLocations: string[];
+    workModePreference: string | null;
+    salaryPreference: number | null;
     experiences: {
       type: "EMPLOYMENT" | "PROJECT";
       title: string;
@@ -176,6 +180,10 @@ const PROFILES: Record<
     headline: "Full Stack Software Engineer",
     summary:
       "Experienced software engineer with 4+ years building scalable web applications. Passionate about clean architecture, developer experience, and shipping products that solve real problems. Strong background in TypeScript, React, and Node.js.",
+    targetRoles: ["Full Stack Engineer", "Frontend Engineer", "Software Engineer"],
+    targetLocations: ["San Francisco, CA", "Remote", "New York, NY"],
+    workModePreference: "Remote",
+    salaryPreference: 150000,
     experiences: [
       {
         type: "EMPLOYMENT",
@@ -247,6 +255,10 @@ const PROFILES: Record<
     headline: "Senior Platform Engineer",
     summary:
       "Platform engineer with 6+ years of experience in distributed systems, cloud infrastructure, and developer tooling. Focused on building reliable, scalable backend systems. AWS certified with deep Kubernetes expertise.",
+    targetRoles: ["Staff Engineer", "Platform Engineer", "Backend Lead", "DevOps Engineer"],
+    targetLocations: ["Seattle, WA", "Remote", "Austin, TX"],
+    workModePreference: "Hybrid",
+    salaryPreference: 200000,
     experiences: [
       {
         type: "EMPLOYMENT",
@@ -351,6 +363,10 @@ async function seedProfile(userId: string, userLabel: string) {
       location: data.location,
       headline: data.headline,
       summary: data.summary,
+      targetRoles: data.targetRoles,
+      targetLocations: data.targetLocations,
+      workModePreference: data.workModePreference,
+      salaryPreference: data.salaryPreference,
     },
   });
 
