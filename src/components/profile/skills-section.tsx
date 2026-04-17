@@ -171,7 +171,7 @@ export function SkillsSection({ skills, onUpdate }: SkillsSectionProps) {
             <button
               type="button"
               onClick={handleAdd}
-              className="rounded-lg border border-dashed border-zinc-700 px-3 py-2 text-sm text-indigo-400 hover:border-zinc-600 hover:text-indigo-300"
+              className="flex items-center rounded-lg border border-dashed border-zinc-700 px-3 py-2 text-sm text-indigo-400 hover:border-zinc-600 hover:text-indigo-300"
             >
               + Add skill
             </button>
