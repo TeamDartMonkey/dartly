@@ -5,12 +5,13 @@ import { useCallback, useEffect, useState } from "react";
 import { showToast } from "@/components/ui/toast";
 import type { JobActivity } from "@/types/activity";
 import type { Job } from "@/types/job";
+import { DocumentsSection } from "./documents-section";
 import { FollowUpsSection } from "./followups-section";
 import { InterviewsSection } from "./interviews-section";
 import { OverviewSection } from "./overview-section";
 import { TimelineSection } from "./timeline-section";
 
-type Tab = "overview" | "timeline" | "interviews" | "followups";
+type Tab = "overview" | "timeline" | "interviews" | "followups" | "documents";
 
 const STAGE_STYLES: Record<string, string> = {
   Interested: "bg-zinc-800 text-zinc-400",
@@ -86,6 +87,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ jobId: str
     { id: "timeline", label: "Timeline" },
     { id: "interviews", label: "Interviews" },
     { id: "followups", label: "Follow-ups" },
+    { id: "documents", label: "Documents" },
   ];
 
   return (
@@ -183,6 +185,11 @@ export default function JobDetailPage({ params }: { params: Promise<{ jobId: str
             jobId={job.id}
             onActivitiesChanged={fetchActivities}
           />
+        </div>
+      )}
+      {activeTab === "documents" && (
+        <div role="tabpanel" id="panel-documents" aria-labelledby="tab-documents">
+          <DocumentsSection job={job} />
         </div>
       )}
     </div>
