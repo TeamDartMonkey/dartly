@@ -34,6 +34,46 @@ export function toVersionResponse(v: DocumentVersion): DocumentVersionResponse {
   };
 }
 
+export async function findDocumentByJob(userId: string, type: DocumentType, jobId: string) {
+  const link = await prisma.jobDocumentLink.findFirst({
+    where: { jobId, document: { userId, type, isDeleted: false } },
+    include: {
+      document: {
+        include: { versions: { orderBy: { versionNumber: "desc" }, take: 1 } },
+      },
+    },
+    orderBy: { linkedAt: "desc" },
+  });
+
+  if (!link?.document.versions.length) return null;
+  return { doc: link.document, latestVersion: link.document.versions[0] };
+}
+
+export async function createOrUpdateDocumentForJob(userId: string, input: CreateDocumentInput) {
+  const existing = input.jobId ? await findDocumentByJob(userId, input.type, input.jobId) : null;
+
+  if (existing) {
+    const nextVersion = existing.latestVersion.versionNumber + 1;
+    const version = await prisma.documentVersion.create({
+      data: {
+        documentId: existing.doc.id,
+        versionNumber: nextVersion,
+        content: input.content ?? null,
+      },
+    });
+
+    const updated = await prisma.document.update({
+      where: { id: existing.doc.id },
+      data: { updatedAt: new Date() },
+    });
+
+    return { doc: updated, version, isNew: false };
+  }
+
+  const result = await createDocument(userId, input);
+  return { ...result, isNew: true };
+}
+
 export async function createDocument(userId: string, input: CreateDocumentInput) {
   return prisma.$transaction(async (tx) => {
     const doc = await tx.document.create({

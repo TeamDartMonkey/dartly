@@ -16,8 +16,15 @@ type GenerateResult = {
 const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-const MAX_RETRIES = 3;
-const INITIAL_DELAY_MS = 1000;
+const MAX_RETRIES = 1;
+
+function parseRetryDelay(error: unknown): number | null {
+  if (error instanceof Error) {
+    const match = error.message.match(/retryDelay["':\s]+(\d+)s/i);
+    if (match) return Number.parseInt(match[1], 10) * 1000;
+  }
+  return null;
+}
 
 function isRetryable(error: unknown): boolean {
   if (error instanceof Error) {
@@ -43,7 +50,7 @@ async function generateWithRetry(prompt: string): Promise<string> {
         throw error;
       }
       if (attempt < MAX_RETRIES && isRetryable(error)) {
-        const delay = INITIAL_DELAY_MS * 2 ** attempt;
+        const delay = parseRetryDelay(error) ?? 2000 * (attempt + 1);
         await new Promise((resolve) => setTimeout(resolve, delay));
         continue;
       }

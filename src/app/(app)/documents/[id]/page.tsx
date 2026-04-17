@@ -237,7 +237,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
         })
         .from(element)
         .save();
-    } catch (err) {
+    } catch {
       showToast("Failed to generate PDF", "error");
     } finally {
       setDownloading(false);
@@ -303,7 +303,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           </div>
         </div>
 
-        {versions.length > 1 && (
+        {versions.length > 0 && (
           <div className="flex items-center gap-3">
             <Select
               value={selectedVersionId ?? ""}
