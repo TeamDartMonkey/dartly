@@ -13,7 +13,7 @@ type GenerateResult = {
   content: string;
 };
 
-const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY);
+const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY ?? "");
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 const MAX_RETRIES = 1;
