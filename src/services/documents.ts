@@ -1,4 +1,5 @@
-import type { Document, DocumentType, DocumentVersion } from "@prisma/client";
+import type { Document, DocumentType, DocumentVersion, Prisma } from "@prisma/client";
+import { ApiError } from "@/lib/api-error";
 import { prisma } from "@/services/prisma";
 import type { DocumentResponse, DocumentVersionResponse } from "@/types/document";
 
@@ -34,6 +35,19 @@ export function toVersionResponse(v: DocumentVersion): DocumentVersionResponse {
   };
 }
 
+// Serializable isolation + aggregate-based read prevents two concurrent writers
+// from both reading the same max versionNumber and creating duplicate versions.
+async function nextVersionNumber(
+  tx: Prisma.TransactionClient,
+  documentId: string
+): Promise<number> {
+  const agg = await tx.documentVersion.aggregate({
+    where: { documentId },
+    _max: { versionNumber: true },
+  });
+  return (agg._max.versionNumber ?? 0) + 1;
+}
+
 export async function createDocument(userId: string, input: CreateDocumentInput) {
   return prisma.$transaction(async (tx) => {
     const doc = await tx.document.create({
@@ -41,7 +55,6 @@ export async function createDocument(userId: string, input: CreateDocumentInput)
         userId,
         type: input.type,
         name: input.name,
-        status: "DRAFT",
       },
     });
 
@@ -95,33 +108,27 @@ export async function getDocumentById(id: string, userId: string) {
 }
 
 export async function updateDocumentContent(id: string, userId: string, content: string) {
-  const doc = await prisma.document.findFirst({
-    where: { id, userId, isDeleted: false },
-    include: {
-      versions: { orderBy: { versionNumber: "desc" }, take: 1 },
+  return prisma.$transaction(
+    async (tx) => {
+      const doc = await tx.document.findFirst({
+        where: { id, userId, isDeleted: false },
+      });
+      if (!doc) return null;
+
+      const versionNumber = await nextVersionNumber(tx, id);
+      const version = await tx.documentVersion.create({
+        data: { documentId: id, versionNumber, content },
+      });
+
+      const updated = await tx.document.update({
+        where: { id },
+        data: { updatedAt: new Date() },
+      });
+
+      return toDocumentResponse(updated, version);
     },
-  });
-
-  if (!doc) return null;
-
-  const nextVersion = doc.versions.length > 0 ? doc.versions[0].versionNumber + 1 : 1;
-
-  return prisma.$transaction(async (tx) => {
-    const version = await tx.documentVersion.create({
-      data: {
-        documentId: id,
-        versionNumber: nextVersion,
-        content,
-      },
-    });
-
-    const updated = await tx.document.update({
-      where: { id },
-      data: { updatedAt: new Date() },
-    });
-
-    return toDocumentResponse(updated, version);
-  });
+    { isolationLevel: "Serializable" }
+  );
 }
 
 export async function softDeleteDocument(id: string, userId: string): Promise<boolean> {
@@ -151,26 +158,22 @@ export async function getDocumentVersions(documentId: string, userId: string) {
 }
 
 export async function createDocumentVersion(documentId: string, userId: string, content: string) {
-  const doc = await prisma.document.findFirst({
-    where: { id: documentId, userId, isDeleted: false },
-    include: {
-      versions: { orderBy: { versionNumber: "desc" }, take: 1 },
+  return prisma.$transaction(
+    async (tx) => {
+      const doc = await tx.document.findFirst({
+        where: { id: documentId, userId, isDeleted: false },
+      });
+      if (!doc) return null;
+
+      const versionNumber = await nextVersionNumber(tx, documentId);
+      const version = await tx.documentVersion.create({
+        data: { documentId, versionNumber, content },
+      });
+
+      return toVersionResponse(version);
     },
-  });
-
-  if (!doc) return null;
-
-  const nextVersion = doc.versions.length > 0 ? doc.versions[0].versionNumber + 1 : 1;
-
-  const version = await prisma.documentVersion.create({
-    data: {
-      documentId,
-      versionNumber: nextVersion,
-      content,
-    },
-  });
-
-  return toVersionResponse(version);
+    { isolationLevel: "Serializable" }
+  );
 }
 
 export async function linkDocumentToJob(
@@ -187,9 +190,21 @@ export async function linkDocumentToJob(
 
   if (!job || !doc || !version) return null;
 
-  return prisma.jobDocumentLink.create({
-    data: { jobId, documentId, documentVersionId },
-  });
+  try {
+    return await prisma.jobDocumentLink.create({
+      data: { jobId, documentId, documentVersionId },
+    });
+  } catch (err) {
+    if (
+      typeof err === "object" &&
+      err !== null &&
+      "code" in err &&
+      (err as { code: string }).code === "P2002"
+    ) {
+      throw new ApiError(409, "Document version already linked to this job");
+    }
+    throw err;
+  }
 }
 
 export async function getDocumentsForJob(jobId: string, userId: string) {
@@ -197,7 +212,7 @@ export async function getDocumentsForJob(jobId: string, userId: string) {
   if (!job) return null;
 
   const links = await prisma.jobDocumentLink.findMany({
-    where: { jobId },
+    where: { jobId, document: { isDeleted: false } },
     include: {
       document: true,
       documentVersion: true,
@@ -205,10 +220,8 @@ export async function getDocumentsForJob(jobId: string, userId: string) {
     orderBy: { linkedAt: "desc" },
   });
 
-  return links
-    .filter((l) => !l.document.isDeleted)
-    .map((l) => ({
-      ...toDocumentResponse(l.document, l.documentVersion),
-      linkedAt: l.linkedAt.toISOString(),
-    }));
+  return links.map((l) => ({
+    ...toDocumentResponse(l.document, l.documentVersion),
+    linkedAt: l.linkedAt.toISOString(),
+  }));
 }
