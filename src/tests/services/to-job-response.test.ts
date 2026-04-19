@@ -25,7 +25,6 @@ describe("toJobResponse", () => {
       customNotes: null,
       priority: false,
       lastActivityAt: new Date("2026-01-10"),
-      outcomeAt: null,
       createdAt: new Date("2026-01-01"),
       updatedAt: new Date("2026-01-10"),
     } satisfies PrismaJob;

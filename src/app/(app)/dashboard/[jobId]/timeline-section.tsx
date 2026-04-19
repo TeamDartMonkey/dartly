@@ -153,7 +153,6 @@ const DOT_COLORS: Record<string, string> = {
   INTERVIEW: "bg-amber-500",
   FOLLOWUP: "bg-zinc-400",
   NOTE: "bg-zinc-500",
-  OUTCOME: "bg-green-500",
 };
 
 const TYPE_BADGE: Record<string, string> = {
@@ -162,5 +161,4 @@ const TYPE_BADGE: Record<string, string> = {
   INTERVIEW: "bg-amber-950 text-amber-400",
   FOLLOWUP: "bg-zinc-800 text-zinc-300",
   NOTE: "bg-zinc-800 text-zinc-400",
-  OUTCOME: "bg-green-950 text-green-400",
 };

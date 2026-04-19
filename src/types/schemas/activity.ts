@@ -1,13 +1,6 @@
 import { z } from "zod/v4";
 
-export const ActivityTypeSchema = z.enum([
-  "INTERVIEW",
-  "FOLLOWUP",
-  "NOTE",
-  "STAGE",
-  "APPLIED",
-  "OUTCOME",
-]);
+export const ActivityTypeSchema = z.enum(["INTERVIEW", "FOLLOWUP", "NOTE", "STAGE", "APPLIED"]);
 
 // POST /api/jobs/[id]/activities
 export const CreateActivitySchema = z.object({

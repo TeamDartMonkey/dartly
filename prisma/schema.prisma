@@ -97,7 +97,6 @@ model Job {
   recruiterNotes    String?
   customNotes       String?
   lastActivityAt    DateTime?
-  outcomeAt         DateTime?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
