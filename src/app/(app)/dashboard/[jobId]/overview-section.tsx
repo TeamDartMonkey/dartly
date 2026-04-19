@@ -26,6 +26,8 @@ export function OverviewSection({ job, onJobUpdated }: Props) {
     applicationDate: job.applicationDate ? job.applicationDate.slice(0, 10) : "",
     deadline: job.deadline ? job.deadline.slice(0, 10) : "",
     recruiterNotes: job.recruiterNotes ?? "",
+    customNotes: job.customNotes ?? "",
+    priority: job.priority ?? false,
     stage: job.stage,
   });
 
@@ -47,6 +49,8 @@ export function OverviewSection({ job, onJobUpdated }: Props) {
       applicationDate: job.applicationDate ? job.applicationDate.slice(0, 10) : "",
       deadline: job.deadline ? job.deadline.slice(0, 10) : "",
       recruiterNotes: job.recruiterNotes ?? "",
+      customNotes: job.customNotes ?? "",
+      priority: job.priority ?? false,
       stage: job.stage,
     });
     setEditing(false);
@@ -76,6 +80,8 @@ export function OverviewSection({ job, onJobUpdated }: Props) {
           applicationDate: form.applicationDate || null,
           deadline: form.deadline || null,
           recruiterNotes: form.recruiterNotes.trim() || null,
+          customNotes: form.customNotes.trim() || null,
+          priority: form.priority,
           stage: form.stage,
         }),
       });
@@ -205,6 +211,27 @@ export function OverviewSection({ job, onJobUpdated }: Props) {
           />
         </div>
 
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
+          <div>
+            <span className="block text-xs font-medium text-zinc-400 mb-1">Priority</span>
+            {editing ? (
+              <label className="flex items-center gap-2 py-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.priority}
+                  onChange={(e) => setForm((prev) => ({ ...prev, priority: e.target.checked }))}
+                  className="h-4 w-4 rounded border-zinc-600 bg-zinc-800 text-indigo-500 focus:ring-indigo-500"
+                />
+                <span className="text-sm text-zinc-300">Mark as priority</span>
+              </label>
+            ) : (
+              <p className="text-sm text-zinc-300 py-2 min-h-[36px]">
+                {form.priority ? "Yes" : <span className="text-zinc-600 italic">No</span>}
+              </p>
+            )}
+          </div>
+        </div>
+
         <TextareaField
           label="Job description"
           id="description"
@@ -224,6 +251,17 @@ export function OverviewSection({ job, onJobUpdated }: Props) {
           editing={editing}
           onChange={handleChange}
           placeholder="Recruiter name, email, phone, LinkedIn..."
+          rows={3}
+        />
+
+        <TextareaField
+          label="Notes"
+          id="customNotes"
+          name="customNotes"
+          value={form.customNotes}
+          editing={editing}
+          onChange={handleChange}
+          placeholder="Personal notes, links, reminders..."
           rows={3}
         />
       </div>

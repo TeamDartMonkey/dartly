@@ -1,7 +1,7 @@
 export interface JobActivity {
   id: string;
   jobId: string;
-  type: "INTERVIEW" | "FOLLOWUP" | "NOTE" | "STAGE" | "APPLIED" | "OUTCOME";
+  type: "INTERVIEW" | "FOLLOWUP" | "NOTE" | "STAGE" | "APPLIED";
   title: string;
   description: string | null;
   scheduledAt: string | null;
