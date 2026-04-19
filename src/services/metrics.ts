@@ -10,7 +10,10 @@ export type DashboardMetrics = {
 };
 
 export async function getDashboardMetrics(userId: string): Promise<DashboardMetrics> {
-  const jobs = await prisma.job.findMany({ where: { userId } });
+  const jobs = await prisma.job.findMany({
+    where: { userId },
+    select: { id: true, stage: true },
+  });
 
   // Stage counts (using UI labels)
   const stageCounts: Record<string, number> = {};
@@ -31,13 +34,14 @@ export async function getDashboardMetrics(userId: string): Promise<DashboardMetr
   let averageTimeToResponse: number | null = null;
 
   if (appliedJobIds.length > 0) {
-    // Find jobs that have stage history showing movement from APPLIED to another stage
+    // Find jobs that moved out of APPLIED. History is only written when stage
+    // changes (see services/jobs.ts), so fromStage: "APPLIED" is sufficient.
     const stageHistories = await prisma.jobStageHistory.findMany({
       where: {
         jobId: { in: appliedJobIds },
         fromStage: "APPLIED",
-        toStage: { not: "APPLIED" },
       },
+      select: { jobId: true, changedAt: true },
       orderBy: { changedAt: "asc" },
     });
 
@@ -55,6 +59,7 @@ export async function getDashboardMetrics(userId: string): Promise<DashboardMetr
           jobId: { in: Array.from(respondedJobIds) },
           toStage: "APPLIED",
         },
+        select: { jobId: true, changedAt: true },
         orderBy: { changedAt: "asc" },
       });
 

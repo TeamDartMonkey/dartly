@@ -1,3 +1,4 @@
+import logger from "@/lib/logger";
 import type { ProfileData } from "@/types/profile";
 
 type JobContext = {
@@ -10,16 +11,21 @@ type GenerateResult = {
   content: string;
 };
 
+// Stub provider: deterministic templates with no external API calls.
+// Swap in a real AI provider (OpenAI, Anthropic, etc.) and remove this warning
+// once the AI_PROVIDER env var or equivalent gate is wired.
+function warnStub(kind: string) {
+  logger.warn("AI stub provider invoked — returning template content", { kind });
+}
+
 /**
  * Generates a resume draft using profile data and job context.
- *
- * Placeholder implementation — returns a structured Markdown resume.
- * Swap in a real AI provider (OpenAI, Anthropic, etc.) when decided.
  */
 export async function generateResumeDraft(
   profile: ProfileData,
   job: JobContext
 ): Promise<GenerateResult> {
+  warnStub("resume");
   const name = [profile.firstName, profile.lastName].filter(Boolean).join(" ") || "Your Name";
   const contact = [profile.email, profile.phone, profile.location].filter(Boolean).join(" | ");
 
@@ -74,13 +80,12 @@ export async function generateResumeDraft(
 
 /**
  * Generates a cover letter draft using profile data and job context.
- *
- * Placeholder implementation — returns a structured cover letter template.
  */
 export async function generateCoverLetterDraft(
   profile: ProfileData,
   job: JobContext
 ): Promise<GenerateResult> {
+  warnStub("cover-letter");
   const name = [profile.firstName, profile.lastName].filter(Boolean).join(" ") || "Your Name";
 
   const lines: string[] = [];
@@ -132,11 +137,9 @@ type RewriteInput = {
 
 /**
  * Rewrites/improves document content based on an instruction.
- *
- * Placeholder implementation — prepends the instruction as a note
- * and returns lightly restructured content. Replace with AI call.
  */
 export async function rewriteContent(input: RewriteInput): Promise<GenerateResult> {
+  warnStub("rewrite");
   const { content, instruction } = input;
 
   // Placeholder: apply simple transformations based on common instructions

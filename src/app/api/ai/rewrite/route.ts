@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { ApiError, handleApiError } from "@/lib/api-error";
 import { withHttpLogging } from "@/lib/api-wrapper";
 import logger from "@/lib/logger";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { requireAuth } from "@/lib/requireAuth";
 import { validateBody } from "@/lib/validate-body";
 import { rewriteContent } from "@/services/ai";
@@ -10,6 +11,13 @@ import { RewriteContentSchema } from "@/types/schemas";
 
 export async function POST(request: NextRequest) {
   return withHttpLogging(request, async () => {
+    const rateLimitResponse = await checkRateLimit(request, {
+      id: "api/ai/rewrite",
+      limit: 20,
+      windowSecs: 60,
+    });
+    if (rateLimitResponse) return rateLimitResponse;
+
     try {
       const user = await requireAuth();
       const { documentId, instruction } = await validateBody(request, RewriteContentSchema);
@@ -31,7 +39,7 @@ export async function POST(request: NextRequest) {
       logger.info("AI rewrite generated", {
         userId: user.id,
         documentId,
-        instruction,
+        instructionLength: instruction.length,
       });
 
       return NextResponse.json(
