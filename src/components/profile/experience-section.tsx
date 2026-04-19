@@ -128,94 +128,86 @@ export function ExperienceSection({ experiences, onUpdate }: ExperienceSectionPr
               const isDragTarget = dragOverIndex === index && draggedIndex !== index;
 
               return (
-                <>
-                  {/* biome-ignore lint/a11y/noStaticElementInteractions: native drag-and-drop requires handlers on this container */}
-                  <li
-                    key={exp.id || index}
-                    draggable
-                    onDragStart={() => handleDragStart(index)}
-                    onDragOver={(e) => handleDragOver(e, index)}
-                    onDrop={() => handleDrop(index)}
-                    onDragEnd={handleDragEnd}
-                    className={[
-                      "group list-none rounded-lg border bg-zinc-950/40 p-4 transition-colors",
-                      isDragging
-                        ? "border-indigo-500 opacity-50"
-                        : isDragTarget
-                          ? "border-indigo-400"
-                          : "border-zinc-700 hover:border-zinc-600",
-                    ].join(" ")}
-                  >
-                    <div className="flex items-start justify-between gap-3">
+                <li
+                  key={exp.id || index}
+                  draggable
+                  onDragStart={() => handleDragStart(index)}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDrop={() => handleDrop(index)}
+                  onDragEnd={handleDragEnd}
+                  className={[
+                    "group list-none rounded-lg border bg-zinc-950/40 p-4 transition-colors",
+                    isDragging
+                      ? "border-indigo-500 opacity-50"
+                      : isDragTarget
+                        ? "border-indigo-400"
+                        : "border-zinc-700 hover:border-zinc-600",
+                  ].join(" ")}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={() => handleEdit(index)}
+                      className="min-w-0 flex-1 text-left"
+                    >
+                      <p className="text-sm font-medium text-zinc-50">
+                        {exp.title || <span className="text-zinc-600">Untitled</span>}
+                        {exp.organization && (
+                          <span className="font-normal text-zinc-400"> at {exp.organization}</span>
+                        )}
+                      </p>
+
+                      <p className="mt-0.5 text-xs text-zinc-500">{formatDateRange(exp)}</p>
+
+                      {exp.description && (
+                        <p className="mt-2 line-clamp-2 text-sm text-zinc-400">{exp.description}</p>
+                      )}
+                    </button>
+
+                    <div className="flex shrink-0 items-center gap-1">
+                      <span
+                        className="select-none px-2 py-1 text-zinc-500 cursor-grab active:cursor-grabbing"
+                        title="Drag to reorder"
+                        aria-hidden="true"
+                      >
+                        ⋮⋮
+                      </span>
+
                       <button
                         type="button"
                         onClick={() => handleEdit(index)}
-                        className="min-w-0 flex-1 text-left"
+                        className="p-1.5 text-zinc-500 transition-colors hover:text-indigo-400"
+                        aria-label="Edit"
+                        title="Edit"
                       >
-                        <p className="text-sm font-medium text-zinc-50">
-                          {exp.title || <span className="text-zinc-600">Untitled</span>}
-                          {exp.organization && (
-                            <span className="font-normal text-zinc-400">
-                              {" "}
-                              at {exp.organization}
-                            </span>
-                          )}
-                        </p>
-
-                        <p className="mt-0.5 text-xs text-zinc-500">{formatDateRange(exp)}</p>
-
-                        {exp.description && (
-                          <p className="mt-2 line-clamp-2 text-sm text-zinc-400">
-                            {exp.description}
-                          </p>
-                        )}
+                        ✎
                       </button>
 
-                      <div className="flex shrink-0 items-center gap-1">
-                        <span
-                          className="select-none px-2 py-1 text-zinc-500 cursor-grab active:cursor-grabbing"
-                          title="Drag to reorder"
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(index)}
+                        className="p-1.5 text-zinc-500 transition-colors hover:text-red-400"
+                        aria-label="Delete"
+                        title="Delete"
+                      >
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                           aria-hidden="true"
                         >
-                          ⋮⋮
-                        </span>
-
-                        <button
-                          type="button"
-                          onClick={() => handleEdit(index)}
-                          className="p-1.5 text-zinc-500 transition-colors hover:text-indigo-400"
-                          aria-label="Edit"
-                          title="Edit"
-                        >
-                          ✎
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(index)}
-                          className="p-1.5 text-zinc-500 transition-colors hover:text-red-400"
-                          aria-label="Delete"
-                          title="Delete"
-                        >
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            aria-hidden="true"
-                          >
-                            <polyline points="3 6 5 6 21 6" />
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                          </svg>
-                        </button>
-                      </div>
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        </svg>
+                      </button>
                     </div>
-                  </li>
-                </>
+                  </div>
+                </li>
               );
             })}
           </ul>
