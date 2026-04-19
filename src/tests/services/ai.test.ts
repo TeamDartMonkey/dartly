@@ -1,6 +1,14 @@
-import { describe, expect, it } from "vitest";
-import { generateCoverLetterDraft, generateResumeDraft, rewriteContent } from "@/services/ai";
+import { describe, expect, it, vi } from "vitest";
 import type { ProfileData } from "@/types/profile";
+
+vi.mock("@/lib/logger", () => ({
+  default: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+  logError: vi.fn(),
+}));
+
+const { generateCoverLetterDraft, generateResumeDraft, rewriteContent } = await import(
+  "@/services/ai"
+);
 
 const baseProfile: ProfileData = {
   firstName: "Jane",
@@ -107,5 +115,26 @@ describe("rewriteContent", () => {
     });
 
     expect(result.content).not.toContain("\n\n\n");
+  });
+
+  it("applies formal transformation — removes exclamation marks", async () => {
+    const result = await rewriteContent({
+      content: "Hello! I'm very excited! Really!!!",
+      instruction: "Make it more professional",
+    });
+
+    // Strip the leading instruction comment (which contains `<!--`) before asserting
+    const transformed = result.content.replace(/^<!--.*-->\n/, "");
+    expect(transformed).not.toContain("!");
+  });
+
+  it("passes through unchanged when no known keyword matches", async () => {
+    const result = await rewriteContent({
+      content: "Keep this exactly",
+      instruction: "swag it up",
+    });
+
+    // only the leading instruction comment should have been added
+    expect(result.content.replace(/^<!--.*-->\n/, "")).toBe("Keep this exactly");
   });
 });

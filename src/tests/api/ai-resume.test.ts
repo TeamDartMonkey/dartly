@@ -48,6 +48,10 @@ vi.mock("@/services/profile", () => ({
   getProfile: mockGetProfile,
 }));
 
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: vi.fn(async () => null),
+}));
+
 vi.mock("@/services/prisma", () => ({
   prisma: {
     job: { findFirst: mockJobFindFirst },
@@ -139,5 +143,27 @@ describe("POST /api/ai/resume", () => {
 
     const res = await POST(makeRequest());
     expect(res.status).toBe(401);
+  });
+
+  it("returns 400 when request body validation fails", async () => {
+    const { ApiError } = await import("@/lib/api-error");
+    mockValidateBody.mockRejectedValue(new ApiError(400, "Invalid request body"));
+
+    const res = await POST(makeRequest());
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toBe("Invalid request body");
+  });
+
+  it("returns 429 when rate-limited", async () => {
+    const { NextResponse } = await import("next/server");
+    const rateLimitMod = await import("@/lib/rate-limit");
+    vi.mocked(rateLimitMod.checkRateLimit).mockResolvedValueOnce(
+      NextResponse.json({ error: "Too many requests" }, { status: 429 })
+    );
+
+    const res = await POST(makeRequest());
+    expect(res.status).toBe(429);
   });
 });
