@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { ApiError, handleApiError } from "@/lib/api-error";
 import { withHttpLogging } from "@/lib/api-wrapper";
 import logger from "@/lib/logger";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { requireAuth } from "@/lib/requireAuth";
 import { validateBody } from "@/lib/validate-body";
 import { generateCoverLetterDraft } from "@/services/ai";
@@ -12,6 +13,13 @@ import { GenerateDocumentSchema } from "@/types/schemas";
 
 export async function POST(request: NextRequest) {
   return withHttpLogging(request, async () => {
+    const rateLimitResponse = await checkRateLimit(request, {
+      id: "api/ai/cover-letter",
+      limit: 10,
+      windowSecs: 60,
+    });
+    if (rateLimitResponse) return rateLimitResponse;
+
     try {
       const user = await requireAuth();
       const { jobId } = await validateBody(request, GenerateDocumentSchema);

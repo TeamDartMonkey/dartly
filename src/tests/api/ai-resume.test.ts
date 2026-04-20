@@ -23,6 +23,10 @@ vi.mock("@/lib/api-wrapper", () => ({
   withHttpLogging: vi.fn((_req: unknown, handler: () => unknown) => handler()),
 }));
 
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: vi.fn().mockResolvedValue(null),
+}));
+
 vi.mock("@/lib/requireAuth", () => ({
   requireAuth: mockRequireAuth,
 }));
@@ -140,5 +144,19 @@ describe("POST /api/ai/resume", () => {
 
     const res = await POST(makeRequest());
     expect(res.status).toBe(401);
+  });
+
+  it("returns 429 when rate limited without invoking auth or AI", async () => {
+    const { checkRateLimit } = await import("@/lib/rate-limit");
+    const { NextResponse } = await import("next/server");
+    vi.mocked(checkRateLimit).mockResolvedValueOnce(
+      NextResponse.json({ error: "Too many requests" }, { status: 429 })
+    );
+
+    const res = await POST(makeRequest());
+
+    expect(res.status).toBe(429);
+    expect(mockRequireAuth).not.toHaveBeenCalled();
+    expect(mockGenerateResumeDraft).not.toHaveBeenCalled();
   });
 });
