@@ -27,7 +27,8 @@ describe("getDashboardMetrics", () => {
     expect(metrics.totalJobs).toBe(0);
     expect(metrics.activeApplications).toBe(0);
     expect(metrics.responseRate).toBe(0);
-    expect(metrics.averageTimeToResponse).toBeNull();
+    expect(metrics.interviewRate).toBe(0);
+    expect(metrics.rejectionRate).toBe(0);
     expect(metrics.stageCounts).toEqual({});
   });
 
@@ -73,45 +74,56 @@ describe("getDashboardMetrics", () => {
       { id: "j2", stage: "INTERVIEW" },
     ]);
 
-    // First call: find histories from APPLIED to other stages
-    // Second call: find when jobs entered APPLIED
-    mockStageHistoryFindMany
-      .mockResolvedValueOnce([
-        {
-          jobId: "j2",
-          fromStage: "APPLIED",
-          toStage: "INTERVIEW",
-          changedAt: new Date("2026-01-10"),
-        },
-      ])
-      .mockResolvedValueOnce([
-        { jobId: "j2", toStage: "APPLIED", changedAt: new Date("2026-01-05") },
-      ]);
+    mockStageHistoryFindMany.mockResolvedValueOnce([
+      {
+        jobId: "j2",
+        fromStage: "APPLIED",
+        toStage: "INTERVIEW",
+        changedAt: new Date("2026-01-10"),
+      },
+    ]);
 
     const metrics = await getDashboardMetrics(USER_ID);
 
-    // 1 out of 2 applied jobs got a response = 50%
     expect(metrics.responseRate).toBe(50);
-    // 5 days from Jan 5 to Jan 10
-    expect(metrics.averageTimeToResponse).toBe(5);
   });
 
-  it("returns null averageTimeToResponse when no responses exist", async () => {
-    mockJobFindMany.mockResolvedValue([{ id: "j1", stage: "APPLIED" }]);
+  it("computes interview rate", async () => {
+    mockJobFindMany.mockResolvedValue([
+      { id: "j1", stage: "APPLIED" },
+      { id: "j2", stage: "INTERVIEW" },
+      { id: "j3", stage: "OFFER" },
+      { id: "j4", stage: "REJECTED" },
+    ]);
     mockStageHistoryFindMany.mockResolvedValue([]);
 
     const metrics = await getDashboardMetrics(USER_ID);
 
-    expect(metrics.responseRate).toBe(0);
-    expect(metrics.averageTimeToResponse).toBeNull();
+    // 2 interview/offer out of 4 non-interested = 50%
+    expect(metrics.interviewRate).toBe(50);
   });
 
-  it("handles zero applied edge case (no division by zero)", async () => {
+  it("computes rejection rate", async () => {
+    mockJobFindMany.mockResolvedValue([
+      { id: "j1", stage: "APPLIED" },
+      { id: "j2", stage: "APPLIED" },
+      { id: "j3", stage: "REJECTED" },
+    ]);
+    mockStageHistoryFindMany.mockResolvedValue([]);
+
+    const metrics = await getDashboardMetrics(USER_ID);
+
+    // 1 rejected out of 3 non-interested = 33%
+    expect(metrics.rejectionRate).toBe(33);
+  });
+
+  it("returns zero rates for interested-only jobs", async () => {
     mockJobFindMany.mockResolvedValue([{ id: "j1", stage: "INTERESTED" }]);
 
     const metrics = await getDashboardMetrics(USER_ID);
 
     expect(metrics.responseRate).toBe(0);
-    expect(metrics.averageTimeToResponse).toBeNull();
+    expect(metrics.interviewRate).toBe(0);
+    expect(metrics.rejectionRate).toBe(0);
   });
 });
