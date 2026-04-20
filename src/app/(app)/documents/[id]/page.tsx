@@ -274,10 +274,11 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
         <div>
           <button
             type="button"
-            onClick={() => router.push("/documents")}
+            onClick={() => router.back()}
             className="text-indigo-400 hover:text-indigo-300 text-sm"
+            aria-label="Go back"
           >
-            &larr; Documents
+            &larr;
           </button>
         </div>
 
