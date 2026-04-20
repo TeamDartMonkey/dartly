@@ -184,7 +184,8 @@ export default function FilterBar({
           onChange={(val) => setSortBy(val as SortKey)}
           options={[
             { value: "recent", label: "Most recent" },
-            { value: "deadline", label: "Deadline (soonest)" },
+            { value: "stage", label: "Stage" },
+            { value: "deadline", label: "Deadline" },
             { value: "created", label: "Date created" },
             { value: "company", label: "Company A-Z" },
             { value: "priority", label: "Priority first" },
