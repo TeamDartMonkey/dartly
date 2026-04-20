@@ -8,9 +8,11 @@ _Dartly — ATS for Candidates | CS 490 Capstone_
 |------|-------|
 | App URL | `http://localhost:3000` |
 | CI | `.github/workflows/ci.yml` |
-| Test user A email | `john.doe@email.com` |
+| Test user A email | `testuser@gmail.com` |
+| Test user A password | `Testpass1!` |
 | Test user A ID | `a818c364-412a-4545-8c88-f7b4cba05307` |
-| Test user B email | `jordan.kim@email.com` |
+| Test user B email | `testuser2@gmail.com` |
+| Test user B password | `Testpass1!` |
 | Test user B ID | `77475f79-adb0-4de2-a61c-5ff34eb96ce7` |
 | Seed command | `bun run db:clean && bun run db:seed` |
 | Test command | `bun run test` |
@@ -18,11 +20,11 @@ _Dartly — ATS for Candidates | CS 490 Capstone_
 
 ### Seeded Data Summary
 
-- **14 jobs** across 5 stages (Interested, Applied, Interview, Offer, Rejected)
-- User A: 6 jobs, User B: 8 jobs
+- **88 jobs** across 7 stages (Interested, Applied, Interview, Offer, Rejected, Ghosted, Archived)
+- User A: 42 jobs, User B: 43 jobs
 - **2 profiles** with 3/2 experiences, 2/2 educations, 6/6 skills
-- **8 AI documents** (4 resumes + 4 cover letters, all DRAFT, linked to jobs)
-- **36 activities**, **22 stage history** records
+- **Activities and stage history** auto-generated per job based on stage transitions
+- **Dashboard metrics**: Total Jobs, Active, Response Rate, Interview Rate, Rejection Rate, Ghost Rate, Offer Count, pipeline distribution bar
 
 ---
 
@@ -30,13 +32,14 @@ _Dartly — ATS for Candidates | CS 490 Capstone_
 
 - [ ] Run `bun dev` — confirm app loads at `http://localhost:3000`
 - [ ] Run `bun run db:clean && bun run db:seed` — fresh seed data
-- [ ] Login as User A (`john.doe@email.com`)
+- [ ] Login as User A (`testuser@gmail.com` / `Testpass1!`)
 - [ ] Open CI tab: `https://github.com/justincordova/dartly/actions` (or repo URL)
 - [ ] Open VS Code with these files ready to show:
   - `src/services/jobs.ts` (stage transition transaction)
   - `src/tests/services/jobs.test.ts` (stage transition tests)
   - `src/tests/api/jobs-id.test.ts` (auth/ownership tests)
   - `src/tests/services/profile.test.ts` (profile sync tests)
+  - `src/tests/services/metrics.test.ts` (metrics computation tests)
 
 ---
 
@@ -46,11 +49,12 @@ _Dartly — ATS for Candidates | CS 490 Capstone_
 
 | Step | Action | What to Show |
 |------|--------|--------------|
-| 1 | Open Dashboard | 14 seeded jobs in card grid, metrics panel at top (Total Jobs, Active, Response Rate, Avg Response) |
+| 1 | Open Dashboard | 42 seeded jobs in card grid (User A), metrics panel at top (Total Jobs, Active, Response Rate, Interview Rate, Rejection Rate, Ghost Rate) plus pipeline distribution bar with stage colors and counts |
 | 2 | Search | Type "engineer" in search bar → results filter in real time (matches title, company, location, description, notes) |
 | 3 | Filter | Set Stage filter to "Interview" → shows only interview-stage jobs |
 | 4 | Sort | Change sort from "Most recent" to "Company A-Z" → cards reorder |
-| 5 | Card indicators | Point out: color-coded stage badges (blue=Applied, yellow=Interview, green=Offer, red=Rejected), urgency indicators (Overdue/Due soon), priority flags |
+| 5 | Card indicators | Point out: color-coded stage badges (blue=Applied, yellow=Interview, green=Offer, red=Rejected, purple=Ghosted, orange=Archived, gray=Interested), urgency indicators (Overdue/Due soon), priority flags |
+| 6 | Metrics panel | Point out the pipeline distribution bar showing proportional stage breakdown (hover/click to expand), Ghost Rate metric card, Interview Rate, Rejection Rate, and the offer count badge if offers exist |
 
 ### A2. Card Expansion to Job Detail and Workflow (2 min)
 
@@ -71,7 +75,7 @@ _Dartly — ATS for Candidates | CS 490 Capstone_
 | 3 | Click "Follow-ups" tab | Shows existing follow-ups with overdue highlighting |
 | 4 | Add follow-up | Click "Add follow-up" → fill title, due date, notes → save |
 | 5 | Click "Timeline" tab | Show unified timeline — all activity types visible (STAGE, INTERVIEW, FOLLOWUP, NOTE), auto-logged stage changes with "Stage changed: Applied → Interview" |
-| 6 | Update outcome | Go back to Overview tab, change stage to "Offer" or "Rejected" → save → timeline auto-logs the change |
+| 6 | Update outcome | Go back to Overview tab, change stage to "Ghosted" or "Rejected" → save → timeline auto-logs the change |
 
 ### A4. Profile Completion + AI Job-Context Document Flow (2 min)
 
@@ -83,7 +87,7 @@ _Dartly — ATS for Candidates | CS 490 Capstone_
 | 4 | Generate AI resume | Click "Generate Resume" → Gemini 2.5 Flash generates resume using profile + job context → auto-saved as document linked to job → redirects to document viewer |
 | 5 | Generate AI cover letter | Go back to Job Detail → Documents tab → Click "Generate Cover Letter" → shows generated cover letter |
 | 6 | Rewrite/improve | In document viewer, use Rewrite panel → type "Make it more concise" → shows side-by-side diff → click "Accept" to save as new version |
-| 7 | Show dashboard metrics | Navigate to Dashboard → metrics panel shows stage counts, total jobs, active count, response rate |
+| 7 | Show dashboard metrics | Navigate to Dashboard → metrics panel shows all rates (Response, Interview, Rejection, Ghost), pipeline bar reflects stage distribution |
 
 ---
 
@@ -97,9 +101,10 @@ _Dartly — ATS for Candidates | CS 490 Capstone_
 |------|--------|--------------|
 | 1 | In the app | Change a job stage in Job Detail Overview → save |
 | 2 | Check Timeline tab | Auto-created `STAGE` activity: "Stage changed: Applied → Interview" |
-| 3 | Check Dashboard | `lastActivityAt` bumped → job surfaces at top with "Most recent" sort. Metrics panel reflects new stage counts |
-| 4 | Open `src/services/jobs.ts` | Show the Prisma transaction at **lines 113–159** that atomically: (1) updates the Job record, (2) bumps `lastActivityAt` (**line 134**), (3) creates `JobStageHistory` (**line 139**), (4) creates `JobActivity` (**line 149**) |
-| 5 | Show stage detection | Point to **line 111**: `const stageChanged = prismaStage && prismaStage !== existing.stage` — gates history/activity creation |
+| 3 | Check Dashboard | `lastActivityAt` bumped → job surfaces at top with "Most recent" sort. Metrics panel reflects new stage counts and rates (Ghost Rate updates if moved to/from Ghosted) |
+| 4 | Open `src/services/jobs.ts` | Show the Prisma transaction at **lines 115–162** that atomically: (1) updates the Job record, (2) bumps `lastActivityAt` (**line 137**), (3) creates `JobStageHistory` (**line 142**), (4) creates `JobActivity` (**line 152**) |
+| 5 | Show stage detection | Point to **line 112**: `const stageChanged = prismaStage && prismaStage !== existing.stage` — gates history/activity creation |
+| 6 | Show Ghosted handling | Point to `src/services/metrics.ts` — Ghosted excluded from active applications (**line 25**), ghost rate computed separately (**line 54–56**), response rate excludes GHOSTED transitions (**line 37**) |
 
 **Show unit test:**
 
@@ -107,9 +112,20 @@ Open `src/tests/services/jobs.test.ts`:
 
 | Test | Line | What it proves |
 |------|------|----------------|
-| `"creates stage history and STAGE activity when stage changes"` | 99 | Verifies `jobStageHistory.create` and `jobActivity.create` are called with correct from/to stages and activity metadata |
-| `"updates job without creating stage history when stage unchanged"` | 86 | Negative case — verifies NO history/activity is created when stage stays the same |
-| `"returns null when job not found"` | 121 | Edge case — updateJob returns null for nonexistent job |
+| `"creates stage history and STAGE activity when stage changes"` | 100 | Verifies `jobStageHistory.create` and `jobActivity.create` are called with correct from/to stages and activity metadata |
+| `"updates job without creating stage history when stage unchanged"` | 87 | Negative case — verifies NO history/activity is created when stage stays the same |
+| `"returns null when job not found"` | 122 | Edge case — updateJob returns null for nonexistent job |
+
+**Show metrics test:**
+
+Open `src/tests/services/metrics.test.ts`:
+
+| Test | Line | What it proves |
+|------|------|----------------|
+| `"computes active applications excluding Rejected, Archived, and Ghosted"` | 58 | Verifies Ghosted jobs are excluded from active count |
+| `"computes ghost rate"` | 121 | Verifies ghost rate is calculated as percentage of non-Interested jobs |
+| `"computes interview rate"` | 94 | Verifies interview rate includes Interview + Offer stages |
+| `"computes rejection rate"` | 108 | Verifies rejection rate as percentage of non-Interested jobs |
 
 ### B2. CI and Meaningful Testing Evidence (3 min)
 
@@ -121,15 +137,16 @@ Runs on every PR/push to `main`:
 2. `bun prisma generate`
 3. `bun lint` (Biome)
 4. `bun run type-check` (`tsc --noEmit`)
-5. `bun run test` (Vitest — 29 files, 184 tests)
+5. `bun run test` (Vitest — 31 files, 265 tests)
 6. `bun run build` (Next.js production build)
 
 **Show specific tests:**
 
 | Requirement | File | Test Name | Line |
 |-------------|------|-----------|------|
-| Dashboard workflow | `src/tests/services/jobs.test.ts` | `"creates stage history and STAGE activity when stage changes"` | 99 |
+| Dashboard workflow | `src/tests/services/jobs.test.ts` | `"creates stage history and STAGE activity when stage changes"` | 100 |
 | Profile completion | `src/tests/services/profile.test.ts` | `"updates existing, creates new, and deletes removed experiences"` | 148 |
+| Metrics computation | `src/tests/services/metrics.test.ts` | `"computes ghost rate"` | 121 |
 | Non-happy-path (401) | `src/tests/api/jobs-id.test.ts` | `"returns 401 when not authenticated"` | 78 |
 | Non-happy-path (ownership) | `src/tests/api/jobs-id.test.ts` | `"returns 404 when user does not own the job"` | 86 |
 
@@ -137,7 +154,7 @@ Runs on every PR/push to `main`:
 
 > The ownership denial test (`jobs-id.test.ts:86`) verifies that when user A tries to update user B's job, the service returns null and the API responds with 404 — not 403. This prevents cross-account data access without leaking which resources exist. The `requireAuth()` gate at the top of every handler plus `userId` scoping in service queries provides defense-in-depth.
 
-**Test suite summary:** 29 files, 184 tests — ~70 dashboard workflow, ~25 profile, ~80 negative-path (401/400/404/429/validation).
+**Test suite summary:** 31 files, 265 tests — covering dashboard workflow, profile sync, metrics computation, AI generation, document management, and negative-path (401/400/404/429/validation).
 
 ### B3. Architecture and Implementation Q&A (2 min)
 
@@ -149,11 +166,11 @@ Runs on every PR/push to `main`:
 
 #### Q2: Where is stage transition logic implemented and why?
 
-> In `src/services/jobs.ts:111-159` — inside the `updateJob()` service function, wrapped in a single Prisma `$transaction()`. This ensures the job update, stage history record, activity log, and `lastActivityAt` bump are atomic. If any step fails, the whole change rolls back. Putting it in the service layer (not the API route) means it's reusable and testable independently of HTTP concerns.
+> In `src/services/jobs.ts:107-162` — inside the `updateJob()` service function, wrapped in a single Prisma `$transaction()`. This ensures the job update, stage history record, activity log, and `lastActivityAt` bump are atomic. If any step fails, the whole change rolls back. Putting it in the service layer (not the API route) means it's reusable and testable independently of HTTP concerns.
 
 #### Q3: How does Job Detail coordinate timeline, interview, and document actions?
 
-> Job Detail (`/dashboard/[jobId]/page.tsx`) fetches the job and its activities via `GET /api/jobs/{id}`, then distributes data to tab components. The Timeline tab shows ALL activities (unfiltered). Interviews and Follow-ups tabs filter by `type === "INTERVIEW"` and `type === "FOLLOWUP"` respectively. All three use the same `POST /api/jobs/{id]/activities` endpoint — the `type` field on `JobActivity` is the polymorphic discriminator. Documents tab fetches via `GET /api/jobs/{id}/documents` and links to the document viewer.
+> Job Detail (`/dashboard/[jobId]/page.tsx`) fetches the job and its activities via `GET /api/jobs/{id}`, then distributes data to tab components. The Timeline tab shows ALL activities (unfiltered). Interviews and Follow-ups tabs filter by `type === "INTERVIEW"` and `type === "FOLLOWUP"` respectively. All three use the same `POST /api/jobs/{id}/activities` endpoint — the `type` field on `JobActivity` is the polymorphic discriminator. Documents tab fetches via `GET /api/jobs/{id}/documents` and links to the document viewer.
 
 #### Q4: How do profile entities feed AI generation inputs?
 
@@ -163,7 +180,7 @@ Runs on every PR/push to `main`:
 
 > - Metrics are computed on-the-fly (no caching) — Sprint 3 can add a materialized view or computed column
 > - Activity `type` is a free-form string, not an enum — gives flexibility but no DB-level validation
-> - No E2E/integration tests yet — all 184 tests are unit tests with mocked Prisma
+> - No E2E/integration tests yet — all 265 tests are unit tests with mocked Prisma
 > - AI generation is synchronous (no streaming or queue) — could timeout for slow responses
 > - Document versioning stores full content (no diffs) — could grow large over time
 
@@ -178,9 +195,9 @@ Runs on every PR/push to `main`:
 | Job Detail workflow | 6 | Section A2 |
 | Interview/follow-up/timeline/outcome | 6 | Section A3 |
 | Profile + AI docs + save/link + metrics | 6 | Section A4 |
-| Workflow/data-integrity proof | 5 | Section B1 — stage transition transaction |
+| Workflow/data-integrity proof | 5 | Section B1 — stage transition transaction + metrics |
 | CI pipeline evidence | 3 | Section B2 — GitHub Actions |
-| Meaningful unit tests | 5 | Section B2 — 3 specific tests shown |
+| Meaningful unit tests | 5 | Section B2 — specific tests shown |
 | Architecture understanding | 5 | Section B3 — Q&A |
 | **Total** | **50** | |
 
