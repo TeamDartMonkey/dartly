@@ -26,6 +26,7 @@ export default function JobListItem({ job, onEdit, onDelete, onStageChange, onRe
   const [isRestoring, setIsRestoring] = useState(false);
 
   const isInactive = job.stage === "Archived" || job.stage === "Ghosted";
+  const isArchived = job.stage === "Archived";
 
   const urgency = job.stage === "Interested" ? getUrgency(job.deadline) : "none";
   const urgencyStyle = URGENCY_STYLES[urgency];
@@ -113,7 +114,7 @@ export default function JobListItem({ job, onEdit, onDelete, onStageChange, onRe
             </span>
           )}
 
-          {isInactive && onRestore && (
+          {isArchived && onRestore && (
             <button
               type="button"
               onClick={(e) => {
