@@ -168,7 +168,12 @@ ${RESUME_FORMAT_EXAMPLE}
 FORMAT RULES:
 ${RESUME_FORMAT_RULES}
 
-Tailor the resume content to highlight the candidate's most relevant experience and skills for the target job. Rewrite and rephrase descriptions to emphasize impact and relevance. Output ONLY the resume content in Jake's format. No preamble, no explanation, no markdown code fences.`;
+Tailoring instructions:
+- Select the 2-4 most relevant projects from the candidate's profile that align with the target job's tech stack and domain. Do NOT list every project — only those that strengthen the application.
+- Reorder projects so the most relevant one appears first in the Projects section.
+- Rewrite project and experience bullet points to emphasize skills, technologies, and achievements that match the target job description.
+- If the target job emphasizes frontend work, prioritize frontend projects and rephrase bullets to highlight UI/UX impact. If it emphasizes backend or infrastructure, prioritize those projects accordingly.
+- Output ONLY the resume content in Jake's format. No preamble, no explanation, no markdown code fences.`;
 
   const content = await generateWithRetry(prompt);
   return { content };
