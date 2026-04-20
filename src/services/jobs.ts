@@ -109,6 +109,7 @@ export async function updateJob(id: string, userId: string, data: UpdateJobInput
 
   const prismaStage = data.stage ? (STAGE_UI_TO_PRISMA[data.stage] as PrismaJobStage) : undefined;
   const stageChanged = prismaStage && prismaStage !== existing.stage;
+  const leavingInterested = stageChanged && existing.stage === "INTERESTED";
 
   return prisma.$transaction(async (tx) => {
     const updated = await tx.job.update({
@@ -128,6 +129,7 @@ export async function updateJob(id: string, userId: string, data: UpdateJobInput
         ...(data.recruiterNotes !== undefined && { recruiterNotes: data.recruiterNotes }),
         ...(data.customNotes !== undefined && { customNotes: data.customNotes }),
         ...(prismaStage !== undefined && { stage: prismaStage }),
+        ...(leavingInterested && { deadline: null }),
         ...(data.priority !== undefined && { priority: data.priority }),
         // Bumped on every save to surface "recently touched" jobs at the top of the
         // dashboard. Intentionally not gated on field changes.

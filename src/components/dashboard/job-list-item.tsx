@@ -23,7 +23,7 @@ export default function JobListItem({ job, onEdit, onDelete, onStageChange }: Jo
   const router = useRouter();
   const [isChangingStage, setIsChangingStage] = useState(false);
 
-  const urgency = getUrgency(job.deadline);
+  const urgency = job.stage === "Interested" ? getUrgency(job.deadline) : "none";
   const urgencyStyle = URGENCY_STYLES[urgency];
 
   async function handleStageChange(val: string) {

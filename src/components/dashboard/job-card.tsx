@@ -32,7 +32,7 @@ export default function JobCard({
   const [isRestoring, setIsRestoring] = useState(false);
   const isArchived = job.stage === "Archived";
 
-  const urgency = getUrgency(job.deadline);
+  const urgency = job.stage === "Interested" ? getUrgency(job.deadline) : "none";
   const urgencyStyle = URGENCY_STYLES[urgency];
 
   async function handleStageChange(val: string) {
