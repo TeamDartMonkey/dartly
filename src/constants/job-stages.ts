@@ -6,6 +6,7 @@ export const STAGE_UI_TO_PRISMA: Record<JobStage, string> = {
   Interview: "INTERVIEW",
   Offer: "OFFER",
   Rejected: "REJECTED",
+  Ghosted: "GHOSTED",
   Archived: "ARCHIVED",
 };
 
@@ -15,6 +16,7 @@ export const STAGE_PRISMA_TO_UI: Record<string, JobStage> = {
   INTERVIEW: "Interview",
   OFFER: "Offer",
   REJECTED: "Rejected",
+  GHOSTED: "Ghosted",
   ARCHIVED: "Archived",
 };
 
@@ -24,10 +26,13 @@ export const STAGES: JobStage[] = [
   "Interview",
   "Offer",
   "Rejected",
+  "Ghosted",
   "Archived",
 ];
 
-export const ACTIVE_STAGES: JobStage[] = STAGES.filter((s) => s !== "Archived");
+export const ACTIVE_STAGES: JobStage[] = STAGES.filter(
+  (s) => s !== "Archived" && s !== "Ghosted"
+);
 
 type StageStyle = {
   badge: string;
@@ -61,10 +66,15 @@ export const STAGE_STYLES: Record<JobStage, StageStyle> = {
     dot: "bg-red-400",
     text: "text-red-400",
   },
+  Ghosted: {
+    badge: "bg-purple-950 text-purple-400 border-purple-800",
+    dot: "bg-purple-400",
+    text: "text-purple-400",
+  },
   Archived: {
-    badge: "bg-zinc-900 text-zinc-500 border-zinc-800",
-    dot: "bg-zinc-500",
-    text: "text-zinc-500",
+    badge: "bg-orange-950 text-orange-400 border-orange-800",
+    dot: "bg-orange-400",
+    text: "text-orange-400",
   },
 };
 

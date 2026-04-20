@@ -12,6 +12,7 @@ type JobListItemProps = {
   onEdit?: (job: Job) => void;
   onDelete?: (id: string) => void;
   onStageChange?: (id: string, stage: JobStage) => void;
+  onRestore?: (id: string) => Promise<void>;
 };
 
 const STAGE_OPTIONS = ACTIVE_STAGES.map((s) => {
@@ -19,9 +20,12 @@ const STAGE_OPTIONS = ACTIVE_STAGES.map((s) => {
   return { value: s, label: s, badge: style.badge, dot: style.dot };
 });
 
-export default function JobListItem({ job, onEdit, onDelete, onStageChange }: JobListItemProps) {
+export default function JobListItem({ job, onEdit, onDelete, onStageChange, onRestore }: JobListItemProps) {
   const router = useRouter();
   const [isChangingStage, setIsChangingStage] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
+
+  const isInactive = job.stage === "Archived" || job.stage === "Ghosted";
 
   const urgency = job.stage === "Interested" ? getUrgency(job.deadline) : "none";
   const urgencyStyle = URGENCY_STYLES[urgency];
@@ -34,6 +38,16 @@ export default function JobListItem({ job, onEdit, onDelete, onStageChange }: Jo
       await onStageChange(job.id, newStage);
     } finally {
       setIsChangingStage(false);
+    }
+  }
+
+  async function handleRestore() {
+    if (!onRestore) return;
+    setIsRestoring(true);
+    try {
+      await onRestore(job.id);
+    } finally {
+      setIsRestoring(false);
     }
   }
 
@@ -79,7 +93,7 @@ export default function JobListItem({ job, onEdit, onDelete, onStageChange }: Jo
             </svg>
           )}
 
-          {onStageChange && !isChangingStage && (
+          {!isInactive && onStageChange && !isChangingStage && (
             <BadgePicker
               value={job.stage}
               options={STAGE_OPTIONS}
@@ -88,7 +102,7 @@ export default function JobListItem({ job, onEdit, onDelete, onStageChange }: Jo
             />
           )}
 
-          {(isChangingStage || !onStageChange) && (
+          {(isInactive || isChangingStage || !onStageChange) && (
             <span
               className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium ${STAGE_STYLES[job.stage].badge}`}
             >
@@ -97,6 +111,50 @@ export default function JobListItem({ job, onEdit, onDelete, onStageChange }: Jo
               />
               {job.stage}
             </span>
+          )}
+
+          {isInactive && onRestore && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRestore();
+              }}
+              disabled={isRestoring}
+              className="p-1.5 text-zinc-600 transition-colors hover:text-green-400"
+              aria-label="Restore"
+              title="Restore"
+            >
+              {isRestoring ? (
+                <svg
+                  className="animate-spin text-zinc-500"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  aria-hidden="true"
+                >
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                </svg>
+              ) : (
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                  <polyline points="3 3 3 8 8 8" />
+                </svg>
+              )}
+            </button>
           )}
 
           {urgency !== "none" && (

@@ -28,9 +28,12 @@ const mockUser = { id: "user-123" };
 const mockMetrics = {
   stageCounts: { Interested: 3, Applied: 2, Interview: 1 },
   totalJobs: 6,
-  responseRate: 50,
-  averageTimeToResponse: 5.2,
   activeApplications: 4,
+  responseRate: 50,
+  interviewRate: 33,
+  rejectionRate: 17,
+  ghostRate: 25,
+  offerCount: 1,
 };
 
 function makeRequest(): NextRequest {
@@ -68,9 +71,12 @@ describe("GET /api/metrics", () => {
     mockGetDashboardMetrics.mockResolvedValue({
       stageCounts: {},
       totalJobs: 0,
-      responseRate: 0,
-      averageTimeToResponse: null,
       activeApplications: 0,
+      responseRate: 0,
+      interviewRate: 0,
+      rejectionRate: 0,
+      ghostRate: 0,
+      offerCount: 0,
     });
 
     const res = await GET(makeRequest());
@@ -78,6 +84,7 @@ describe("GET /api/metrics", () => {
 
     expect(res.status).toBe(200);
     expect(body.totalJobs).toBe(0);
-    expect(body.averageTimeToResponse).toBeNull();
+    expect(body.ghostRate).toBe(0);
+    expect(body.offerCount).toBe(0);
   });
 });

@@ -31,6 +31,8 @@ export default function JobCard({
   const [isChangingStage, setIsChangingStage] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const isArchived = job.stage === "Archived";
+  const isGhosted = job.stage === "Ghosted";
+  const isInactive = isArchived || isGhosted;
 
   const urgency = job.stage === "Interested" ? getUrgency(job.deadline) : "none";
   const urgencyStyle = URGENCY_STYLES[urgency];
@@ -87,7 +89,36 @@ export default function JobCard({
             </button>
           )}
 
-          {!isArchived && onArchive && (
+          {!isInactive && onStageChange && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onStageChange(job.id, "Ghosted");
+              }}
+              className="p-1.5 text-zinc-600 transition-colors hover:text-purple-400"
+              aria-label="Mark Ghosted"
+              title="Mark Ghosted"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+                <line x1="1" y1="1" x2="23" y2="23" />
+              </svg>
+            </button>
+          )}
+
+          {!isInactive && onArchive && (
             <button
               type="button"
               onClick={(e) => {
@@ -116,7 +147,7 @@ export default function JobCard({
             </button>
           )}
 
-          {isArchived && onRestore && (
+          {isInactive && onRestore && (
             <button
               type="button"
               onClick={(e) => {
@@ -219,7 +250,7 @@ export default function JobCard({
             </svg>
           )}
 
-          {!isArchived && onStageChange && (
+          {!isInactive && onStageChange && (
             <BadgePicker
               value={job.stage}
               options={STAGE_OPTIONS}
@@ -228,7 +259,7 @@ export default function JobCard({
             />
           )}
 
-          {(isArchived || !onStageChange) && (
+          {(isInactive || !onStageChange) && (
             <span
               className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium ${STAGE_STYLES[job.stage].badge}`}
             >

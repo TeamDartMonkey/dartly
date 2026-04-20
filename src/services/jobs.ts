@@ -9,6 +9,7 @@ const STAGE_LABELS: Record<string, string> = {
   INTERVIEW: "Interview",
   OFFER: "Offer",
   REJECTED: "Rejected",
+  GHOSTED: "Ghosted",
   ARCHIVED: "Archived",
 };
 

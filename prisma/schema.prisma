@@ -190,6 +190,7 @@ enum JobStage {
   INTERVIEW
   OFFER
   REJECTED
+  GHOSTED
   ARCHIVED
 }
 
