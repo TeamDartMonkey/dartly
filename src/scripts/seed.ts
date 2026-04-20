@@ -12,7 +12,11 @@ const USER_A_JOBS = [
     stage: "APPLIED" as const,
     priority: true,
     description: "Building scalable backend systems",
-    applicationDate: new Date("2024-03-15"),
+    applicationDate: new Date("2026-03-15"),
+    deadline: null,
+    compensationNotes: "Base: $180k–$220k, RSU package, annual bonus 15%",
+    recruiterNotes: "Spoke with Sarah from talent acquisition — team is growing fast, 2 positions open",
+    customNotes: "Former colleague Marcus works here, can refer internally",
   },
   {
     title: "Full Stack Developer",
@@ -21,7 +25,11 @@ const USER_A_JOBS = [
     stage: "INTERVIEW" as const,
     priority: true,
     description: "Full stack development with React and Node.js",
-    applicationDate: new Date("2024-03-20"),
+    applicationDate: new Date("2026-03-20"),
+    deadline: null,
+    compensationNotes: "Base: $160k–$190k, stock options, $5k learning budget",
+    recruiterNotes: "Recruiter Jake mentioned async culture, minimal meetings. Team of 6.",
+    customNotes: "Onsite loop scheduled for next week. Need to prep system design round.",
   },
   {
     title: "Frontend Engineer",
@@ -30,7 +38,11 @@ const USER_A_JOBS = [
     stage: "INTERESTED" as const,
     priority: false,
     description: "Building modern web applications",
-    applicationDate: new Date("2024-03-25"),
+    applicationDate: new Date("2026-03-25"),
+    deadline: null,
+    compensationNotes: null,
+    recruiterNotes: null,
+    customNotes: "Found on LinkedIn — interesting product but haven't applied yet",
   },
   {
     title: "Backend Developer",
@@ -39,7 +51,10 @@ const USER_A_JOBS = [
     stage: "OFFER" as const,
     priority: true,
     description: "Developing high-performance APIs",
-    applicationDate: new Date("2024-03-10"),
+    applicationDate: new Date("2026-03-10"),
+    compensationNotes: "Offered: $195k base, $25k sign-on, 401k match 6%, equity TBD",
+    recruiterNotes: "HR says offer is negotiable on equity. Benefits are strong — unlimited PTO, health/dental/vision.",
+    customNotes: "Top choice right now. Need to respond by April 5. Leverage other offers for equity.",
   },
   {
     title: "Software Engineer II",
@@ -48,7 +63,11 @@ const USER_A_JOBS = [
     stage: "APPLIED" as const,
     priority: false,
     description: "Early-stage startup, equity opportunity",
-    applicationDate: new Date("2024-03-28"),
+    applicationDate: new Date("2026-03-28"),
+    deadline: new Date("2026-04-30"),
+    compensationNotes: "Base: $140k–$160k, 0.1–0.3% equity, Series A",
+    recruiterNotes: null,
+    customNotes: "Early stage so equity could be big. Risky but high upside. Need to research runway.",
   },
   {
     title: "QA Engineer",
@@ -57,7 +76,11 @@ const USER_A_JOBS = [
     stage: "REJECTED" as const,
     priority: false,
     description: "Automated testing and CI quality gates",
-    applicationDate: new Date("2024-03-05"),
+    applicationDate: new Date("2026-03-05"),
+    deadline: null,
+    compensationNotes: "Base: $130k–$150k",
+    recruiterNotes: "Generic rejection email — position filled internally",
+    customNotes: "Good practice for interview prep. Moved on.",
   },
 ];
 
@@ -69,7 +92,11 @@ const USER_B_JOBS = [
     stage: "INTERVIEW" as const,
     priority: true,
     description: "Leading architecture for microservices platform",
-    applicationDate: new Date("2024-03-12"),
+    applicationDate: new Date("2026-03-12"),
+    deadline: null,
+    compensationNotes: "Base: $210k–$250k, RSUs, annual bonus 20%",
+    recruiterNotes: "Recruiter Lisa — very responsive, team lead seemed enthusiastic after phone screen",
+    customNotes: "Final round next Thursday. Prep for distributed systems deep-dive.",
   },
   {
     title: "React Developer",
@@ -78,7 +105,11 @@ const USER_B_JOBS = [
     stage: "APPLIED" as const,
     priority: false,
     description: "Building customer-facing dashboard",
-    applicationDate: new Date("2024-03-22"),
+    applicationDate: new Date("2026-03-22"),
+    deadline: null,
+    compensationNotes: "Base: $150k–$170k, standard benefits",
+    recruiterNotes: null,
+    customNotes: "Saw posting on Wellfound. Dashboard product looks interesting.",
   },
   {
     title: "Platform Engineer",
@@ -87,7 +118,10 @@ const USER_B_JOBS = [
     stage: "OFFER" as const,
     priority: true,
     description: "Infrastructure as code and CI/CD pipelines",
-    applicationDate: new Date("2024-03-08"),
+    applicationDate: new Date("2026-03-08"),
+    compensationNotes: "Offered: $200k base, $30k sign-on, RSUs vesting 4yr, $10k relocation",
+    recruiterNotes: "Offer letter received. Benefits are solid — 401k 8% match, wellness stipend.",
+    customNotes: "Strong offer but CloudBase culture seems very on-call heavy. Weighing against GrowthLabs.",
   },
   {
     title: "DevOps Engineer",
@@ -96,7 +130,11 @@ const USER_B_JOBS = [
     stage: "INTERESTED" as const,
     priority: true,
     description: "Managing Kubernetes clusters and monitoring",
-    applicationDate: new Date("2024-03-26"),
+    applicationDate: new Date("2026-03-26"),
+    deadline: null,
+    compensationNotes: "Estimate: $170k–$190k based on levels.fyi",
+    recruiterNotes: "Reached out on LinkedIn — sounds like a hands-on role with lots of autonomy",
+    customNotes: "Need to apply. Boston would require relocation but COL is reasonable.",
   },
   {
     title: "Backend Lead",
@@ -105,7 +143,11 @@ const USER_B_JOBS = [
     stage: "INTERVIEW" as const,
     priority: true,
     description: "Leading payment processing systems",
-    applicationDate: new Date("2024-03-18"),
+    applicationDate: new Date("2026-03-18"),
+    deadline: null,
+    compensationNotes: "Base: $220k–$260k, performance bonus, equity refresh annually",
+    recruiterNotes: "Recruiter Tom — fast-tracked process due to competing offer. 3-person panel next.",
+    customNotes: "FinTech domain is new to me but interesting. Need to brush up on PCI compliance basics.",
   },
   {
     title: "Full Stack Lead",
@@ -114,7 +156,10 @@ const USER_B_JOBS = [
     stage: "APPLIED" as const,
     priority: false,
     description: "Patient management system development",
-    applicationDate: new Date("2024-03-24"),
+    applicationDate: new Date("2026-03-24"),
+    compensationNotes: "Base: $175k–$200k, stock options",
+    recruiterNotes: null,
+    customNotes: "HIPAA-regulated environment could be interesting. Applied via company site.",
   },
   {
     title: "Data Engineer",
@@ -123,7 +168,11 @@ const USER_B_JOBS = [
     stage: "INTERESTED" as const,
     priority: false,
     description: "Building ETL pipelines and data warehouses",
-    applicationDate: new Date("2024-03-27"),
+    applicationDate: new Date("2026-03-27"),
+    deadline: null,
+    compensationNotes: null,
+    recruiterNotes: null,
+    customNotes: "Pivot role — more data-focused than I'd like but Denver is appealing",
   },
   {
     title: "ML Engineer",
@@ -132,7 +181,11 @@ const USER_B_JOBS = [
     stage: "APPLIED" as const,
     priority: true,
     description: "Deploying machine learning models to production",
-    applicationDate: new Date("2024-03-14"),
+    applicationDate: new Date("2026-03-14"),
+    deadline: null,
+    compensationNotes: "Base: $190k–$230k, significant equity (pre-IPO), flexible PTO",
+    recruiterNotes: "Recruiter reached out via email — founding team is ex-Google Brain. High caliber.",
+    customNotes: "Exciting space. Need to review transformer architecture before technical screen.",
   },
 ];
 
@@ -399,7 +452,21 @@ async function seedProfile(userId: string, userLabel: string) {
   );
 }
 
-async function seedJobs(userId: string, jobs: typeof USER_A_JOBS, userLabel: string) {
+type SeedJob = {
+  title: string;
+  company: string;
+  location: string;
+  stage: JobStage;
+  priority: boolean;
+  description: string;
+  applicationDate: Date;
+  deadline?: Date | null;
+  compensationNotes?: string | null;
+  recruiterNotes?: string | null;
+  customNotes?: string | null;
+};
+
+async function seedJobs(userId: string, jobs: SeedJob[], userLabel: string) {
   console.log(`\n🌱 Seeding ${jobs.length} jobs for ${userLabel} (${userId.slice(0, 8)}...)`);
 
   for (const jobData of jobs) {
@@ -414,12 +481,16 @@ async function seedJobs(userId: string, jobs: typeof USER_A_JOBS, userLabel: str
           priority: jobData.priority,
           description: jobData.description,
           applicationDate: jobData.applicationDate,
+          deadline: jobData.deadline ?? undefined,
+          compensationNotes: jobData.compensationNotes ?? undefined,
+          recruiterNotes: jobData.recruiterNotes ?? undefined,
+          customNotes: jobData.customNotes ?? undefined,
           lastActivityAt: jobData.applicationDate || new Date(),
         },
       });
 
       const transitions = STAGE_TRANSITIONS[jobData.stage] ?? [{ from: null, to: jobData.stage }];
-      const baseDate = jobData.applicationDate ?? new Date("2024-03-01");
+      const baseDate = jobData.applicationDate ?? new Date("2026-03-01");
 
       for (let i = 0; i < transitions.length; i++) {
         const t = transitions[i];
@@ -511,67 +582,6 @@ async function seedJobs(userId: string, jobs: typeof USER_A_JOBS, userLabel: str
   }
 }
 
-async function seedDocuments(userId: string, userLabel: string) {
-  console.log(`\n🌱 Seeding documents for ${userLabel}`);
-
-  const jobs = await prisma.job.findMany({ where: { userId }, take: 3 });
-  const profile = await prisma.profile.findUnique({ where: { userId } });
-
-  if (!profile || jobs.length === 0) {
-    console.log("  ⚠️  Skipping documents (no profile or jobs found)");
-    return;
-  }
-
-  const firstName = profile.firstName ?? "Candidate";
-  const lastName = profile.lastName ?? "";
-  const fullName = `${firstName} ${lastName}`.trim();
-  const contactLine = [profile.email, profile.phone, profile.location].filter(Boolean).join(" | ");
-
-  for (let i = 0; i < Math.min(jobs.length, 2); i++) {
-    const job = jobs[i];
-
-    const resumeDoc = await prisma.document.create({
-      data: {
-        userId,
-        type: "RESUME",
-        name: `Resume - ${job.company}`,
-        status: "DRAFT",
-      },
-    });
-    const resumeVersion = await prisma.documentVersion.create({
-      data: {
-        documentId: resumeDoc.id,
-        versionNumber: 1,
-        content: `# ${fullName}\n${contactLine}\n\n## Professional Summary\nTailored for ${job.title} at ${job.company}. ${profile.summary ?? ""}\n\n## Experience\n_See profile for full details._\n\n## Skills\n_See profile for full details._`,
-      },
-    });
-    await prisma.jobDocumentLink.create({
-      data: { jobId: job.id, documentId: resumeDoc.id, documentVersionId: resumeVersion.id },
-    });
-
-    const coverDoc = await prisma.document.create({
-      data: {
-        userId,
-        type: "COVER_LETTER",
-        name: `Cover Letter - ${job.company}`,
-        status: "DRAFT",
-      },
-    });
-    const coverVersion = await prisma.documentVersion.create({
-      data: {
-        documentId: coverDoc.id,
-        versionNumber: 1,
-        content: `Dear Hiring Manager at ${job.company},\n\nI am writing to express my interest in the ${job.title} position. With my background in software engineering, I believe I would be a strong fit for this role.\n\nThank you for your consideration.\n\nBest regards,\n${fullName}`,
-      },
-    });
-    await prisma.jobDocumentLink.create({
-      data: { jobId: job.id, documentId: coverDoc.id, documentVersionId: coverVersion.id },
-    });
-
-    console.log(`  ✅ Created resume + cover letter for ${job.title} at ${job.company}`);
-  }
-}
-
 async function main() {
   console.log("=== Dartly Demo Seed Script ===");
 
@@ -579,8 +589,6 @@ async function main() {
   await seedProfile(USER_B, "User B");
   await seedJobs(USER_A, USER_A_JOBS, "User A");
   await seedJobs(USER_B, USER_B_JOBS, "User B");
-  await seedDocuments(USER_A, "User A");
-  await seedDocuments(USER_B, "User B");
 
   const counts = {
     jobs: await prisma.job.count(),
@@ -590,9 +598,6 @@ async function main() {
     skills: await prisma.skill.count(),
     activities: await prisma.jobActivity.count(),
     stageHistory: await prisma.jobStageHistory.count(),
-    documents: await prisma.document.count(),
-    documentVersions: await prisma.documentVersion.count(),
-    documentLinks: await prisma.jobDocumentLink.count(),
   };
 
   console.log("\n✨ Seed complete!");
@@ -604,9 +609,6 @@ async function main() {
   console.log(`   Skills:           ${counts.skills}`);
   console.log(`   Activities:       ${counts.activities}`);
   console.log(`   Stage History:    ${counts.stageHistory}`);
-  console.log(`   Documents:        ${counts.documents}`);
-  console.log(`   Document Versions:${counts.documentVersions}`);
-  console.log(`   Document Links:   ${counts.documentLinks}`);
 }
 
 main()

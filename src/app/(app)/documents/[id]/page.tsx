@@ -271,15 +271,14 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   return (
     <>
       <div className="space-y-6">
-        <div>
-          <button
-            type="button"
-            onClick={() => router.push("/documents")}
-            className="text-indigo-400 hover:text-indigo-300 text-sm"
-          >
-            &larr; Documents
-          </button>
-        </div>
+         <button
+           type="button"
+           onClick={() => router.back()}
+           className="flex items-center justify-center w-10 h-10 rounded-md text-indigo-400 hover:text-indigo-300 hover:bg-zinc-800 text-lg transition-colors"
+           aria-label="Go back"
+         >
+           &larr;
+         </button>
 
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">

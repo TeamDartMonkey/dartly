@@ -195,8 +195,8 @@ export function OverviewSection({ job, onJobUpdated }: Props) {
             label="Deadline"
             id="deadline"
             name="deadline"
-            value={form.deadline}
-            editing={editing}
+            value={job.stage === "Interested" ? form.deadline : ""}
+            editing={editing && job.stage === "Interested"}
             onChange={handleChange}
             type="date"
           />
