@@ -11,6 +11,7 @@ const mockVersionFindMany = vi.fn();
 const mockJobFindFirst = vi.fn();
 const mockLinkCreate = vi.fn();
 const mockLinkUpsert = vi.fn();
+const mockLinkFindFirst = vi.fn();
 
 const tx = {
   document: { create: mockDocCreate, update: mockDocUpdate },
@@ -33,12 +34,13 @@ vi.mock("@/services/prisma", () => ({
       findMany: mockVersionFindMany,
     },
     job: { findFirst: mockJobFindFirst },
-    jobDocumentLink: { create: mockLinkCreate, upsert: mockLinkUpsert },
+    jobDocumentLink: { create: mockLinkCreate, upsert: mockLinkUpsert, findFirst: mockLinkFindFirst },
   },
 }));
 
 const {
   createDocument,
+  findDocumentByJob,
   getDocumentById,
   linkDocumentToJob,
   softDeleteDocument,
@@ -233,5 +235,67 @@ describe("linkDocumentToJob", () => {
 
     expect(result).toBeNull();
     expect(mockLinkUpsert).not.toHaveBeenCalled();
+  });
+});
+
+describe("cross-user access guards", () => {
+  const OTHER_USER = "user-2";
+
+  it("getDocumentById scopes lookup by userId (wrong user → null)", async () => {
+    mockDocFindFirst.mockResolvedValue(null);
+
+    const result = await getDocumentById("doc-1", OTHER_USER);
+
+    expect(result).toBeNull();
+    expect(mockDocFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: "doc-1", userId: OTHER_USER }),
+      })
+    );
+  });
+
+  it("updateDocumentContent scopes lookup by userId and does not write on wrong user", async () => {
+    mockDocFindFirst.mockResolvedValue(null);
+
+    const result = await updateDocumentContent("doc-1", OTHER_USER, "tampered");
+
+    expect(result).toBeNull();
+    expect(mockTransaction).not.toHaveBeenCalled();
+    expect(mockVersionCreate).not.toHaveBeenCalled();
+    expect(mockDocFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: "doc-1", userId: OTHER_USER }),
+      })
+    );
+  });
+
+  it("softDeleteDocument scopes lookup by userId (wrong user → false, no update)", async () => {
+    mockDocFindFirst.mockResolvedValue(null);
+
+    const result = await softDeleteDocument("doc-1", OTHER_USER);
+
+    expect(result).toBe(false);
+    expect(mockDocUpdate).not.toHaveBeenCalled();
+    expect(mockDocFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ id: "doc-1", userId: OTHER_USER }),
+      })
+    );
+  });
+
+  it("findDocumentByJob scopes the nested document relation by userId", async () => {
+    mockLinkFindFirst.mockResolvedValue(null);
+
+    const result = await findDocumentByJob(OTHER_USER, "RESUME", "job-1");
+
+    expect(result).toBeNull();
+    expect(mockLinkFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          jobId: "job-1",
+          document: expect.objectContaining({ userId: OTHER_USER }),
+        }),
+      })
+    );
   });
 });
