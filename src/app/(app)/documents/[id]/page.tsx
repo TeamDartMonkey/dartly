@@ -271,16 +271,29 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   return (
     <>
       <div className="space-y-6">
-        <div>
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="text-indigo-400 hover:text-indigo-300 text-sm"
-            aria-label="Go back"
-          >
-            &larr;
-          </button>
-        </div>
+         <div>
+           <button
+             type="button"
+             onClick={() => router.back()}
+             className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-50 transition-colors"
+             aria-label="Go back"
+           >
+             <svg
+               width="16"
+               height="16"
+               viewBox="0 0 24 24"
+               fill="none"
+               stroke="currentColor"
+               strokeWidth="2"
+               strokeLinecap="round"
+               strokeLinejoin="round"
+               aria-hidden="true"
+             >
+               <polyline points="15 18 9 12 15 6" />
+             </svg>
+             Back
+           </button>
+         </div>
 
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
