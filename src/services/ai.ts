@@ -179,8 +179,42 @@ export async function generateCoverLetterDraft(
   job: JobContext
 ): Promise<GenerateResult> {
   const name = [profile.firstName, profile.lastName].filter(Boolean).join(" ") || "Your Name";
+  const contactParts = [
+    profile.email,
+    profile.phone,
+    profile.location,
+  ].filter(Boolean);
 
-  const prompt = `You are an expert cover letter writer. Generate a professional, compelling cover letter in clean Markdown format.
+  const currentDate = new Date().toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  const COVER_LETTER_FORMAT_EXAMPLE = `# ${name}
+<div class="section headerInfo">
+
+${contactParts.join(" | ")}
+
+</div>
+
+${currentDate}
+
+${job.company}
+
+Dear Hiring Manager,
+
+[Opening paragraph — express enthusiasm for the role and company, mention the position title]
+
+[Middle paragraph(s) — connect experience and skills to the job requirements, highlight specific achievements with quantified impact]
+
+[Closing paragraph — restate interest, include a call to action, thank the reader]
+
+Sincerely,
+
+${name}`;
+
+  const prompt = `You are an expert cover letter writer. Generate a professional, compelling cover letter using the format below.
 
 TARGET JOB:
 Title: ${job.title}
@@ -189,19 +223,25 @@ Company: ${job.company}${job.description ? `\nDescription: ${job.description}` :
 CANDIDATE PROFILE:
 ${serializeProfile(profile)}
 
-FORMAT:
-- Start with the candidate's name, then contact info (email, phone, location) each on its own line
-- A blank line, then today's date placeholder: [Current Date]
-- A blank line, then the company name
-- Salutation (Dear Hiring Manager, or specific name if known)
+FORMAT EXAMPLE:
+${COVER_LETTER_FORMAT_EXAMPLE}
+
+FORMAT RULES:
+- Name must be "# " (h1 heading) — this renders large and centered
+- Contact info goes in a <div class="section headerInfo"> block right after the name, with email, phone, and location separated by " | "
+- Date is already set to today (${currentDate}) — use it exactly as shown
+- Company name on its own line after the date
+- Salutation: "Dear Hiring Manager," (or a specific name if known from the job description)
 - 3-4 body paragraphs that:
-  - Open with enthusiasm for the role and company
-  - Connect the candidate's experience and skills to the job requirements
-  - Highlight specific achievements and quantify impact when possible
-  - Close with a call to action and appreciation
-- Professional closing (Sincerely, followed by the candidate's name)
-- Use **bold** for key terms or company names sparingly
-- Output ONLY the cover letter, no preamble or explanation
+  - Open with genuine enthusiasm for the specific role and company
+  - Connect the candidate's experience directly to the job requirements
+  - Highlight specific achievements with quantified impact (numbers, percentages, user counts)
+  - Close with confidence, a call to action, and appreciation for the reader's time
+- Professional closing: "Sincerely," on its own line, then the candidate's name on the next line
+- Do NOT use bullet points or lists — cover letters are prose paragraphs only
+- Keep the letter to one page (250-400 words)
+- Use **bold** sparingly for key terms or company names
+- Output ONLY the cover letter content, no preamble, no explanation, no markdown code fences
 - Candidate's name to use: ${name}`;
 
   const content = await generateWithRetry(prompt);

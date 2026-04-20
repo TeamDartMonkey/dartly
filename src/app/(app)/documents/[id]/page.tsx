@@ -389,7 +389,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           ) : viewMode === "preview" ? (
             <div className="bg-zinc-950 rounded-md p-4 overflow-auto">
               {displayContent ? (
-                <div ref={previewRef} className="jakes-resume-preview">
+                <div ref={previewRef} className={`jakes-resume-preview${doc.type === "COVER_LETTER" ? " cover-letter-preview" : ""}`}>
                   <Markdown rehypePlugins={[rehypeRaw]}>{displayContent}</Markdown>
                 </div>
               ) : (
