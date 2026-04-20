@@ -254,12 +254,14 @@ describe("cross-user access guards", () => {
     );
   });
 
-  it("updateDocumentContent scopes lookup by userId (wrong user → null)", async () => {
+  it("updateDocumentContent scopes lookup by userId and does not write on wrong user", async () => {
     mockDocFindFirst.mockResolvedValue(null);
 
     const result = await updateDocumentContent("doc-1", OTHER_USER, "tampered");
 
     expect(result).toBeNull();
+    expect(mockTransaction).not.toHaveBeenCalled();
+    expect(mockVersionCreate).not.toHaveBeenCalled();
     expect(mockDocFindFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ id: "doc-1", userId: OTHER_USER }),

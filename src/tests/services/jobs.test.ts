@@ -25,6 +25,10 @@ vi.mock("@/services/prisma", () => ({
   },
 }));
 
+beforeEach(() => {
+  vi.clearAllMocks();
+});
+
 describe("createJob", () => {
   it("creates job with initial stage history", async () => {
     const { createJob } = await import("@/services/jobs");
@@ -80,10 +84,6 @@ describe("createJob", () => {
 });
 
 describe("updateJob", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   it("updates job without creating stage history when stage unchanged", async () => {
     const { updateJob } = await import("@/services/jobs");
 
@@ -131,10 +131,6 @@ describe("updateJob", () => {
 
 describe("cross-user access guards", () => {
   const OTHER_USER = "u2";
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
 
   it("getJob scopes lookup by userId (wrong user → null)", async () => {
     const { getJob } = await import("@/services/jobs");
