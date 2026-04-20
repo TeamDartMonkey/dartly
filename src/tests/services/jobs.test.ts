@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mockJobCreate = vi.fn();
 const mockJobFindFirst = vi.fn();
 const mockJobUpdate = vi.fn();
+const mockJobDeleteMany = vi.fn();
 const mockStageHistoryCreate = vi.fn();
 const mockActivityCreate = vi.fn();
 const mockTx = {
@@ -19,7 +20,7 @@ vi.mock("@/services/prisma", () => ({
     job: {
       findFirst: mockJobFindFirst,
       findMany: vi.fn(),
-      deleteMany: vi.fn(),
+      deleteMany: mockJobDeleteMany,
     },
   },
 }));
@@ -125,5 +126,58 @@ describe("updateJob", () => {
 
     const result = await updateJob("missing", "u1", { title: "X" });
     expect(result).toBeNull();
+  });
+});
+
+describe("cross-user access guards", () => {
+  const OTHER_USER = "u2";
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("getJob scopes lookup by userId (wrong user → null)", async () => {
+    const { getJob } = await import("@/services/jobs");
+    mockJobFindFirst.mockResolvedValue(null);
+
+    const result = await getJob("j1", OTHER_USER);
+
+    expect(result).toBeNull();
+    expect(mockJobFindFirst).toHaveBeenCalledWith({
+      where: { id: "j1", userId: OTHER_USER },
+    });
+  });
+
+  it("updateJob scopes lookup by userId and skips update on wrong user", async () => {
+    const { updateJob } = await import("@/services/jobs");
+    mockJobFindFirst.mockResolvedValue(null);
+
+    const result = await updateJob("j1", OTHER_USER, { title: "tampered" });
+
+    expect(result).toBeNull();
+    expect(mockJobUpdate).not.toHaveBeenCalled();
+    expect(mockJobFindFirst).toHaveBeenCalledWith({
+      where: { id: "j1", userId: OTHER_USER },
+    });
+  });
+
+  it("deleteJob scopes deleteMany by userId (wrong user → false, zero rows)", async () => {
+    const { deleteJob } = await import("@/services/jobs");
+    mockJobDeleteMany.mockResolvedValue({ count: 0 });
+
+    const result = await deleteJob("j1", OTHER_USER);
+
+    expect(result).toBe(false);
+    expect(mockJobDeleteMany).toHaveBeenCalledWith({
+      where: { id: "j1", userId: OTHER_USER },
+    });
+  });
+
+  it("deleteJob returns true when the row matches the caller", async () => {
+    const { deleteJob } = await import("@/services/jobs");
+    mockJobDeleteMany.mockResolvedValue({ count: 1 });
+
+    const result = await deleteJob("j1", "u1");
+    expect(result).toBe(true);
   });
 });
