@@ -1,18 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { STAGE_STYLES } from "@/constants/job-stages";
 import type { JobStage } from "@/types/job";
-
-type DashboardMetrics = {
-  stageCounts: Record<string, number>;
-  totalJobs: number;
-  activeApplications: number;
-  responseRate: number;
-  interviewRate: number;
-  rejectionRate: number;
-};
+import type { DashboardMetrics } from "@/services/metrics";
 
 const PIPELINE_ORDER: JobStage[] = [
   "Interested",
@@ -24,10 +16,26 @@ const PIPELINE_ORDER: JobStage[] = [
   "Archived",
 ];
 
+const STORAGE_KEY = "dartly:metrics-expanded";
+
 export function MetricsPanel() {
   const router = useRouter();
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    setExpanded(stored === null ? true : stored === "true");
+  }, []);
+
+  const toggleExpanded = useCallback(() => {
+    setExpanded((prev) => {
+      const next = !prev;
+      localStorage.setItem(STORAGE_KEY, String(next));
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     fetch("/api/metrics")
@@ -46,20 +54,24 @@ export function MetricsPanel() {
   }, [router]);
 
   if (loading) {
-    const skeletonKeys = ["total", "active", "rate", "interview", "reject"];
     return (
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        {skeletonKeys.map((key) => (
-          <div
-            key={key}
-            className="h-20 animate-pulse rounded-lg border border-zinc-700 bg-zinc-800/50"
-          />
-        ))}
+      <div className="mb-6">
+        <div className="h-8 w-48 animate-pulse rounded bg-zinc-800" />
+        <div className="mt-3 grid grid-cols-3 gap-3">
+          {["a", "b", "c", "d", "e", "f"].map((key) => (
+            <div
+              key={key}
+              className="h-20 animate-pulse rounded-lg border border-zinc-700 bg-zinc-800/50"
+            />
+          ))}
+        </div>
       </div>
     );
   }
 
   if (!metrics || metrics.totalJobs === 0) return null;
+
+  if (expanded === null) return null;
 
   const cards = [
     {
@@ -87,6 +99,11 @@ export function MetricsPanel() {
       value: `${metrics.rejectionRate}%`,
       accent: "border-l-red-400",
     },
+    {
+      label: "Ghost Rate",
+      value: `${metrics.ghostRate}%`,
+      accent: "border-l-purple-400",
+    },
   ];
 
   const totalForBar = PIPELINE_ORDER.reduce(
@@ -95,32 +112,73 @@ export function MetricsPanel() {
   );
 
   return (
-    <div className="mb-6 space-y-4">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        {cards.map((card) => (
-          <div
-            key={card.label}
-            className={`rounded-lg border border-zinc-700 border-l-[3px] ${card.accent} bg-zinc-800/50 p-4 transition-shadow hover:shadow-[0_0_12px_-3px_rgba(161,161,170,0.15)]`}
-          >
-            <p className="text-xs text-zinc-400">{card.label}</p>
-            <p className="mt-1.5 text-xl font-semibold text-zinc-50">{card.value}</p>
-          </div>
-        ))}
-      </div>
+    <div className="mb-6">
+      <button
+        type="button"
+        onClick={toggleExpanded}
+        className="flex w-full items-center gap-2 group"
+      >
+        <svg
+          className={`h-4 w-4 text-zinc-500 transition-transform ${expanded ? "rotate-90" : ""}`}
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <polyline points="6 4 10 8 6 12" />
+        </svg>
+        <span className="text-sm font-medium text-zinc-400 group-hover:text-zinc-300 transition-colors">
+          Dashboard Stats
+        </span>
+        {metrics.offerCount > 0 && (
+          <span className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-green-800 bg-green-950 px-2.5 py-0.5 text-xs font-medium text-green-400">
+            <svg
+              width="10"
+              height="10"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            {metrics.offerCount} {metrics.offerCount === 1 ? "Offer" : "Offers"}
+          </span>
+        )}
+      </button>
+
+      {expanded && (
+        <div className="mt-3 grid grid-cols-3 gap-3">
+          {cards.map((card) => (
+            <div
+              key={card.label}
+              className={`rounded-lg border border-zinc-700 border-l-[3px] ${card.accent} bg-zinc-800/50 p-4 transition-shadow hover:shadow-[0_0_12px_-3px_rgba(161,161,170,0.15)]`}
+            >
+              <p className="text-xs text-zinc-400">{card.label}</p>
+              <p className="mt-1.5 text-xl font-semibold text-zinc-50">{card.value}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {totalForBar > 0 && (
-        <div className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4">
-          <p className="mb-3 text-xs font-medium text-zinc-400">Pipeline</p>
+        <div className={`rounded-lg border border-zinc-700 bg-zinc-800/50 p-4 ${expanded ? "mt-3" : "mt-2"}`}>
           <div className="flex h-3 overflow-hidden rounded-full bg-zinc-900">
             {PIPELINE_ORDER.map((stage) => {
               const count = metrics.stageCounts[stage] ?? 0;
-              const width = count > 0 ? Math.max((count / totalForBar) * 100, 0.5) : 0;
-              if (width === 0) return null;
+              if (count === 0) return null;
+              const rawWidth = (count / totalForBar) * 100;
               return (
                 <div
                   key={stage}
                   className={`${STAGE_STYLES[stage].dot} transition-all`}
-                  style={{ width: `${width}%` }}
+                  style={{ width: `${rawWidth}%`, minWidth: "2px" }}
                   title={`${stage}: ${count}`}
                 />
               );

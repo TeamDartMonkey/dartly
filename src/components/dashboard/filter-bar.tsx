@@ -51,8 +51,8 @@ export default function FilterBar({
 
   const filtered = useMemo(() => {
     let result = showArchived
-      ? jobs.filter((j) => j.stage === "Archived" || j.stage === "Ghosted")
-      : jobs.filter((j) => j.stage !== "Archived" && j.stage !== "Ghosted");
+      ? jobs.filter((j) => j.stage === "Archived")
+      : jobs.filter((j) => j.stage !== "Archived");
 
     result = searchJobs(result, search);
 
@@ -156,7 +156,7 @@ export default function FilterBar({
           onChange={(val) => setStageFilter(val as JobStage | "")}
           options={[
             { value: "", label: "All stages" },
-            ...STAGES.filter((s) => s !== "Archived" && s !== "Ghosted").map((s) => ({
+            ...STAGES.filter((s) => s !== "Archived").map((s) => ({
               value: s,
               label: s,
             }))

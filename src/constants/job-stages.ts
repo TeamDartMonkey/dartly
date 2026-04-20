@@ -72,9 +72,9 @@ export const STAGE_STYLES: Record<JobStage, StageStyle> = {
     text: "text-purple-400",
   },
   Archived: {
-    badge: "bg-zinc-900 text-zinc-500 border-zinc-800",
-    dot: "bg-zinc-500",
-    text: "text-zinc-500",
+    badge: "bg-orange-950 text-orange-400 border-orange-800",
+    dot: "bg-orange-400",
+    text: "text-orange-400",
   },
 };
 

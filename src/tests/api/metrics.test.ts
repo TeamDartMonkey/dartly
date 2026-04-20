@@ -32,6 +32,8 @@ const mockMetrics = {
   responseRate: 50,
   interviewRate: 33,
   rejectionRate: 17,
+  ghostRate: 25,
+  offerCount: 1,
 };
 
 function makeRequest(): NextRequest {
@@ -73,6 +75,8 @@ describe("GET /api/metrics", () => {
       responseRate: 0,
       interviewRate: 0,
       rejectionRate: 0,
+      ghostRate: 0,
+      offerCount: 0,
     });
 
     const res = await GET(makeRequest());
@@ -80,7 +84,7 @@ describe("GET /api/metrics", () => {
 
     expect(res.status).toBe(200);
     expect(body.totalJobs).toBe(0);
-    expect(body.interviewRate).toBe(0);
-    expect(body.rejectionRate).toBe(0);
+    expect(body.ghostRate).toBe(0);
+    expect(body.offerCount).toBe(0);
   });
 });

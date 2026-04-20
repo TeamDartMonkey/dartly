@@ -8,6 +8,8 @@ export type DashboardMetrics = {
   responseRate: number;
   interviewRate: number;
   rejectionRate: number;
+  ghostRate: number;
+  offerCount: number;
 };
 
 export async function getDashboardMetrics(userId: string): Promise<DashboardMetrics> {
@@ -32,7 +34,7 @@ export async function getDashboardMetrics(userId: string): Promise<DashboardMetr
       where: {
         jobId: { in: nonInterestedJobs.map((j) => j.id) },
         fromStage: "APPLIED",
-        toStage: { not: "APPLIED" },
+        toStage: { notIn: ["APPLIED", "GHOSTED"] },
       },
     });
     const respondedJobIds = new Set(stageHistories.map((h) => h.jobId));
@@ -49,6 +51,12 @@ export async function getDashboardMetrics(userId: string): Promise<DashboardMetr
   const rejectionRate =
     nonInterestedCount > 0 ? Math.round((rejectionCount / nonInterestedCount) * 100) : 0;
 
+  const ghostCount = jobs.filter((j) => j.stage === "GHOSTED").length;
+  const ghostRate =
+    nonInterestedCount > 0 ? Math.round((ghostCount / nonInterestedCount) * 100) : 0;
+
+  const offerCount = jobs.filter((j) => j.stage === "OFFER").length;
+
   return {
     stageCounts,
     totalJobs: jobs.length,
@@ -56,5 +64,7 @@ export async function getDashboardMetrics(userId: string): Promise<DashboardMetr
     responseRate,
     interviewRate,
     rejectionRate,
+    ghostRate,
+    offerCount,
   };
 }
