@@ -19,6 +19,7 @@ const STAGE_STYLES: Record<string, string> = {
   Interview: "bg-yellow-950 text-yellow-400",
   Offer: "bg-green-950 text-green-400",
   Rejected: "bg-red-950 text-red-400",
+  Ghosted: "bg-purple-950 text-purple-400",
   Archived: "bg-zinc-900 text-zinc-500",
 };
 

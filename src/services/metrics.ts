@@ -20,7 +20,7 @@ export async function getDashboardMetrics(userId: string): Promise<DashboardMetr
   }
 
   const activeApplications = jobs.filter(
-    (j) => j.stage !== "REJECTED" && j.stage !== "ARCHIVED"
+    (j) => j.stage !== "REJECTED" && j.stage !== "ARCHIVED" && j.stage !== "GHOSTED"
   ).length;
 
   const nonInterestedJobs = jobs.filter((j) => j.stage !== "INTERESTED");

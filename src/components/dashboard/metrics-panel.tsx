@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { STAGES, STAGE_STYLES } from "@/constants/job-stages";
+import { STAGE_STYLES } from "@/constants/job-stages";
 import type { JobStage } from "@/types/job";
 
 type DashboardMetrics = {
@@ -20,6 +20,7 @@ const PIPELINE_ORDER: JobStage[] = [
   "Interview",
   "Offer",
   "Rejected",
+  "Ghosted",
   "Archived",
 ];
 

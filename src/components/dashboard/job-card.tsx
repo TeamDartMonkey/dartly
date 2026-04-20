@@ -31,6 +31,8 @@ export default function JobCard({
   const [isChangingStage, setIsChangingStage] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const isArchived = job.stage === "Archived";
+  const isGhosted = job.stage === "Ghosted";
+  const isInactive = isArchived || isGhosted;
 
   const urgency = job.stage === "Interested" ? getUrgency(job.deadline) : "none";
   const urgencyStyle = URGENCY_STYLES[urgency];
@@ -87,7 +89,7 @@ export default function JobCard({
             </button>
           )}
 
-          {!isArchived && onArchive && (
+          {!isInactive && onArchive && (
             <button
               type="button"
               onClick={(e) => {
@@ -116,7 +118,7 @@ export default function JobCard({
             </button>
           )}
 
-          {isArchived && onRestore && (
+          {isInactive && onRestore && (
             <button
               type="button"
               onClick={(e) => {
@@ -219,7 +221,7 @@ export default function JobCard({
             </svg>
           )}
 
-          {!isArchived && onStageChange && (
+          {!isInactive && onStageChange && (
             <BadgePicker
               value={job.stage}
               options={STAGE_OPTIONS}
@@ -228,7 +230,7 @@ export default function JobCard({
             />
           )}
 
-          {(isArchived || !onStageChange) && (
+          {(isInactive || !onStageChange) && (
             <span
               className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium ${STAGE_STYLES[job.stage].badge}`}
             >

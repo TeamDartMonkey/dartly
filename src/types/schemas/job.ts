@@ -6,6 +6,7 @@ export const JobStageSchema = z.enum([
   "Interview",
   "Offer",
   "Rejected",
+  "Ghosted",
   "Archived",
 ]);
 
