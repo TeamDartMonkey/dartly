@@ -6,9 +6,11 @@ const mockDocFindFirst = vi.fn();
 const mockDocFindMany = vi.fn();
 const mockDocUpdate = vi.fn();
 const mockVersionCreate = vi.fn();
+const mockVersionFindFirst = vi.fn();
 const mockVersionFindMany = vi.fn();
 const mockJobFindFirst = vi.fn();
 const mockLinkCreate = vi.fn();
+const mockLinkUpsert = vi.fn();
 
 const tx = {
   document: { create: mockDocCreate, update: mockDocUpdate },
@@ -27,16 +29,18 @@ vi.mock("@/services/prisma", () => ({
     },
     documentVersion: {
       create: mockVersionCreate,
+      findFirst: mockVersionFindFirst,
       findMany: mockVersionFindMany,
     },
     job: { findFirst: mockJobFindFirst },
-    jobDocumentLink: { create: mockLinkCreate },
+    jobDocumentLink: { create: mockLinkCreate, upsert: mockLinkUpsert },
   },
 }));
 
 const {
   createDocument,
   getDocumentById,
+  linkDocumentToJob,
   softDeleteDocument,
   updateDocumentContent,
   toDocumentResponse,
@@ -189,5 +193,45 @@ describe("updateDocumentContent", () => {
     mockDocFindFirst.mockResolvedValue(null);
     const result = await updateDocumentContent("doc-999", USER_ID, "new content");
     expect(result).toBeNull();
+  });
+});
+
+describe("linkDocumentToJob", () => {
+  const baseLink = {
+    id: "link-1",
+    jobId: "job-1",
+    documentId: "doc-1",
+    documentVersionId: "ver-1",
+    linkedAt: now,
+  };
+
+  it("upserts idempotently so a duplicate link does not fail", async () => {
+    mockJobFindFirst.mockResolvedValue({ id: "job-1", userId: USER_ID });
+    mockDocFindFirst.mockResolvedValue(baseDoc);
+    mockVersionFindFirst.mockResolvedValue(baseVersion);
+    mockLinkUpsert.mockResolvedValue(baseLink);
+
+    const first = await linkDocumentToJob("job-1", "doc-1", "ver-1", USER_ID);
+    const second = await linkDocumentToJob("job-1", "doc-1", "ver-1", USER_ID);
+
+    expect(first).toEqual(baseLink);
+    expect(second).toEqual(baseLink);
+    expect(mockLinkUpsert).toHaveBeenCalledTimes(2);
+    expect(mockLinkUpsert).toHaveBeenCalledWith({
+      where: { jobId_documentVersionId: { jobId: "job-1", documentVersionId: "ver-1" } },
+      create: { jobId: "job-1", documentId: "doc-1", documentVersionId: "ver-1" },
+      update: {},
+    });
+  });
+
+  it("returns null when the job does not belong to the user", async () => {
+    mockJobFindFirst.mockResolvedValue(null);
+    mockDocFindFirst.mockResolvedValue(baseDoc);
+    mockVersionFindFirst.mockResolvedValue(baseVersion);
+
+    const result = await linkDocumentToJob("job-1", "doc-1", "ver-1", USER_ID);
+
+    expect(result).toBeNull();
+    expect(mockLinkUpsert).not.toHaveBeenCalled();
   });
 });
