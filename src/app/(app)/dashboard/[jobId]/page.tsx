@@ -95,7 +95,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ jobId: str
       <button
         type="button"
         onClick={() => router.back()}
-        className="text-indigo-400 hover:text-indigo-300 text-sm mb-6"
+        className="flex items-center justify-center w-10 h-10 rounded-md text-indigo-400 hover:text-indigo-300 hover:bg-zinc-800 text-lg transition-colors mb-6"
         aria-label="Go back"
       >
         &larr;
