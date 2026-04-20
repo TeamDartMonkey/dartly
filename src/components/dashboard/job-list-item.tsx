@@ -58,7 +58,7 @@ export default function JobListItem({ job, onEdit, onDelete, onStageChange }: Jo
           </div>
           <div className="mt-1 flex items-center gap-3 text-xs text-zinc-500">
             {job.location && <span>{job.location}</span>}
-            {job.deadline && <span className="whitespace-nowrap">Deadline: {job.deadline}</span>}
+            {job.stage === "Interested" && job.deadline && <span className="whitespace-nowrap">Deadline: {job.deadline}</span>}
             <span className="whitespace-nowrap">Last activity: {job.lastActivityDate}</span>
           </div>
         </button>
