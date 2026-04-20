@@ -7,6 +7,13 @@ import { STAGES } from "@/constants/job-stages";
 import type { Job, JobStage, ViewMode } from "@/types/job";
 import { searchJobs } from "@/utils/search-jobs";
 import type { SortKey } from "@/utils/sort-jobs";
+
+const SORT_CHIP_LABELS: Record<string, string> = {
+  deadline: "Deadline",
+  created: "Created",
+  company: "Company",
+  priority: "Priority",
+};
 import { sortJobs } from "@/utils/sort-jobs";
 
 type FilterBarProps = {
@@ -93,8 +100,12 @@ export default function FilterBar({
         clear: () => setDeadlineFilter(""),
       });
     if (search) chips.push({ label: `Search: ${search}`, clear: () => setSearch("") });
+    if (sortBy !== "recent") {
+      chips.push({ label: `Sort: ${SORT_CHIP_LABELS[sortBy] ?? sortBy}`, clear: () => setSortBy("recent") });
+    }
+    if (showArchived) chips.push({ label: "Archived", clear: () => onShowArchivedChange(false) });
     return chips;
-  }, [stageFilter, locationFilter, deadlineFilter, search]);
+  }, [stageFilter, locationFilter, deadlineFilter, search, sortBy, showArchived, onShowArchivedChange]);
 
   const hasActiveFilters = activeFilters.length > 0;
 
@@ -104,6 +115,7 @@ export default function FilterBar({
     setLocationFilter("");
     setDeadlineFilter("");
     setSortBy("recent");
+    onShowArchivedChange(false);
   }
 
   return (
