@@ -227,8 +227,10 @@ export async function linkDocumentToJob(
 
   if (!job || !doc || !version) return null;
 
-  return prisma.jobDocumentLink.create({
-    data: { jobId, documentId, documentVersionId },
+  return prisma.jobDocumentLink.upsert({
+    where: { jobId_documentVersionId: { jobId, documentVersionId } },
+    create: { jobId, documentId, documentVersionId },
+    update: {},
   });
 }
 
