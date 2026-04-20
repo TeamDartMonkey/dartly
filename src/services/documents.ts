@@ -49,27 +49,7 @@ export async function findDocumentByJob(userId: string, type: DocumentType, jobI
   return { doc: link.document, latestVersion: link.document.versions[0] };
 }
 
-export async function createOrUpdateDocumentForJob(userId: string, input: CreateDocumentInput) {
-  const existing = input.jobId ? await findDocumentByJob(userId, input.type, input.jobId) : null;
-
-  if (existing) {
-    const nextVersion = existing.latestVersion.versionNumber + 1;
-    const version = await prisma.documentVersion.create({
-      data: {
-        documentId: existing.doc.id,
-        versionNumber: nextVersion,
-        content: input.content ?? null,
-      },
-    });
-
-    const updated = await prisma.document.update({
-      where: { id: existing.doc.id },
-      data: { updatedAt: new Date() },
-    });
-
-    return { doc: updated, version, isNew: false };
-  }
-
+export async function createDocumentForJob(userId: string, input: CreateDocumentInput) {
   const result = await createDocument(userId, input);
   return { ...result, isNew: true };
 }
