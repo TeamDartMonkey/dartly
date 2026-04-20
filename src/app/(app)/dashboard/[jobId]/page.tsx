@@ -94,8 +94,9 @@ export default function JobDetailPage({ params }: { params: Promise<{ jobId: str
     <div>
       <button
         type="button"
-        onClick={() => router.push("/dashboard")}
+        onClick={() => router.back()}
         className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-50 mb-6 transition-colors"
+        aria-label="Go back"
       >
         <svg
           width="16"
@@ -110,7 +111,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ jobId: str
         >
           <polyline points="15 18 9 12 15 6" />
         </svg>
-        Back to dashboard
+        Back
       </button>
 
       <div className="mb-6">
