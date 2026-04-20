@@ -239,16 +239,17 @@ export async function getDocumentsForJob(jobId: string, userId: string) {
   const links = await prisma.jobDocumentLink.findMany({
     where: { jobId },
     include: {
-      document: true,
-      documentVersion: true,
+      document: {
+        include: { versions: { orderBy: { versionNumber: "desc" }, take: 1 } },
+      },
     },
     orderBy: { linkedAt: "desc" },
   });
 
   return links
-    .filter((l) => !l.document.isDeleted)
+    .filter((l) => !l.document.isDeleted && l.document.versions.length > 0)
     .map((l) => ({
-      ...toDocumentResponse(l.document, l.documentVersion),
+      ...toDocumentResponse(l.document, l.document.versions[0]),
       linkedAt: l.linkedAt.toISOString(),
     }));
 }
