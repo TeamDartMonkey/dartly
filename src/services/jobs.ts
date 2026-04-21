@@ -104,29 +104,15 @@ export async function createJob(data: CreateJobInput) {
   });
 }
 
-// updateJob — Updates a job and atomically logs stage transitions.
-// Wrapped in a Prisma $transaction so the job update, stage history record,
-// activity log entry, and lastActivityAt bump all succeed or roll back together.
 export async function updateJob(id: string, userId: string, data: UpdateJobInput) {
-  // Fetch the existing job scoped to the authenticated user (ownership check).
-  // Returns null if the job doesn't exist or belongs to a different user.
   const existing = await prisma.job.findFirst({ where: { id, userId } });
   if (!existing) return null;
 
-  // Convert the UI-facing stage label (e.g. "Interview") to the Prisma enum value (e.g. "INTERVIEW").
   const prismaStage = data.stage ? (STAGE_UI_TO_PRISMA[data.stage] as PrismaJobStage) : undefined;
-  // Gate: only create history/activity records when the stage actually changed.
-  // This prevents spurious timeline entries when editing other fields (title, notes, etc.).
   const stageChanged = prismaStage && prismaStage !== existing.stage;
-  // Clear the deadline when leaving "Interested" — it's only relevant for pre-application tracking.
   const leavingInterested = stageChanged && existing.stage === "INTERESTED";
 
-  // Everything below runs inside a single database transaction.
-  // If any write fails, the entire operation rolls back — no partial updates.
   return prisma.$transaction(async (tx) => {
-    // Step 1: Update the job record with only the fields that were provided.
-    // The spread pattern `...(condition && { field })` only includes the key
-    // when the condition is truthy, so unchanged fields are left alone.
     const updated = await tx.job.update({
       where: { id },
       data: {
@@ -146,16 +132,11 @@ export async function updateJob(id: string, userId: string, data: UpdateJobInput
         ...(prismaStage !== undefined && { stage: prismaStage }),
         ...(leavingInterested && { deadline: null }),
         ...(data.priority !== undefined && { priority: data.priority }),
-        // Bumped on every save to surface "recently touched" jobs at the top of the
-        // dashboard. Intentionally not gated on field changes.
         lastActivityAt: new Date(),
       },
     });
 
-    // Step 2 (conditional): If the stage changed, record the transition.
-    // This powers the Timeline tab and metrics like response rate.
     if (stageChanged) {
-      // Log the from/to stages so we can reconstruct the full stage history later.
       await tx.jobStageHistory.create({
         data: {
           jobId: id,
@@ -164,8 +145,6 @@ export async function updateJob(id: string, userId: string, data: UpdateJobInput
         },
       });
 
-      // Create a human-readable activity entry for the Timeline tab.
-      // Uses display labels (e.g. "Applied" instead of "APPLIED") for readability.
       const fromLabel = STAGE_LABELS[existing.stage] ?? existing.stage;
       const toLabel = STAGE_LABELS[prismaStage] ?? prismaStage;
       await tx.jobActivity.create({
