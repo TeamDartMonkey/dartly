@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { showToast } from "@/components/ui/toast";
@@ -13,100 +14,153 @@ interface Props {
 }
 
 export function TimelineSection({ activities, jobId, onActivitiesChanged }: Props) {
-  const [addingNote, setAddingNote] = useState(false);
-  const [noteTitle, setNoteTitle] = useState("");
-  const [noteDesc, setNoteDesc] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
-  const sorted = [...activities].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  const today = () => new Date().toISOString().split("T")[0];
+  const emptyForm = { title: "", date: today(), description: "" };
+  const [form, setForm] = useState(emptyForm);
 
-  async function handleAddNote() {
-    if (!noteTitle.trim()) {
+  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  }
+
+  function startEdit(activity: JobActivity) {
+    setEditingId(activity.id);
+    setForm({
+      title: activity.title,
+      date: activity.scheduledAt ? activity.scheduledAt.slice(0, 10) : today(),
+      description: activity.description ?? "",
+    });
+    setShowForm(true);
+  }
+
+  function handleCancel() {
+    setShowForm(false);
+    setEditingId(null);
+    setForm({ ...emptyForm, date: today() });
+  }
+
+  async function handleSave() {
+    if (!form.title.trim()) {
       showToast("Note title is required", "error");
       return;
     }
     setSaving(true);
     try {
-      const res = await fetch(`/api/jobs/${jobId}/activities`, {
-        method: "POST",
+      const payload = {
+        type: "NOTE",
+        title: form.title.trim(),
+        description: form.description.trim() || undefined,
+        scheduledAt: new Date(`${form.date}T00:00:00`).toISOString(),
+      };
+      const url = editingId
+        ? `/api/jobs/${jobId}/activities/${editingId}`
+        : `/api/jobs/${jobId}/activities`;
+      const res = await fetch(url, {
+        method: editingId ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "NOTE",
-          title: noteTitle.trim(),
-          description: noteDesc.trim() || undefined,
-        }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error();
       await onActivitiesChanged();
-      setNoteTitle("");
-      setNoteDesc("");
-      setAddingNote(false);
-      showToast("Note added");
+      handleCancel();
+      showToast(editingId ? "Note updated" : "Note added");
     } catch {
-      showToast("Failed to add note", "error");
+      showToast("Failed to save note", "error");
     } finally {
       setSaving(false);
     }
   }
 
+  async function handleDelete(id: string) {
+    setDeleting(id);
+    try {
+      const res = await fetch(`/api/jobs/${jobId}/activities/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      await onActivitiesChanged();
+      showToast("Note removed");
+    } catch {
+      showToast("Failed to remove note", "error");
+    } finally {
+      setDeleting(null);
+    }
+  }
+
+  const sorted = [...activities].sort((a, b) => {
+    const aDate = a.scheduledAt ?? a.createdAt;
+    const bDate = b.scheduledAt ?? b.createdAt;
+    return new Date(bDate).getTime() - new Date(aDate).getTime();
+  });
+
   return (
     <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-base font-medium text-zinc-50">Timeline</h2>
-        <button
-          type="button"
-          onClick={() => setAddingNote(true)}
-          className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
-        >
-          + Add note
-        </button>
+        {!showForm && (
+          <button
+            type="button"
+            onClick={() => setShowForm(true)}
+            className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
+          >
+            + Add note
+          </button>
+        )}
       </div>
 
-      {addingNote && (
+      {showForm && (
         <div className="mb-6 bg-zinc-800 border border-zinc-700 rounded-lg p-4 space-y-3">
+          <h3 className="text-sm font-medium text-zinc-200">
+            {editingId ? "Edit note" : "Add note"}
+          </h3>
           <Input
             id="note-title"
             label="Note title *"
+            name="title"
             type="text"
-            value={noteTitle}
-            onChange={(e) => setNoteTitle(e.target.value)}
+            value={form.title}
+            onChange={handleChange}
             placeholder="e.g. Heard back from recruiter"
+          />
+          <DatePicker
+            id="note-date"
+            label="Date"
+            value={form.date}
+            onChange={(v) => setForm((prev) => ({ ...prev, date: v }))}
+            placeholder="Select date"
           />
           <Textarea
             id="note-desc"
             label="Details"
-            value={noteDesc}
-            onChange={(e) => setNoteDesc(e.target.value)}
+            name="description"
+            value={form.description}
+            onChange={handleChange}
             placeholder="Optional details..."
             rows={3}
           />
           <div className="flex justify-end gap-2">
             <button
               type="button"
-              onClick={() => {
-                setAddingNote(false);
-                setNoteTitle("");
-                setNoteDesc("");
-              }}
+              onClick={handleCancel}
               className="bg-zinc-700 hover:bg-zinc-600 text-zinc-300 px-3 py-1.5 rounded-md text-sm"
             >
               Cancel
             </button>
             <button
               type="button"
-              onClick={handleAddNote}
+              onClick={handleSave}
               disabled={saving}
               className="bg-indigo-500 hover:bg-indigo-600 text-zinc-50 px-3 py-1.5 rounded-md text-sm font-medium disabled:opacity-50"
             >
-              {saving ? "Saving..." : "Add note"}
+              {saving ? "Saving..." : editingId ? "Save changes" : "Add note"}
             </button>
           </div>
         </div>
       )}
 
-      {sorted.length === 0 ? (
+      {sorted.length === 0 && !showForm ? (
         <p className="text-sm text-zinc-500 text-center py-8">
           No activity yet. Events will appear here as you update this job.
         </p>
@@ -119,24 +173,43 @@ export function TimelineSection({ activities, jobId, onActivitiesChanged }: Prop
                   className={`w-1.5 h-1.5 rounded-full ${DOT_COLORS[activity.type] ?? "bg-zinc-500"}`}
                 />
               </span>
-              <div>
-                <p className="text-sm font-medium text-zinc-200">{activity.title}</p>
-                {activity.description && (
-                  <p className="text-xs text-zinc-400 mt-0.5">{activity.description}</p>
-                )}
-                <div className="flex items-center gap-2 mt-1">
-                  <span
-                    className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${TYPE_BADGE[activity.type] ?? "bg-zinc-800 text-zinc-400"}`}
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="text-sm font-medium text-zinc-200">{activity.title}</p>
+                  {activity.description && (
+                    <p className="text-xs text-zinc-400 mt-0.5">{activity.description}</p>
+                  )}
+                  <div className="flex items-center gap-2 mt-1">
+                    <span
+                      className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${TYPE_BADGE[activity.type] ?? "bg-zinc-800 text-zinc-400"}`}
+                    >
+                      {activity.type.charAt(0) + activity.type.slice(1).toLowerCase()}
+                    </span>
+                    <span className="text-xs text-zinc-500">
+                      {new Date(activity.scheduledAt ?? activity.createdAt).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => startEdit(activity)}
+                    className="text-xs text-zinc-400 hover:text-zinc-50 px-2 py-1 rounded hover:bg-zinc-700 transition-colors"
                   >
-                    {activity.type.charAt(0) + activity.type.slice(1).toLowerCase()}
-                  </span>
-                  <span className="text-xs text-zinc-500">
-                    {new Date(activity.createdAt).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </span>
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(activity.id)}
+                    disabled={deleting === activity.id}
+                    className="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded hover:bg-zinc-700 transition-colors disabled:opacity-50"
+                  >
+                    {deleting === activity.id ? "..." : "Delete"}
+                  </button>
                 </div>
               </div>
             </li>

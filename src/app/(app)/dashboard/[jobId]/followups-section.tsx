@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { showToast } from "@/components/ui/toast";
@@ -150,13 +151,13 @@ export function FollowUpsSection({ activities, jobId, onActivitiesChanged }: Pro
             onChange={handleChange}
             placeholder="e.g. Send thank-you email to recruiter"
           />
-          <Input
+          <DatePicker
             id="fu-due"
             label="Due date"
-            name="scheduledAt"
-            type="datetime-local"
             value={form.scheduledAt}
-            onChange={handleChange}
+            onChange={(v) => setForm((prev) => ({ ...prev, scheduledAt: v }))}
+            placeholder="Select date and time"
+            includeTime
           />
           <Textarea
             id="fu-notes"
