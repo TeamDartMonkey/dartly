@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Markdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import { RewritePanel } from "@/components/documents/rewrite-panel";
@@ -39,7 +39,6 @@ const VIEW_OPTIONS: { value: ViewMode; label: string }[] = [
 
 export default function DocumentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
-  const previewRef = useRef<HTMLDivElement>(null);
   const [id, setId] = useState<string | null>(null);
   const [doc, setDoc] = useState<DocumentResponse | null>(null);
   const [versions, setVersions] = useState<DocumentVersionResponse[]>([]);
@@ -50,7 +49,6 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   const [saving, setSaving] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     params.then((p) => setId(p.id));
@@ -220,30 +218,6 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
       });
   }
 
-  const handleDownloadPdf = useCallback(async () => {
-    if (!previewRef.current || !doc) return;
-    setDownloading(true);
-    try {
-      const html2pdfModule = await import("html2pdf.js");
-      const html2pdf = html2pdfModule.default ?? html2pdfModule;
-      const element = previewRef.current;
-      await html2pdf()
-        .set({
-          margin: 0.5,
-          filename: `${doc.name}.pdf`,
-          image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true },
-          jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
-        })
-        .from(element)
-        .save();
-    } catch {
-      showToast("Failed to generate PDF", "error");
-    } finally {
-      setDownloading(false);
-    }
-  }, [doc]);
-
   function handleViewModeChange(mode: ViewMode) {
     if (mode === "edit") {
       setEditContent(displayContent);
@@ -347,16 +321,6 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                 </button>
               ))}
             </div>
-            {viewMode === "preview" && (
-              <button
-                type="button"
-                onClick={handleDownloadPdf}
-                disabled={downloading}
-                className="bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-zinc-50 px-3 py-1.5 rounded-md text-sm font-medium disabled:opacity-50"
-              >
-                {downloading ? "Generating..." : "Download PDF"}
-              </button>
-            )}
           </div>
 
           {viewMode === "edit" ? (
@@ -388,7 +352,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           ) : viewMode === "preview" ? (
             <div className="bg-zinc-950 rounded-md p-4 overflow-auto">
               {displayContent ? (
-                <div ref={previewRef} className={`jakes-resume-preview${doc.type === "COVER_LETTER" ? " cover-letter-preview" : ""}`}>
+                <div className={`jakes-resume-preview${doc.type === "COVER_LETTER" ? " cover-letter-preview" : ""}`}>
                   <Markdown rehypePlugins={[rehypeRaw]}>{displayContent}</Markdown>
                 </div>
               ) : (
@@ -398,9 +362,9 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           ) : (
             <div className="bg-zinc-950 rounded-md p-4 overflow-auto">
               {displayContent ? (
-                <pre className="text-sm text-zinc-300 whitespace-pre-wrap font-mono leading-relaxed">
-                  {displayContent}
-                </pre>
+                <div className="markdown-viewer max-w-3xl mx-auto">
+                  <Markdown rehypePlugins={[rehypeRaw]}>{displayContent}</Markdown>
+                </div>
               ) : (
                 <span className="text-zinc-500 italic">No content</span>
               )}

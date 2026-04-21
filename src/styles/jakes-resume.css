@@ -145,3 +145,121 @@
   padding: 0;
   line-height: 1.35;
 }
+
+.markdown-viewer {
+  background: #18181b;
+  color: #e4e4e7;
+  font-family: "Computer Modern Serif", Georgia, "Times New Roman", Times, serif;
+  font-size: 11pt;
+  line-height: 1.6;
+  padding: 1rem;
+}
+
+.markdown-viewer h1 {
+  font-size: 24pt;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin: 0 0 6pt 0;
+  color: #f4f4f5;
+}
+
+.markdown-viewer h2 {
+  font-size: 14pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 16pt 0 4pt 0;
+  padding: 0 0 3pt 0;
+  border-bottom: 1px solid #3f3f46;
+  color: #f4f4f5;
+}
+
+.markdown-viewer h3 {
+  font-size: 12pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 12pt 0 2pt 0;
+  padding: 0;
+  color: #f4f4f5;
+}
+
+.markdown-viewer h3:has(.spacer) {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: 11pt;
+}
+
+.markdown-viewer .spacer {
+  flex: 1;
+}
+
+.markdown-viewer .normal {
+  font-weight: 400;
+  white-space: nowrap;
+  font-size: 10pt;
+  color: #a1a1aa;
+}
+
+.markdown-viewer .tech-stack {
+  font-style: italic;
+  font-size: 9.5pt;
+  color: #a1a1aa;
+}
+
+.markdown-viewer p {
+  font-size: 11pt;
+  margin: 4pt 0;
+  color: #d4d4d8;
+}
+
+.markdown-viewer p:has(.spacer) {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 10pt;
+}
+
+.markdown-viewer ul {
+  font-size: 10.5pt;
+  margin: 4pt 0;
+  padding-left: 1.5em;
+  list-style-type: disc;
+}
+
+.markdown-viewer li {
+  font-size: 10.5pt;
+  line-height: 1.5;
+  margin-bottom: 3pt;
+}
+
+.markdown-viewer .section.headerInfo {
+  text-align: center;
+  margin-bottom: 6pt;
+}
+
+.markdown-viewer .section.headerInfo p {
+  font-size: 10pt;
+  margin: 0;
+  color: #a1a1aa;
+}
+
+.markdown-viewer strong {
+  font-weight: 700;
+  color: #f4f4f5;
+}
+
+.markdown-viewer em {
+  font-style: italic;
+}
+
+.markdown-viewer a {
+  color: #818cf8;
+  text-decoration: none;
+}
