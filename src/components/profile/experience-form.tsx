@@ -27,6 +27,7 @@ const EXPERIENCE_TYPE_OPTIONS = [
 ];
 
 function validate(values: {
+  type: Experience["type"];
   title: string;
   organization: string;
   startDate: string;
@@ -40,7 +41,7 @@ function validate(values: {
     errors.title = "Title is required";
   }
 
-  if (!values.organization.trim()) {
+  if (values.type === "EMPLOYMENT" && !values.organization.trim()) {
     errors.organization = "Organization is required";
   }
 
@@ -76,6 +77,7 @@ export function ExperienceForm({ experience, onSave, onCancel }: ExperienceFormP
     e.preventDefault();
 
     const validationErrors = validate({
+      type,
       title,
       organization,
       startDate,
@@ -83,6 +85,7 @@ export function ExperienceForm({ experience, onSave, onCancel }: ExperienceFormP
       isCurrent,
       description,
     });
+
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
@@ -92,9 +95,9 @@ export function ExperienceForm({ experience, onSave, onCancel }: ExperienceFormP
       id: experience?.id ?? "",
       type,
       title: title.trim(),
-      organization: organization.trim(),
+      organization: type === "EMPLOYMENT" ? organization.trim() : "",
       location: type === "EMPLOYMENT" ? location.trim() : undefined,
-      startDate: startDate,
+      startDate,
       endDate: isCurrent ? undefined : endDate,
       isCurrent,
       description: description.trim(),
@@ -111,7 +114,17 @@ export function ExperienceForm({ experience, onSave, onCancel }: ExperienceFormP
           id="experience-type"
           options={EXPERIENCE_TYPE_OPTIONS}
           value={type}
-          onChange={(v) => setType(v as Experience["type"])}
+          onChange={(v) => {
+            const nextType = v as Experience["type"];
+            setType(nextType);
+
+            if (nextType === "PROJECT") {
+              setLocation("");
+              setIsCurrent(false);
+              setEndDate("");
+              setErrors((prev) => ({ ...prev, organization: undefined, endDate: undefined }));
+            }
+          }}
           placeholder="Select type"
         />
       </div>
@@ -131,45 +144,47 @@ export function ExperienceForm({ experience, onSave, onCancel }: ExperienceFormP
 
       <Input
         id="experience-organization"
-        label="Organization"
-        placeholder={type === "EMPLOYMENT" ? "e.g. Acme Corp" : "e.g. Open Source"}
+        label={type === "EMPLOYMENT" ? "Organization" : "Organization (Optional)"}
+        placeholder={type === "EMPLOYMENT" ? "e.g. Acme Corp" : "e.g. Personal / Open Source"}
         value={organization}
         onChange={(e) => {
           setOrganization(e.target.value);
           if (errors.organization) setErrors((prev) => ({ ...prev, organization: undefined }));
         }}
         error={errors.organization}
-        required
+        required={type === "EMPLOYMENT"}
       />
 
       {type === "EMPLOYMENT" && (
-        <Input
-          id="experience-location"
-          label="Location"
-          placeholder="e.g. San Francisco, CA"
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-        />
-      )}
-
-      <div>
-        <label
-          htmlFor="experience-current"
-          className="flex items-center gap-2 text-sm text-zinc-300 cursor-pointer"
-        >
-          <input
-            id="experience-current"
-            type="checkbox"
-            checked={isCurrent}
-            onChange={(e) => {
-              setIsCurrent(e.target.checked);
-              if (e.target.checked) setEndDate("");
-            }}
-            className="rounded border-zinc-700 bg-zinc-800 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-0"
+        <>
+          <Input
+            id="experience-location"
+            label="Location"
+            placeholder="e.g. San Francisco, CA"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
           />
-          I currently work here
-        </label>
-      </div>
+
+          <div>
+            <label
+              htmlFor="experience-current"
+              className="flex cursor-pointer items-center gap-2 text-sm text-zinc-300"
+            >
+              <input
+                id="experience-current"
+                type="checkbox"
+                checked={isCurrent}
+                onChange={(e) => {
+                  setIsCurrent(e.target.checked);
+                  if (e.target.checked) setEndDate("");
+                }}
+                className="rounded border-zinc-700 bg-zinc-800 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-0"
+              />
+              I currently work here
+            </label>
+          </div>
+        </>
+      )}
 
       <DatePicker
         id="experience-start-date"
@@ -184,7 +199,7 @@ export function ExperienceForm({ experience, onSave, onCancel }: ExperienceFormP
         required
       />
 
-      {!isCurrent && (
+      {type === "EMPLOYMENT" && !isCurrent && (
         <DatePicker
           id="experience-end-date"
           label="End Date"
@@ -218,13 +233,13 @@ export function ExperienceForm({ experience, onSave, onCancel }: ExperienceFormP
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-md border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm font-medium text-zinc-300 hover:bg-zinc-700 transition-colors"
+          className="rounded-md border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-700"
         >
           Cancel
         </button>
         <button
           type="submit"
-          className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 transition-colors"
+          className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500"
         >
           Save
         </button>
