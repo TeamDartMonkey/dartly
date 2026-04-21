@@ -35,11 +35,42 @@ _Dartly — ATS for Candidates | CS 490 Capstone_
 - [ ] Login as User A (`testuser@gmail.com` / `Testpass1!`)
 - [ ] Open CI tab: `https://github.com/justincordova/dartly/actions` (or repo URL)
 - [ ] Open VS Code with these files ready to show:
-  - `src/services/jobs.ts` (stage transition transaction)
-  - `src/tests/services/jobs.test.ts` (stage transition tests)
-  - `src/tests/api/jobs-id.test.ts` (auth/ownership tests)
-  - `src/tests/services/profile.test.ts` (profile sync tests)
-  - `src/tests/services/metrics.test.ts` (metrics computation tests)
+
+#### B1 — Stage Transition Transaction & Metrics
+
+| File | Lines | What to Show |
+|------|-------|-------------|
+| `src/services/jobs.ts` | 107–162 | Prisma transaction: update job, bump `lastActivityAt` (137), create `JobStageHistory` (142), create `JobActivity` (152) |
+| `src/services/jobs.ts` | 112 | Stage change detection gate |
+| `src/services/metrics.ts` | 25 | Ghosted excluded from active applications |
+| `src/services/metrics.ts` | 37 | Response rate excludes GHOSTED transitions |
+| `src/services/metrics.ts` | 54–56 | Ghost rate computed separately |
+
+#### B1 — Unit Tests (jobs)
+
+| File | Line | Test Name | What It Proves |
+|------|------|-----------|----------------|
+| `src/tests/services/jobs.test.ts` | 87 | `"updates job without creating stage history when stage unchanged"` | Negative case — no history/activity when stage stays the same |
+| `src/tests/services/jobs.test.ts` | 100 | `"creates stage history and STAGE activity when stage changes"` | Verifies `jobStageHistory.create` and `jobActivity.create` called with correct data |
+| `src/tests/services/jobs.test.ts` | 122 | `"returns null when job not found"` | Edge case — returns null for nonexistent job |
+
+#### B2 — Unit Tests (metrics, auth, profile)
+
+| File | Line | Test Name | What It Proves |
+|------|------|-----------|----------------|
+| `src/tests/services/metrics.test.ts` | 58 | `"computes active applications excluding Rejected, Archived, and Ghosted"` | Ghosted jobs excluded from active count |
+| `src/tests/services/metrics.test.ts` | 94 | `"computes interview rate"` | Interview rate includes Interview + Offer stages |
+| `src/tests/services/metrics.test.ts` | 108 | `"computes rejection rate"` | Rejection rate as percentage of non-Interested jobs |
+| `src/tests/services/metrics.test.ts` | 121 | `"computes ghost rate"` | Ghost rate calculated as percentage of non-Interested jobs |
+| `src/tests/api/jobs-id.test.ts` | 78 | `"returns 401 when not authenticated"` | Unauthenticated requests rejected |
+| `src/tests/api/jobs-id.test.ts` | 86 | `"returns 404 when user does not own the job"` | Cross-account data access denied (returns 404, not 403) |
+| `src/tests/services/profile.test.ts` | 148 | `"updates existing, creates new, and deletes removed experiences"` | Profile sync handles all three operations |
+
+#### B2 — CI Pipeline
+
+| File | Notes |
+|------|-------|
+| `.github/workflows/ci.yml` | Full file — lint → type-check → test → build pipeline |
 
 ---
 

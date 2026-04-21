@@ -55,6 +55,10 @@ describe("getDashboardMetrics", () => {
     expect(metrics.totalJobs).toBe(5);
   });
 
+  // Active applications should only count jobs that are still in play.
+  // Rejected (employer said no), Archived (candidate withdrew), and
+  // Ghosted (employer stopped responding) are all terminal states.
+  // Expected: 3 active (Interested + Applied + Interview), 3 excluded.
   it("computes active applications excluding Rejected, Archived, and Ghosted", async () => {
     mockJobFindMany.mockResolvedValue([
       { id: "j1", stage: "INTERESTED" },
@@ -91,6 +95,9 @@ describe("getDashboardMetrics", () => {
     expect(metrics.responseRate).toBe(50);
   });
 
+  // Interview rate = (Interview + Offer jobs) / non-Interested jobs * 100.
+  // Offer counts because reaching offer implies the candidate passed interviews.
+  // Expected: 2 of 4 non-Interested = 50%.
   it("computes interview rate", async () => {
     mockJobFindMany.mockResolvedValue([
       { id: "j1", stage: "APPLIED" },
@@ -105,6 +112,8 @@ describe("getDashboardMetrics", () => {
     expect(metrics.interviewRate).toBe(50);
   });
 
+  // Rejection rate = rejected jobs / non-Interested jobs * 100.
+  // Expected: 1 of 3 non-Interested = 33% (Math.round).
   it("computes rejection rate", async () => {
     mockJobFindMany.mockResolvedValue([
       { id: "j1", stage: "APPLIED" },
@@ -118,6 +127,9 @@ describe("getDashboardMetrics", () => {
     expect(metrics.rejectionRate).toBe(33);
   });
 
+  // Ghost rate = ghosted jobs / non-Interested jobs * 100.
+  // Ghosted means the employer stopped responding after the candidate applied.
+  // Expected: 1 of 4 non-Interested = 25%.
   it("computes ghost rate", async () => {
     mockJobFindMany.mockResolvedValue([
       { id: "j1", stage: "APPLIED" },

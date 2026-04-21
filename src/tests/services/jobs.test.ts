@@ -84,6 +84,9 @@ describe("createJob", () => {
 });
 
 describe("updateJob", () => {
+  // NEGATIVE CASE: When only non-stage fields are edited (e.g. title),
+  // the transaction should NOT create stage history or activity records.
+  // This prevents spam in the Timeline tab from trivial edits.
   it("updates job without creating stage history when stage unchanged", async () => {
     const { updateJob } = await import("@/services/jobs");
 
@@ -97,6 +100,11 @@ describe("updateJob", () => {
     expect(mockActivityCreate).not.toHaveBeenCalled();
   });
 
+  // HAPPY PATH: When the stage changes (Applied → Interview), the transaction must:
+  // 1. Create a JobStageHistory record with the correct from/to stages
+  // 2. Create a JobActivity record of type "STAGE" with a human-readable title
+  // Both assertions verify the exact arguments passed to Prisma, proving the
+  // stage labels are mapped correctly and the job ID is wired through.
   it("creates stage history and STAGE activity when stage changes", async () => {
     const { updateJob } = await import("@/services/jobs");
 
@@ -119,6 +127,8 @@ describe("updateJob", () => {
     });
   });
 
+  // EDGE CASE: Updating a nonexistent job returns null instead of throwing.
+  // The API layer uses this to return a 404 response.
   it("returns null when job not found", async () => {
     const { updateJob } = await import("@/services/jobs");
 
