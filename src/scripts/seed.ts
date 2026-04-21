@@ -1440,8 +1440,8 @@ const SEED_DOCUMENTS: Record<string, { type: "RESUME" | "COVER_LETTER"; name: st
   [USER_A]: [
     {
       type: "RESUME",
-      name: "Full Stack Engineer - TechCorp",
-      jobIndex: 12,
+      name: "Resume - Cirrus Cloud",
+      jobIndex: 0,
       content: `<h1>John Doe</h1>
 <div class="section headerInfo">
 
@@ -1472,30 +1472,28 @@ john.doe@email.com | (555) 123-4567 | San Francisco, CA
 
 ### Projects
 
+### E-Commerce Platform <span class="tech-stack">| Next.js 14, TypeScript, PostgreSQL, Prisma</span> <span class="spacer"></span><span class="normal">Jun 2024 - Nov 2024</span>
+- Engineered a full-stack e-commerce application featuring product catalog, cart, checkout, and Stripe payment integration.
+- Leveraged server-side rendering and edge caching to support 500+ concurrent users with Next.js 14 and Prisma.
+
 ### Inventory Management API <span class="tech-stack">| Java, Spring Boot, PostgreSQL, Docker</span> <span class="spacer"></span><span class="normal">Jan 2024 - May 2024</span>
 - Developed a RESTful inventory management service using Java and Spring Boot for high throughput data operations.
-- Implemented PostgreSQL backend with JPA/Hibernate, handling 5k+ SKU lookups/sec.
-- Docker containerization with JUnit test suite achieving 90% code coverage.
-
-### E-Commerce Platform <span class="tech-stack">| Next.js 14, TypeScript, PostgreSQL, Prisma</span> <span class="spacer"></span><span class="normal">Jun 2024 - Nov 2024</span>
-- Engineered a full-stack e-commerce application featuring product catalog, cart, checkout, and Stripe payment integration, demonstrating end-to-end system design.
-- Leveraged Next.js 14, TypeScript, and PostgreSQL with Prisma for a scalable and performant solution supporting 500+ concurrent users through server-side rendering and edge caching.
-- Designed a responsive UI with Tailwind CSS, ensuring optimal user experience across various devices.
+- Implemented PostgreSQL backend with JPA/Hibernate, handling 5k+ SKU lookups/sec with Docker containerization.
 
 ### Technical Skills
 
-**Languages:** Java, TypeScript, JavaScript, PostgreSQL, MongoDB
+**Languages:** TypeScript, JavaScript, Java, PostgreSQL, MongoDB
 
-**Frameworks:** React, Spring Boot, Next.js, Node.js, Express, GraphQL
+**Frameworks:** React, Next.js, Node.js, Express, GraphQL, Spring Boot
 
 **Tools:** Docker, Git, Jest, Vitest
 
-**Concepts:** RESTful APIs, Microservices, CI/CD, OOP`,
+**Concepts:** Serverless, RESTful APIs, Microservices, CI/CD`,
     },
     {
       type: "COVER_LETTER",
-      name: "Iceberg Data - Java Full Stack",
-      jobIndex: 31,
+      name: "Cover Letter - ArcDev Tools",
+      jobIndex: 1,
       content: `<h1>John Doe</h1>
 <div class="section headerInfo">
 
@@ -1503,19 +1501,48 @@ john.doe@email.com | (555) 123-4567 | San Francisco, CA
 
 </div>
 
-April 20, 2026
+April 21, 2026
 
-Iceberg Data
+ArcDev Tools
 
 Dear Hiring Manager,
 
-I am writing to express my enthusiastic interest in the Java Full Stack Developer position at **Iceberg Data**, as advertised. The opportunity to contribute to an enterprise data platform with a focus on both Java backend and React frontend development is particularly compelling, aligning perfectly with my skill set and passion for building robust, scalable web applications. My 4+ years of experience in full stack development, combined with a strong background in both modern frontend technologies and Java backend systems, makes me confident I can make an immediate and significant contribution to your team.
+I am excited to apply for the Staff Frontend Engineer position at **ArcDev Tools**. After attending your tech talk at ReactConf showcasing the WASM-based editor, I was genuinely impressed by the engineering quality and vision. Building developer tooling and IDE extensions with **React** and **WebAssembly** is exactly the kind of challenging, high-impact work I want to pursue.
 
-My experience includes hands-on development of high-performance backend services, most notably a RESTful Inventory Management API built with **Java** and **Spring Boot**. This project leveraged **PostgreSQL** with JPA/Hibernate, was containerized with Docker, and featured a comprehensive JUnit test suite with 90% code coverage, efficiently handling 5k+ SKU lookups/sec. At TechNova Inc., I led a critical migration from REST to GraphQL for a B2B SaaS platform, which successfully reduced API payload size by 40% and improved developer experience, while also mentoring junior engineers. This experience demonstrates my capability in optimizing backend performance and driving significant architectural improvements.
+My experience building developer-facing tools runs deep. I created an open-source Task Automation CLI in **TypeScript** that has earned 500+ GitHub stars, featuring a plugin architecture for custom task definitions and achieving 95% test coverage. At TechNova Inc., I led the frontend architecture for a B2B SaaS platform serving 50k+ users, migrating from REST to **GraphQL** and reducing payload sizes by 40%. These experiences have given me a strong understanding of how to build performant, extensible developer tools.
 
-Complementing my backend strengths, I possess extensive experience with modern frontend technologies, including **React**, TypeScript, and Next.js, as evidenced by my work on an E-Commerce Platform and various client-facing dashboards. At WebForge LLC, I was instrumental in implementing automated CI/CD pipelines that reduced deployment time by 60%, showcasing my commitment to efficient development workflows and continuous improvement. I am passionate about clean architecture, ensuring a seamless integration between frontend and backend, and shipping products that solve real problems for users, all qualities I believe are essential for an enterprise data platform like **Iceberg Data**.
+I am particularly drawn to the intersection of **React** and **WebAssembly** that ArcDev Tools is pioneering. While my WASM experience is foundational, my deep expertise in React, TypeScript, and browser performance optimization provides a solid base for ramping quickly. I thrive in environments where the product serves developers, and I would love to contribute to your IDE extension platform.
 
-I am confident that my blend of Java backend expertise and modern React frontend skills, combined with a passion for clean architecture and shipping impactful products, aligns perfectly with the requirements for your enterprise data platform. I look forward to the opportunity to discuss my qualifications further and learn more about how I can contribute to **Iceberg Data**'s success. Thank you for your time and consideration.
+I look forward to the opportunity to discuss how my background in developer tooling and frontend engineering can contribute to ArcDev Tools. Thank you for your consideration.
+
+Sincerely,
+
+John Doe`,
+    },
+    {
+      type: "COVER_LETTER",
+      name: "Cover Letter - NeuralPath AI",
+      jobIndex: 2,
+      content: `<h1>John Doe</h1>
+<div class="section headerInfo">
+
+john.doe@email.com | (555) 123-4567 | San Francisco, CA
+
+</div>
+
+April 21, 2026
+
+NeuralPath AI
+
+Dear Hiring Manager,
+
+I am thrilled to apply for the AI/ML Platform Engineer position at **NeuralPath AI**. The opportunity to build ML infrastructure and model serving platforms at the intersection of **TypeScript** and **Python** is incredibly exciting, and I am confident that my experience in full stack engineering and API platform development makes me a strong fit for this role.
+
+At TechNova Inc., I have spent 4 years building and scaling a B2B SaaS platform that serves 50k+ users. I led the architectural decision to migrate from REST to **GraphQL**, reducing API payload sizes by 40% — experience that translates directly to designing efficient model serving APIs. My work on the E-Commerce Platform with **Next.js 14** and **PostgreSQL** involved building high-throughput data pipelines and optimizing for 500+ concurrent users, skills that are essential for ML infrastructure.
+
+What draws me to NeuralPath AI is the Series B growth trajectory and the chance to work on foundational ML platform tooling. A friend who works at the company has spoken highly of the engineering culture and the technical challenges the team is tackling. I am eager to apply my experience in **TypeScript**, API design, and infrastructure to help scale your model serving platform.
+
+I would welcome the opportunity to discuss how my background in platform engineering can contribute to NeuralPath AI's growth. Thank you for your time and consideration.
 
 Sincerely,
 
@@ -1525,8 +1552,8 @@ John Doe`,
   [USER_B]: [
     {
       type: "RESUME",
-      name: "Senior Platform Engineer - GrowthLabs",
-      jobIndex: 16,
+      name: "Resume - Analytics Inc",
+      jobIndex: 0,
       content: `<h1>Jordan Kim</h1>
 <div class="section headerInfo">
 
@@ -1561,9 +1588,9 @@ jordan.kim@email.com | (555) 987-6543 | Newark, NJ
 - High-throughput distributed job scheduler built in Go with etcd-based leader election.
 - Processes 50k+ jobs/min across a 10-node Kubernetes cluster.
 
-### Kubernetes Cost Optimizer <span class="tech-stack">| Go, Prometheus, Terraform</span> <span class="spacer"></span><span class="normal">Jan 2024 - Jun 2024</span>
-- CLI tool analyzing Kubernetes resource usage via Prometheus API.
-- Achieved 30% cost reduction through rightsizing recommendations.
+### Real-Time Log Aggregator <span class="tech-stack">| Kafka, Go, Redis, ClickHouse</span> <span class="spacer"></span><span class="normal">Jun 2022 - Dec 2022</span>
+- Log aggregation pipeline ingesting 100k+ events/sec via Kafka with sub-second query latency.
+- Grafana dashboards for monitoring, deployed on AWS with Terraform.
 
 ### Technical Skills
 
@@ -1573,14 +1600,14 @@ jordan.kim@email.com | (555) 987-6543 | Newark, NJ
 
 **Messaging:** Kafka, gRPC, REST
 
-**Databases:** PostgreSQL, Redis
+**Databases:** PostgreSQL, Redis, ClickHouse
 
 **Monitoring:** Prometheus, Grafana`,
     },
     {
       type: "COVER_LETTER",
-      name: "GrowthLabs - Staff Engineer",
-      jobIndex: 16,
+      name: "Cover Letter - Analytics Inc",
+      jobIndex: 0,
       content: `<h1>Jordan Kim</h1>
 <div class="section headerInfo">
 
@@ -1588,19 +1615,48 @@ jordan.kim@email.com | (555) 987-6543 | Newark, NJ
 
 </div>
 
-April 20, 2026
+April 21, 2026
 
-GrowthLabs
+Analytics Inc
 
 Dear Hiring Manager,
 
-I am excited to apply for the Staff Software Engineer position at GrowthLabs. With 6+ years of experience in distributed systems, cloud infrastructure, and developer tooling, I am particularly drawn to GrowthLabs' mission of building scalable microservices platforms. My track record of architecting systems that process 10M+ events daily, combined with deep expertise in Kubernetes, AWS, and event-driven architectures, positions me to make an immediate impact on your platform team.
+I am writing to express my interest in the Data Engineer position at **Analytics Inc**. While my background is primarily in platform and backend engineering, I have extensive experience building data pipelines and ETL-adjacent systems that translate directly to data engineering work. The Washington, DC location is also appealing for personal reasons.
 
-At CloudScale Systems, I architected event-driven microservices that process over 10 million events per day for our real-time data pipelines. This role required deep expertise in Kubernetes, AWS, and modern observability practices. I also led infrastructure cost optimization initiatives that reduced our AWS spend by 35% through strategic spot instance usage and right-sizing. Previously at DataPipe Corp, I built real-time data processing pipelines using Kafka and Go, designing a custom job scheduler that handles over 100,000 scheduled tasks daily.
+At CloudScale Systems, I architected event-driven microservices processing **10M+ events/day** for real-time data pipelines using **Kafka** and **Go**. This work required deep expertise in data flow, ingestion patterns, and ensuring reliable delivery at scale. Previously at DataPipe Corp, I built real-time data processing pipelines and designed a custom job scheduler handling 100k+ scheduled tasks daily — experience that maps well to ETL pipeline orchestration.
 
-I have a proven ability to bridge the gap between infrastructure and application development. My Kubernetes Cost Optimizer project demonstrates this—it's a CLI tool that analyzes resource usage patterns and generates rightsizing recommendations, achieving 30% cost reductions for users. I believe these experiences align well with GrowthLabs' goals of building a performant, cost-effective platform.
+My project work further demonstrates data engineering capabilities. I built a Real-Time Log Aggregator ingesting **100k+ events/sec** via Kafka, stored in Redis cache and **ClickHouse** for sub-second analytics queries. I also developed a Distributed Task Scheduler processing 50k+ jobs/min across a 10-node Kubernetes cluster. Both projects required designing for throughput, reliability, and observability.
 
-I would welcome the opportunity to discuss how my background in distributed systems and infrastructure engineering can contribute to GrowthLabs' growth. Thank you for your time and consideration.
+I am confident that my experience with high-throughput data systems, Kafka, and pipeline orchestration makes me well-suited for this role. I look forward to discussing how I can contribute to Analytics Inc's data platform. Thank you for your time and consideration.
+
+Sincerely,
+
+Jordan Kim`,
+    },
+    {
+      type: "COVER_LETTER",
+      name: "Cover Letter - ScaleOps",
+      jobIndex: 1,
+      content: `<h1>Jordan Kim</h1>
+<div class="section headerInfo">
+
+jordan.kim@email.com | (555) 987-6543 | Newark, NJ
+
+</div>
+
+April 21, 2026
+
+ScaleOps
+
+Dear Hiring Manager,
+
+I am excited to apply for the DevOps Engineer position at **ScaleOps**. Managing **Kubernetes** clusters and monitoring at scale is the core of what I do, and the hands-on autonomy your recruiter described is exactly the kind of environment where I thrive.
+
+At CloudScale Systems, I maintain and operate the Kubernetes infrastructure supporting our real-time data pipelines processing **10M+ events/day**. I led infrastructure cost optimization initiatives that reduced our AWS spend by **35%** through strategic spot instance usage and right-sizing — experience that translates directly to the ScaleOps mission of operational efficiency. I also maintain 99.99% uptime across critical services while leading the on-call rotation.
+
+My project work reinforces this focus. I built a **Kubernetes Cost Optimizer** CLI tool that analyzes resource usage via the **Prometheus** API and generates rightsizing recommendations, achieving 30% cost reductions. My Distributed Task Scheduler runs across a 10-node Kubernetes cluster processing 50k+ jobs/min. These projects demonstrate deep operational expertise with Kubernetes, monitoring, and infrastructure automation.
+
+The **Boston** location and the emphasis on hands-on autonomy make this role particularly appealing. I would welcome the opportunity to discuss how my experience can contribute to ScaleOps' platform. Thank you for your time and consideration.
 
 Sincerely,
 
@@ -1813,15 +1869,17 @@ async function seedJobs(userId: string, jobs: SeedJob[], userLabel: string) {
       });
     }
 
-    activityCreates.push({
-      data: {
-        jobId: job.id,
-        type: "NOTE",
-        title: "Application submitted",
-        description: `Applied to ${jobData.company} for ${jobData.title} position`,
-        createdAt: baseDate,
-      },
-    });
+    if (jobData.stage !== "INTERESTED" && jobData.stage !== "ARCHIVED") {
+      activityCreates.push({
+        data: {
+          jobId: job.id,
+          type: "NOTE",
+          title: "Application submitted",
+          description: `Applied to ${jobData.company} for ${jobData.title} position`,
+          createdAt: baseDate,
+        },
+      });
+    }
   }
 
   await prisma.$transaction([
