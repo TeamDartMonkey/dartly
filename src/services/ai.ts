@@ -143,7 +143,13 @@ const RESUME_FORMAT_RULES = `- Sections must appear in this order: Education, Ex
 - Education entries can include bullet points for Relevant Coursework or Awards below the degree line
 - Experience entries: "### Job Title <span class="spacer"></span><span class="normal">Date Range</span>" on the first line, then "*Company* <span class="tech-stack">| Tech, Stack</span> <span class="spacer"></span><span class="normal">*Location*</span>" on the second line using italic
 - Project entries: "### Project Name <span class="tech-stack">| Tech, Stack</span> <span class="spacer"></span><span class="normal">Date Range</span>" — tech stack goes inline with the project title, no second line
-- Technical Skills: group skills into exactly these 4 categories using bold labels, each separated by <br> tags: "**Languages & Databases:** ..." then "**Frameworks & Libraries:** ..." then "**Developer Tools:** ..." then "**Concepts:** ..."
+- Technical Skills: separate each category onto its own line with bold labels:
+  "**Languages:** ..." on one line
+  "**Frameworks:** ..." on the next line
+  "**Tools:** ..." on the next line
+  "**Concepts:** ..." on the final line
+- IMPORTANT: Keep tech stacks SHORT — max 40 characters total for EXPERIENCE lines, max 35 characters for PROJECT tech stacks. Prioritize the 2-4 most important technologies, NOT everything.
+- Technical Skills section: max 10 items per category, use commas (not line breaks)
 - Use "- " bullet points for descriptions
 - Contact info goes in <div class="section headerInfo"> block after the name
 - Do NOT wrap output in markdown code fences

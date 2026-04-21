@@ -17,7 +17,7 @@ These choices are final. Do not suggest alternatives or migrations.
 | Linting/Format  | Biome                                        | All-in-one linter + formatter; pre-commit hooks enforce style |
 | CI/CD          | GitHub Actions                               | Automated build, test, lint, and deployment checks |
 | Deployment      | Vercel                                      | Edge deployment, preview URLs for PRs, automatic SSL |
-| AI Provider     | Placeholder (TBD)                                         | Structure exists in `src/services/ai.ts` and `src/app/api/ai/`; uses template generation, not a real AI provider yet |
+| AI Provider     | Google Gemini (`gemini-2.5-flash`)          | Resume, cover letter, and content rewrite generation via `@google/generative-ai` |
 
 ## Conventions
 
@@ -38,11 +38,13 @@ These choices are final. Do not suggest alternatives or migrations.
 - `src/lib/` — server-only infrastructure (logger, env, rate-limit, api-error, api-wrapper, requireAuth, validate-body, supabase-server)
 - `src/utils/` — shared utilities safe for client and server (cn, search-jobs, sort-jobs, deadline)
 - `src/services/` — business logic, external API clients (auth, prisma, supabase, jobs, documents, profile, settings, activities, metrics, ai)
-- `src/types/` — TypeScript type definitions and Zod validation schemas (`types/schemas/`)
+- `src/types/` — TypeScript type definitions (activity, document, job, profile, settings) and Zod validation schemas (`types/schemas/`)
 - `src/constants/` — app-wide constants (job stages, job filters)
-- `src/hooks/` — custom React hooks (use-view-mode)
+- `src/hooks/` — custom React hooks (use-view-mode, use-document-view-mode)
+- `src/styles/` — CSS stylesheets (jakes-resume.css for resume rendering)
+- `src/proxy.ts` — middleware logic for route protection and session refresh
 - `src/scripts/` — database seed and clean scripts
-- `src/app/api/` — API route handlers (auth, health, jobs, documents, profile, settings, metrics, ai)
+- `src/app/api/` — API route handlers (auth, health, jobs, documents, profile, settings, metrics, ai/cover-letter, ai/resume, ai/rewrite)
 - `src/tests/` — test files organized by module (api, components, hooks, lib, services, utils, \_\_mocks\_\_)
 
 ### Route structure
@@ -50,7 +52,7 @@ These choices are final. Do not suggest alternatives or migrations.
 The app uses Next.js route groups:
 
 - `src/app/(auth)/` — public pages: `login/`, `register/`, `forgot-password/`, `reset-password/`
-- `src/app/(app)/` — protected pages: `dashboard/`, `documents/`, `profile/`, `settings/`, with shared `layout.tsx` that checks auth and renders sidebar
+- `src/app/(app)/` — protected pages: `dashboard/`, `dashboard/[jobId]/` (job detail with overview, timeline, followups, interviews, documents sections), `documents/`, `documents/[id]/` (document detail), `profile/`, `settings/`, with shared `layout.tsx` that checks auth and renders sidebar
 
 ### Code style
 

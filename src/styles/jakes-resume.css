@@ -43,6 +43,7 @@
 
 .jakes-resume-preview h3:has(.spacer) {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: baseline;
   border-bottom: none;
@@ -107,6 +108,11 @@
   font-style: italic;
   font-size: 8.5pt;
   color: #555;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  display: inline-block;
+  max-width: 100%;
+  flex-wrap: wrap;
 }
 
 .jakes-resume-preview a {
