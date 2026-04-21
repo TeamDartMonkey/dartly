@@ -137,6 +137,40 @@ describe("updateJob", () => {
     const result = await updateJob("missing", "u1", { title: "X" });
     expect(result).toBeNull();
   });
+
+  // WORKFLOW INTEGRITY: lastActivityAt must be bumped on every update
+  // so the dashboard can surface recently touched jobs at the top.
+  it("bumps lastActivityAt on every update", async () => {
+    const { updateJob } = await import("@/services/jobs");
+
+    mockJobFindFirst.mockResolvedValue({ id: "j1", userId: "u1", stage: "APPLIED" });
+    mockJobUpdate.mockResolvedValue({ id: "j1", stage: "APPLIED" });
+
+    await updateJob("j1", "u1", { title: "Updated" });
+
+    expect(mockJobUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ lastActivityAt: expect.any(Date) }),
+      })
+    );
+  });
+
+  // WORKFLOW INTEGRITY: Deadline is only relevant for pre-application tracking
+  // in the "Interested" stage. When the job moves past Interested, the deadline
+  // is cleared so it doesn't show stale data in the overview.
+  it("clears deadline when leaving Interested stage", async () => {
+    const { updateJob } = await import("@/services/jobs");
+
+    mockJobFindFirst.mockResolvedValue({ id: "j1", userId: "u1", stage: "INTERESTED" });
+    mockJobUpdate.mockResolvedValue({ id: "j1", stage: "APPLIED" });
+    mockStageHistoryCreate.mockResolvedValue({});
+    mockActivityCreate.mockResolvedValue({});
+
+    await updateJob("j1", "u1", { stage: "Applied" });
+
+    const updateCall = mockJobUpdate.mock.calls[0][0];
+    expect(updateCall.data.deadline).toBeNull();
+  });
 });
 
 describe("cross-user access guards", () => {
