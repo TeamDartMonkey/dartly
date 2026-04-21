@@ -36,19 +36,11 @@ export async function getDashboardMetrics(userId: string): Promise<DashboardMetr
   // Looks at stage transitions from APPLIED → any stage except APPLIED or GHOSTED.
   // Ghosted is excluded because "no response" is not a response — but ghosted jobs
   // still inflate the denominator, correctly dragging the rate down.
-  let responseRate = 0;
-  if (nonInterestedCount > 0) {
-    const stageHistories = await prisma.jobStageHistory.findMany({
-      where: {
-        jobId: { in: nonInterestedJobs.map((j) => j.id) },
-        fromStage: "APPLIED",
-        toStage: { notIn: ["APPLIED", "GHOSTED"] },
-      },
-    });
-    // Use a Set to count each job only once, even if it had multiple responses.
-    const respondedJobIds = new Set(stageHistories.map((h) => h.jobId));
-    responseRate = Math.round((respondedJobIds.size / nonInterestedCount) * 100);
-  }
+  const responseCount = jobs.filter(
+    (j) => j.stage === "INTERVIEW" || j.stage === "OFFER" || j.stage === "REJECTED"
+  ).length;
+  const responseRate =
+    nonInterestedCount > 0 ? Math.round((responseCount / nonInterestedCount) * 100) : 0;
 
   // Interview rate: jobs that reached at least Interview stage (or went further to Offer).
   // These are the strongest signal of employer interest.
