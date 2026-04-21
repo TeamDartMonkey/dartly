@@ -75,6 +75,10 @@ describe("PUT /api/jobs/[id]", () => {
     expect(body.error).toBe("Job not found");
   });
 
+  // AUTH GUARD: requireAuth() throws ApiError(401) when no valid session exists.
+  // The API handler catches this and returns 401 Unauthorized.
+  // This test proves every PUT handler is protected — not just by middleware,
+  // but by an explicit auth check inside the handler itself.
   it("returns 401 when not authenticated", async () => {
     const { ApiError } = await import("@/lib/api-error");
     mockRequireAuth.mockRejectedValue(new ApiError(401, "Unauthorized"));
@@ -83,6 +87,10 @@ describe("PUT /api/jobs/[id]", () => {
     expect(res.status).toBe(401);
   });
 
+  // OWNERSHIP DENIAL: When user A tries to update user B's job, the service
+  // returns null (because findFirst scopes by userId). The API maps this to 404
+  // — NOT 403 — to avoid leaking which resources exist to other users.
+  // Defense-in-depth: requireAuth() + userId scoping in service queries.
   it("returns 404 when user does not own the job (ownership denial)", async () => {
     mockUpdateJob.mockResolvedValue(null);
 

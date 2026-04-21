@@ -27,6 +27,7 @@ export default function DashboardPage() {
   const [filtered, setFiltered] = useState<Job[]>([]);
   const onFilteredChange = useCallback((f: Job[]) => setFiltered(f), []);
   const [viewMode, setViewMode] = useViewMode();
+  const [metricsKey, setMetricsKey] = useState(0);
 
   useEffect(() => {
     fetch("/api/jobs")
@@ -74,6 +75,7 @@ export default function DashboardPage() {
     if (res.ok) {
       const updated: Job = await res.json();
       setJobs((current) => current.map((j) => (j.id === updated.id ? updated : j)));
+      setMetricsKey((k) => k + 1);
       showToast("Job updated");
     } else {
       showToast("Failed to update job", "error");
@@ -93,6 +95,7 @@ export default function DashboardPage() {
     if (res.ok) {
       const updated: Job = await res.json();
       setJobs((current) => current.map((j) => (j.id === updated.id ? updated : j)));
+      setMetricsKey((k) => k + 1);
       showToast("Job archived");
     } else {
       showToast("Failed to archive job", "error");
@@ -123,6 +126,7 @@ export default function DashboardPage() {
     if (res.ok) {
       const updated: Job = await res.json();
       setJobs((current) => current.map((j) => (j.id === updated.id ? updated : j)));
+      setMetricsKey((k) => k + 1);
       showToast("Job restored");
     } else {
       showToast("Failed to restore job", "error");
@@ -137,6 +141,7 @@ export default function DashboardPage() {
     }
     if (res.ok) {
       setJobs((current) => current.filter((job) => job.id !== id));
+      setMetricsKey((k) => k + 1);
       showToast("Job removed");
     } else {
       showToast("Failed to remove job", "error");
@@ -194,6 +199,7 @@ export default function DashboardPage() {
       if (res.ok) {
         const updated: Job = await res.json();
         setJobs((current) => current.map((j) => (j.id === updated.id ? updated : j)));
+        setMetricsKey((k) => k + 1);
         showToast("Job updated");
       } else {
         showToast("Failed to update job", "error");
@@ -219,6 +225,7 @@ export default function DashboardPage() {
       if (res.ok) {
         const created: Job = await res.json();
         setJobs((current) => [created, ...current]);
+        setMetricsKey((k) => k + 1);
         showToast("Job added");
       } else {
         showToast("Failed to add job", "error");
@@ -243,7 +250,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Metrics */}
-      <MetricsPanel />
+      <MetricsPanel refreshKey={metricsKey} />
 
       {/* Filter bar */}
       <FilterBar

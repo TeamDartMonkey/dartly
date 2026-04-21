@@ -101,16 +101,20 @@ describe("generateResumeDraft", () => {
   });
 
   it("retries on 503 and eventually succeeds", async () => {
+    vi.useFakeTimers();
     mockGenerateContent
       .mockRejectedValueOnce(new Error("503 Service Unavailable"))
       .mockResolvedValueOnce({
         response: { text: () => "# Jane Doe\n\n### Experience\n\nContent" },
       });
 
-    const result = await generateResumeDraft(baseProfile, jobContext);
+    const promise = generateResumeDraft(baseProfile, jobContext);
+    await vi.advanceTimersByTimeAsync(3000);
+    const result = await promise;
 
     expect(result.content).toContain("Jane Doe");
     expect(mockGenerateContent).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
   });
 
   it("throws on non-retryable API error", async () => {

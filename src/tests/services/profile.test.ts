@@ -145,6 +145,11 @@ describe("upsertProfile", () => {
       expect(mockExperienceDeleteMany).not.toHaveBeenCalled();
     });
 
+    // PROFILE SYNC TEST: The upsertProfile function must handle all three
+    // operations in one call — update existing experiences (exp-1 gets new data),
+    // create new ones (no id = new record), and delete removed ones (exp-2 was
+    // in the DB but not in the submitted array, so it gets pruned).
+    // This prevents stale data from accumulating when the user edits their profile.
     it("updates existing, creates new, and deletes removed experiences", async () => {
       mockExperienceFindMany.mockResolvedValue([{ id: "exp-1" }, { id: "exp-2" }]);
 

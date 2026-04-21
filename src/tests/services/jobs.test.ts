@@ -84,6 +84,9 @@ describe("createJob", () => {
 });
 
 describe("updateJob", () => {
+  // NEGATIVE CASE: When only non-stage fields are edited (e.g. title),
+  // the transaction should NOT create stage history or activity records.
+  // This prevents spam in the Timeline tab from trivial edits.
   it("updates job without creating stage history when stage unchanged", async () => {
     const { updateJob } = await import("@/services/jobs");
 
@@ -97,6 +100,11 @@ describe("updateJob", () => {
     expect(mockActivityCreate).not.toHaveBeenCalled();
   });
 
+  // HAPPY PATH: When the stage changes (Applied → Interview), the transaction must:
+  // 1. Create a JobStageHistory record with the correct from/to stages
+  // 2. Create a JobActivity record of type "STAGE" with a human-readable title
+  // Both assertions verify the exact arguments passed to Prisma, proving the
+  // stage labels are mapped correctly and the job ID is wired through.
   it("creates stage history and STAGE activity when stage changes", async () => {
     const { updateJob } = await import("@/services/jobs");
 
@@ -119,6 +127,8 @@ describe("updateJob", () => {
     });
   });
 
+  // EDGE CASE: Updating a nonexistent job returns null instead of throwing.
+  // The API layer uses this to return a 404 response.
   it("returns null when job not found", async () => {
     const { updateJob } = await import("@/services/jobs");
 
@@ -126,6 +136,40 @@ describe("updateJob", () => {
 
     const result = await updateJob("missing", "u1", { title: "X" });
     expect(result).toBeNull();
+  });
+
+  // WORKFLOW INTEGRITY: lastActivityAt must be bumped on every update
+  // so the dashboard can surface recently touched jobs at the top.
+  it("bumps lastActivityAt on every update", async () => {
+    const { updateJob } = await import("@/services/jobs");
+
+    mockJobFindFirst.mockResolvedValue({ id: "j1", userId: "u1", stage: "APPLIED" });
+    mockJobUpdate.mockResolvedValue({ id: "j1", stage: "APPLIED" });
+
+    await updateJob("j1", "u1", { title: "Updated" });
+
+    expect(mockJobUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ lastActivityAt: expect.any(Date) }),
+      })
+    );
+  });
+
+  // WORKFLOW INTEGRITY: Deadline is only relevant for pre-application tracking
+  // in the "Interested" stage. When the job moves past Interested, the deadline
+  // is cleared so it doesn't show stale data in the overview.
+  it("clears deadline when leaving Interested stage", async () => {
+    const { updateJob } = await import("@/services/jobs");
+
+    mockJobFindFirst.mockResolvedValue({ id: "j1", userId: "u1", stage: "INTERESTED" });
+    mockJobUpdate.mockResolvedValue({ id: "j1", stage: "APPLIED" });
+    mockStageHistoryCreate.mockResolvedValue({});
+    mockActivityCreate.mockResolvedValue({});
+
+    await updateJob("j1", "u1", { stage: "Applied" });
+
+    const updateCall = mockJobUpdate.mock.calls[0][0];
+    expect(updateCall.data.deadline).toBeNull();
   });
 });
 
