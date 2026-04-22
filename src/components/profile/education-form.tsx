@@ -143,9 +143,13 @@ export function EducationForm({ education, onSave, onCancel }: EducationFormProp
         onChange={(v) => {
           setStartDate(v);
           if (errors.startDate) setErrors((prev) => ({ ...prev, startDate: undefined }));
+          if (v && endDate && new Date(v) > new Date(endDate)) {
+            setEndDate("");
+          }
         }}
         error={errors.startDate}
         placeholder="Start date"
+        maxDate={endDate || undefined}
         required
       />
 

@@ -240,6 +240,7 @@ export function ExperienceSection({ experiences, onUpdate }: ExperienceSectionPr
         maxWidth="lg"
       >
         <ExperienceForm
+          key={editingIndex ?? "new"}
           experience={editingIndex !== null ? experiences[editingIndex] : undefined}
           onSave={handleSave}
           onCancel={handleCloseModal}

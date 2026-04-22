@@ -328,7 +328,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               <textarea
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
-                className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm w-full min-h-[400px] text-zinc-50 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm w-full min-h-100 text-zinc-50 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               />
               <div className="flex gap-2">
                 <button
