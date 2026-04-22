@@ -6,6 +6,7 @@ import type { Skill } from "@/types/profile";
 
 type SkillFormProps = {
   skill?: Skill;
+  existingNames: string[];
   onSave: (skill: Skill) => void;
   onCancel: () => void;
 };
@@ -21,7 +22,7 @@ const PROFICIENCY_OPTIONS = [
   "Expert",
 ] as const;
 
-export function SkillForm({ skill, onSave, onCancel }: SkillFormProps) {
+export function SkillForm({ skill, existingNames, onSave, onCancel }: SkillFormProps) {
   const [name, setName] = useState(skill?.name ?? "");
   const [category, setCategory] = useState(skill?.category ?? "");
   const [proficiency, setProficiency] = useState(skill?.proficiency ?? "");
@@ -30,6 +31,14 @@ export function SkillForm({ skill, onSave, onCancel }: SkillFormProps) {
   function validate(): FormErrors {
     const e: FormErrors = {};
     if (!name.trim()) e.name = "Skill name is required";
+    else {
+      const normalizedName = name.trim().toLowerCase();
+      const currentName = skill?.name?.trim().toLowerCase();
+      const isEditingSame = currentName && normalizedName === currentName;
+      if (!isEditingSame && existingNames.some((n) => n.toLowerCase() === normalizedName)) {
+        e.name = "A skill with this name already exists";
+      }
+    }
     return e;
   }
 

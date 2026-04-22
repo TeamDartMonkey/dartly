@@ -267,21 +267,29 @@ async function syncEducations(
 }
 
 async function syncSkills(tx: Prisma.TransactionClient, profileId: string, incoming: Skill[]) {
+  const seen = new Set<string>();
+  const deduped = incoming.filter((s) => {
+    const key = s.name.trim().toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
   const existing = await tx.skill.findMany({
     where: { profileId },
     select: { id: true },
   });
 
   const existingIds = new Set(existing.map((s) => s.id));
-  const incomingIds = new Set(incoming.flatMap((s) => (s.id ? [s.id] : [])));
+  const incomingIds = new Set(deduped.flatMap((s) => (s.id ? [s.id] : [])));
 
   const toDelete = [...existingIds].filter((id) => !incomingIds.has(id));
   if (toDelete.length > 0) {
     await tx.skill.deleteMany({ where: { id: { in: toDelete } } });
   }
 
-  for (let index = 0; index < incoming.length; index++) {
-    const s = incoming[index];
+  for (let index = 0; index < deduped.length; index++) {
+    const s = deduped[index];
 
     const data: {
       profileId: string;
@@ -302,7 +310,7 @@ async function syncSkills(tx: Prisma.TransactionClient, profileId: string, incom
       data.proficiency = s.proficiency || null;
     }
 
-    if (incoming.length > 1) {
+    if (deduped.length > 1) {
       data.order = index;
     }
 

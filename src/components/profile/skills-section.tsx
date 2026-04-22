@@ -187,6 +187,7 @@ export function SkillsSection({ skills, onUpdate }: SkillsSectionProps) {
         <SkillForm
           key={editingIndex ?? "new"}
           skill={editingIndex !== null ? skills[editingIndex] : undefined}
+          existingNames={skills.map((s) => s.name)}
           onSave={handleSave}
           onCancel={handleCloseModal}
         />
