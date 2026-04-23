@@ -27,6 +27,7 @@ const STATUS_STYLES: Record<string, string> = {
   DRAFT: "bg-yellow-500/10 text-yellow-400",
   READY: "bg-green-500/10 text-green-400",
   ARCHIVED: "bg-zinc-700 text-zinc-400",
+  UPLOADED: "bg-blue-500/10 text-blue-400",
 };
 
 type ViewMode = "preview" | "markdown" | "edit";
@@ -49,6 +50,8 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   const [saving, setSaving] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [loadingSignedUrl, setLoadingSignedUrl] = useState(false);
 
   useEffect(() => {
     params.then((p) => setId(p.id));
@@ -88,6 +91,22 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
             if (verData.length > 0) {
               setSelectedVersionId(verData[0].id);
             }
+          }
+        }
+
+        //for uploaded docs
+        if (docData.status === "UPLOADED") {
+          setLoadingSignedUrl(true);
+          try {
+            const urlRes = await fetch(`/api/documents/${id}/signed-url`);
+            if (urlRes.ok) {
+              const { url } = await urlRes.json();
+              setSignedUrl(url);
+            } else {
+              showToast("Failed to load file preview", "error");
+            }
+          } finally {
+            setLoadingSignedUrl(false);
           }
         }
       } catch {
@@ -232,6 +251,8 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     return doc?.content ?? "";
   })();
 
+  const isUploaded = doc?.status === "UPLOADED";
+
   if (loading || !doc) {
     return (
       <div className="space-y-4">
@@ -245,14 +266,14 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   return (
     <>
       <div className="space-y-6">
-         <button
-           type="button"
-           onClick={() => router.back()}
-           className="flex items-center justify-center w-10 h-10 rounded-md text-indigo-400 hover:text-indigo-300 hover:bg-zinc-800 text-lg transition-colors"
-           aria-label="Go back"
-         >
-           &larr;
-         </button>
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="flex items-center justify-center w-10 h-10 rounded-md text-indigo-400 hover:text-indigo-300 hover:bg-zinc-800 text-lg transition-colors"
+          aria-label="Go back"
+        >
+          &larr;
+        </button>
 
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
@@ -276,7 +297,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           </div>
         </div>
 
-        {versions.length > 0 && (
+        {!isUploaded && versions.length > 0 && (
           <div className="flex items-center gap-3">
             <Select
               value={selectedVersionId ?? ""}
@@ -304,78 +325,105 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
         )}
 
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              {VIEW_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => handleViewModeChange(opt.value)}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium ${
-                    viewMode === opt.value
-                      ? "bg-indigo-500 text-zinc-50"
-                      : "bg-zinc-800 border border-zinc-700 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-50"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {viewMode === "edit" ? (
-            <div className="space-y-4">
-              <textarea
-                value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-                className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm w-full min-h-100 text-zinc-50 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              />
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-zinc-50 px-4 py-2 rounded-md text-sm font-medium"
-                >
-                  {saving ? "Saving..." : "Save"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode("preview")}
-                  disabled={saving}
-                  className="bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-zinc-50 px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          ) : viewMode === "preview" ? (
-            <div className="bg-zinc-950 rounded-md p-4 overflow-auto">
-              {displayContent ? (
-                <div className={`jakes-resume-preview${doc.type === "COVER_LETTER" ? " cover-letter-preview" : ""}`}>
-                  <Markdown rehypePlugins={[rehypeRaw]}>{displayContent}</Markdown>
-                </div>
+          {isUploaded ? (
+            //uploaded PDF preview
+            <div className="w-full">
+              {loadingSignedUrl ? (
+                <div className="h-[700px] bg-zinc-800 animate-pulse rounded-md" />
+              ) : signedUrl ? (
+                <iframe
+                  src={signedUrl}
+                  title={doc.name}
+                  className="w-full h-[700px] rounded-md border border-zinc-700"
+                />
               ) : (
-                <span className="text-zinc-500 italic">No content</span>
+                <div className="h-[700px] flex items-center justify-center text-zinc-500 text-sm">
+                  Failed to load preview.
+                </div>
               )}
             </div>
           ) : (
-            <div className="bg-zinc-950 rounded-md p-4 overflow-auto">
-              {displayContent ? (
-                <div className="markdown-viewer max-w-3xl mx-auto">
-                  <Markdown rehypePlugins={[rehypeRaw]}>{displayContent}</Markdown>
+            // ai generated docs (shows preview/markdown/edit)
+            <>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  {VIEW_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => handleViewModeChange(opt.value)}
+                      className={`px-3 py-1.5 rounded-md text-sm font-medium ${
+                        viewMode === opt.value
+                          ? "bg-indigo-500 text-zinc-50"
+                          : "bg-zinc-800 border border-zinc-700 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-50"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {viewMode === "edit" ? (
+                <div className="space-y-4">
+                  <textarea
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    className="bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm w-full min-h-100 text-zinc-50 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSave}
+                      disabled={saving}
+                      className="bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-zinc-50 px-4 py-2 rounded-md text-sm font-medium"
+                    >
+                      {saving ? "Saving..." : "Save"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("preview")}
+                      disabled={saving}
+                      className="bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-zinc-50 px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : viewMode === "preview" ? (
+                <div className="bg-zinc-950 rounded-md p-4 overflow-auto">
+                  {displayContent ? (
+                    <div
+                      className={`jakes-resume-preview${doc.type === "COVER_LETTER" ? " cover-letter-preview" : ""}`}
+                    >
+                      <Markdown rehypePlugins={[rehypeRaw]}>{displayContent}</Markdown>
+                    </div>
+                  ) : (
+                    <span className="text-zinc-500 italic">No content</span>
+                  )}
                 </div>
               ) : (
-                <span className="text-zinc-500 italic">No content</span>
+                <div className="bg-zinc-950 rounded-md p-4 overflow-auto">
+                  {displayContent ? (
+                    <div className="markdown-viewer max-w-3xl mx-auto">
+                      <Markdown rehypePlugins={[rehypeRaw]}>{displayContent}</Markdown>
+                    </div>
+                  ) : (
+                    <span className="text-zinc-500 italic">No content</span>
+                  )}
+                </div>
               )}
-            </div>
+            </>
           )}
         </div>
 
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
-          <h2 className="text-sm font-medium text-zinc-400 mb-4">AI Rewrite</h2>
-          <RewritePanel documentId={doc.id} onAccept={refreshDoc} />
-        </div>
+        {/*only for ai docs, not uploaded ones*/}
+        {!isUploaded && (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
+            <h2 className="text-sm font-medium text-zinc-400 mb-4">AI Rewrite</h2>
+            <RewritePanel documentId={doc.id} onAccept={refreshDoc} />
+          </div>
+        )}
 
         <div className="pt-4 border-t border-zinc-800">
           <button

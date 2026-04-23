@@ -19,6 +19,7 @@ export function toDocumentResponse(
     name: doc.name,
     status: doc.status,
     content: latestVersion.content ?? undefined,
+    fileUrl: latestVersion.fileUrl ?? undefined,
     versionNumber: latestVersion.versionNumber,
     createdAt: doc.createdAt.toISOString(),
     updatedAt: doc.updatedAt.toISOString(),
