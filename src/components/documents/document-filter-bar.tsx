@@ -133,6 +133,7 @@ export default function DocumentFilterBar({
             { value: "", label: "All statuses" },
             { value: "DRAFT", label: "Draft" },
             { value: "READY", label: "Ready" },
+            { value: "UPLOADED", label: "Uploaded"},
             { value: "ARCHIVED", label: "Archived" },
           ]}
           className="sm:w-36"

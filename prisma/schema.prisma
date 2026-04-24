@@ -191,4 +191,5 @@ enum DocumentStatus {
   DRAFT
   READY
   ARCHIVED
+  UPLOADED
 }

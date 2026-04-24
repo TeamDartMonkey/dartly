@@ -11,6 +11,13 @@ import { showToast } from "@/components/ui/toast";
 import "@/styles/jakes-resume.css";
 import type { DocumentResponse, DocumentVersionResponse } from "@/types/document";
 
+import dynamic from "next/dynamic";
+
+const PdfViewer = dynamic(
+  () => import("@/components/documents/pdf-viewer").then((m) => m.PdfViewer),
+  { ssr: false }
+);
+
 const TYPE_STYLES: Record<string, string> = {
   RESUME: "bg-indigo-500/10 text-indigo-400",
   COVER_LETTER: "bg-emerald-500/10 text-emerald-400",
@@ -331,11 +338,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               {loadingSignedUrl ? (
                 <div className="h-[700px] bg-zinc-800 animate-pulse rounded-md" />
               ) : signedUrl ? (
-                <iframe
-                  src={signedUrl}
-                  title={doc.name}
-                  className="w-full h-[700px] rounded-md border border-zinc-700"
-                />
+                <PdfViewer url={signedUrl} />
               ) : (
                 <div className="h-[700px] flex items-center justify-center text-zinc-500 text-sm">
                   Failed to load preview.
