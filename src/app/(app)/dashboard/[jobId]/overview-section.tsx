@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -205,15 +206,22 @@ export function OverviewSection({ job, onJobUpdated }: Props) {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field
-            label="Deadline"
-            id="deadline"
-            name="deadline"
-            value={job.stage === "Interested" ? form.deadline : ""}
-            editing={editing && job.stage === "Interested"}
-            onChange={handleChange}
-            type="date"
-          />
+          <div>
+            <span className="block text-xs font-medium text-zinc-400 mb-1">Deadline</span>
+            {editing ? (
+              <DatePicker
+                id="deadline"
+                value={form.deadline}
+                onChange={(v) => setForm((prev) => ({ ...prev, deadline: v }))}
+                placeholder="Select deadline"
+                minDate={new Date().toISOString().slice(0, 10)}
+              />
+            ) : (
+              <p className="text-sm text-zinc-300 py-2 min-h-[36px]">
+                {form.deadline || <span className="text-zinc-600 italic">Not set</span>}
+              </p>
+            )}
+          </div>
           <Field
             label="Compensation notes"
             id="compensationNotes"

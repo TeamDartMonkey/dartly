@@ -121,6 +121,7 @@ export default function JobForm({ initialValues, onSubmit, onCancel }: JobFormPr
         value={deadline}
         onChange={setDeadline}
         placeholder="Select deadline"
+        minDate={!initialValues ? new Date().toISOString().slice(0, 10) : undefined}
       />
 
       <DatePicker
