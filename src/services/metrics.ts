@@ -28,18 +28,11 @@ export async function getDashboardMetrics(userId: string): Promise<DashboardMetr
   const nonInterestedJobs = jobs.filter((j) => j.stage !== "INTERESTED");
   const nonInterestedCount = nonInterestedJobs.length;
 
-  let responseRate = 0;
-  if (nonInterestedCount > 0) {
-    const stageHistories = await prisma.jobStageHistory.findMany({
-      where: {
-        jobId: { in: nonInterestedJobs.map((j) => j.id) },
-        fromStage: "APPLIED",
-        toStage: { notIn: ["APPLIED", "GHOSTED"] },
-      },
-    });
-    const respondedJobIds = new Set(stageHistories.map((h) => h.jobId));
-    responseRate = Math.round((respondedJobIds.size / nonInterestedCount) * 100);
-  }
+  const responseCount = jobs.filter(
+    (j) => j.stage === "INTERVIEW" || j.stage === "OFFER" || j.stage === "REJECTED"
+  ).length;
+  const responseRate =
+    nonInterestedCount > 0 ? Math.round((responseCount / nonInterestedCount) * 100) : 0;
 
   const interviewCount = jobs.filter(
     (j) => j.stage === "INTERVIEW" || j.stage === "OFFER"

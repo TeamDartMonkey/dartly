@@ -18,7 +18,7 @@ const PIPELINE_ORDER: JobStage[] = [
 
 const STORAGE_KEY = "dartly:metrics-expanded";
 
-export function MetricsPanel() {
+export function MetricsPanel({ refreshKey }: { refreshKey: number }) {
   const router = useRouter();
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,7 +37,9 @@ export function MetricsPanel() {
     });
   }, []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: refreshKey intentionally triggers re-fetch
   useEffect(() => {
+    setLoading(true);
     fetch("/api/metrics")
       .then((res) => {
         if (res.status === 401) {
@@ -51,7 +53,7 @@ export function MetricsPanel() {
         if (data) setMetrics(data);
       })
       .finally(() => setLoading(false));
-  }, [router]);
+  }, [router, refreshKey]);
 
   if (loading) {
     return (

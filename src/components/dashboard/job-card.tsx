@@ -1,7 +1,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { BadgePicker } from "@/components/ui/badge-picker";
-import { ACTIVE_STAGES, STAGE_STYLES } from "@/constants/job-stages";
+import { STAGES, STAGE_STYLES } from "@/constants/job-stages";
 import type { Job, JobStage } from "@/types/job";
 import { getUrgency, URGENCY_STYLES } from "@/utils/deadline";
 
@@ -14,10 +14,12 @@ type JobCardProps = {
   onRestore?: (id: string) => Promise<void>;
 };
 
-const STAGE_OPTIONS = ACTIVE_STAGES.map((s) => {
-  const style = STAGE_STYLES[s];
-  return { value: s, label: s, badge: style.badge, dot: style.dot };
-});
+function getStageOptions(_currentStage: JobStage) {
+  return STAGES.map((s) => {
+    const style = STAGE_STYLES[s];
+    return { value: s, label: s, badge: style.badge, dot: style.dot };
+  });
+}
 
 export default function JobCard({
   job,
@@ -31,8 +33,9 @@ export default function JobCard({
   const [isChangingStage, setIsChangingStage] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const isArchived = job.stage === "Archived";
-  const isGhosted = job.stage === "Ghosted";
-  const isInactive = isArchived || isGhosted;
+  const isInactive = isArchived;
+  const showStageDropdown = onStageChange && !isArchived && !isChangingStage;
+  const stageOptions = getStageOptions(job.stage);
 
   const urgency = job.stage === "Interested" ? getUrgency(job.deadline) : "none";
   const urgencyStyle = URGENCY_STYLES[urgency];
@@ -221,16 +224,16 @@ export default function JobCard({
             </svg>
           )}
 
-          {!isInactive && onStageChange && (
+          {showStageDropdown && (
             <BadgePicker
               value={job.stage}
-              options={STAGE_OPTIONS}
+              options={stageOptions}
               onChange={(val) => handleStageChange(val)}
               disabled={isChangingStage}
             />
           )}
 
-          {(isInactive || !onStageChange) && (
+          {(isInactive || !showStageDropdown) && (
             <span
               className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium ${STAGE_STYLES[job.stage].badge}`}
             >

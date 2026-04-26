@@ -8,6 +8,20 @@ import { showToast } from "@/components/ui/toast";
 import { STAGES } from "@/constants/job-stages";
 import type { Job, JobStage } from "@/types/job";
 
+function formatRelativeDate(dateStr: string) {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 30) return `${diffDays} days ago`;
+  if (diffDays < 60) return "1 month ago";
+  const months = Math.floor(diffDays / 30);
+  return `${months} months ago`;
+}
+
 interface Props {
   job: Job;
   onJobUpdated: (job: Job) => void;
@@ -229,6 +243,12 @@ export function OverviewSection({ job, onJobUpdated }: Props) {
                 {form.priority ? "Yes" : <span className="text-zinc-600 italic">No</span>}
               </p>
             )}
+          </div>
+          <div>
+            <span className="block text-xs font-medium text-zinc-400 mb-1">Last activity</span>
+            <p className="text-sm text-zinc-300 py-2 min-h-[36px]">
+              {formatRelativeDate(job.lastActivityDate)}
+            </p>
           </div>
         </div>
 

@@ -35,11 +35,49 @@ _Dartly — ATS for Candidates | CS 490 Capstone_
 - [ ] Login as User A (`testuser@gmail.com` / `Testpass1!`)
 - [ ] Open CI tab: `https://github.com/justincordova/dartly/actions` (or repo URL)
 - [ ] Open VS Code with these files ready to show:
-  - `src/services/jobs.ts` (stage transition transaction)
-  - `src/tests/services/jobs.test.ts` (stage transition tests)
-  - `src/tests/api/jobs-id.test.ts` (auth/ownership tests)
-  - `src/tests/services/profile.test.ts` (profile sync tests)
-  - `src/tests/services/metrics.test.ts` (metrics computation tests)
+
+#### B1 — Stage Transition Transaction & Metrics
+
+| File | Lines | What to Show |
+|------|-------|-------------|
+| `src/services/jobs.ts` | 115–160 | Prisma transaction: update job, bump `lastActivityAt` (135), create `JobStageHistory` (140), create `JobActivity` (150), clear deadline when leaving Interested (133) |
+| `src/services/jobs.ts` | 112 | Stage change detection gate |
+| `src/services/jobs.ts` | 113 | Deadline clearing when leaving Interested |
+| `src/services/metrics.ts` | 24 | Ghosted excluded from active applications |
+| `src/services/metrics.ts` | 31–35 | Response rate based on current stage (INTERVIEW, OFFER, REJECTED / non-Interested) |
+| `src/services/metrics.ts` | 47–49 | Ghost rate computed separately |
+
+#### B1 — Unit Tests (jobs)
+
+| File | Line | Test Name | What It Proves |
+|------|------|-----------|----------------|
+| `src/tests/services/jobs.test.ts` | 87 | `"updates job without creating stage history when stage unchanged"` | Negative case — no history/activity when stage stays the same |
+| `src/tests/services/jobs.test.ts` | 100 | `"creates stage history and STAGE activity when stage changes"` | Verifies `jobStageHistory.create` and `jobActivity.create` called with correct data |
+| `src/tests/services/jobs.test.ts` | 122 | `"returns null when job not found"` | Edge case — returns null for nonexistent job |
+| `src/tests/services/jobs.test.ts` | 131 | `"bumps lastActivityAt on every update"` | Workflow integrity — timestamp always updated on save |
+| `src/tests/services/jobs.test.ts` | 146 | `"clears deadline when leaving Interested stage"` | Deadline only relevant pre-application; cleared on stage transition |
+
+#### B2 — Unit Tests (metrics, auth, profile)
+
+| File | Line | Test Name | What It Proves |
+|------|------|-----------|----------------|
+| `src/tests/services/metrics.test.ts` | 55 | `"computes active applications excluding Rejected, Archived, and Ghosted"` | Ghosted jobs excluded from active count |
+| `src/tests/services/metrics.test.ts` | 70 | `"computes response rate based on current stage"` | Response rate uses current stage (INTERVIEW/OFFER/REJECTED), not stage history |
+| `src/tests/services/metrics.test.ts` | 81 | `"computes interview rate"` | Interview rate includes Interview + Offer stages |
+| `src/tests/services/metrics.test.ts` | 94 | `"computes rejection rate"` | Rejection rate as percentage of non-Interested jobs |
+| `src/tests/services/metrics.test.ts` | 106 | `"computes ghost rate"` | Ghost rate calculated as percentage of non-Interested jobs |
+| `src/tests/api/jobs-id.test.ts` | 78 | `"returns 401 when not authenticated"` | Unauthenticated requests rejected |
+| `src/tests/api/jobs-id.test.ts` | 86 | `"returns 404 when user does not own the job"` | Cross-account data access denied (returns 404, not 403) |
+| `src/tests/services/profile.test.ts` | 148 | `"updates existing, creates new, and deletes removed experiences"` | Profile sync handles all three operations |
+| `src/tests/api/ai-cover-letter.test.ts` | 112 | `"returns 201 with generated cover letter document"` | Cover letter generation with profile + job context |
+| `src/tests/api/ai-rewrite.test.ts` | 69 | `"returns 200 with original and rewritten content"` | AI rewrite returns both original and rewritten |
+| `src/tests/api/ai-rewrite.test.ts` | 92 | `"returns 400 when document has no content"` | Edge case — cannot rewrite empty document |
+
+#### B2 — CI Pipeline
+
+| File | Notes |
+|------|-------|
+| `.github/workflows/ci.yml` | Full file — lint → type-check → test → build pipeline |
 
 ---
 
@@ -102,9 +140,9 @@ _Dartly — ATS for Candidates | CS 490 Capstone_
 | 1 | In the app | Change a job stage in Job Detail Overview → save |
 | 2 | Check Timeline tab | Auto-created `STAGE` activity: "Stage changed: Applied → Interview" |
 | 3 | Check Dashboard | `lastActivityAt` bumped → job surfaces at top with "Most recent" sort. Metrics panel reflects new stage counts and rates (Ghost Rate updates if moved to/from Ghosted) |
-| 4 | Open `src/services/jobs.ts` | Show the Prisma transaction at **lines 115–162** that atomically: (1) updates the Job record, (2) bumps `lastActivityAt` (**line 137**), (3) creates `JobStageHistory` (**line 142**), (4) creates `JobActivity` (**line 152**) |
+| 4 | Open `src/services/jobs.ts` | Show the Prisma transaction at **lines 115–160** that atomically: (1) updates the Job record, (2) bumps `lastActivityAt` (**line 135**), (3) clears deadline when leaving Interested (**line 133**), (4) creates `JobStageHistory` (**line 140**), (5) creates `JobActivity` (**line 150**) |
 | 5 | Show stage detection | Point to **line 112**: `const stageChanged = prismaStage && prismaStage !== existing.stage` — gates history/activity creation |
-| 6 | Show Ghosted handling | Point to `src/services/metrics.ts` — Ghosted excluded from active applications (**line 25**), ghost rate computed separately (**line 54–56**), response rate excludes GHOSTED transitions (**line 37**) |
+| 6 | Show metrics computation | Point to `src/services/metrics.ts` — response rate uses current stage, not stage history (**line 31–35**); Ghosted excluded from active applications (**line 24**); ghost rate computed separately (**line 47–49**) |
 
 **Show unit test:**
 
@@ -115,6 +153,8 @@ Open `src/tests/services/jobs.test.ts`:
 | `"creates stage history and STAGE activity when stage changes"` | 100 | Verifies `jobStageHistory.create` and `jobActivity.create` are called with correct from/to stages and activity metadata |
 | `"updates job without creating stage history when stage unchanged"` | 87 | Negative case — verifies NO history/activity is created when stage stays the same |
 | `"returns null when job not found"` | 122 | Edge case — updateJob returns null for nonexistent job |
+| `"bumps lastActivityAt on every update"` | 131 | Workflow integrity — timestamp always updated on save |
+| `"clears deadline when leaving Interested stage"` | 146 | Deadline cleared on stage transition away from Interested |
 
 **Show metrics test:**
 
@@ -122,10 +162,11 @@ Open `src/tests/services/metrics.test.ts`:
 
 | Test | Line | What it proves |
 |------|------|----------------|
-| `"computes active applications excluding Rejected, Archived, and Ghosted"` | 58 | Verifies Ghosted jobs are excluded from active count |
-| `"computes ghost rate"` | 121 | Verifies ghost rate is calculated as percentage of non-Interested jobs |
-| `"computes interview rate"` | 94 | Verifies interview rate includes Interview + Offer stages |
-| `"computes rejection rate"` | 108 | Verifies rejection rate as percentage of non-Interested jobs |
+| `"computes active applications excluding Rejected, Archived, and Ghosted"` | 55 | Verifies Ghosted jobs are excluded from active count |
+| `"computes response rate based on current stage"` | 70 | Verifies response rate uses current stage (INTERVIEW/OFFER/REJECTED), not stage history |
+| `"computes ghost rate"` | 106 | Verifies ghost rate is calculated as percentage of non-Interested jobs |
+| `"computes interview rate"` | 81 | Verifies interview rate includes Interview + Offer stages |
+| `"computes rejection rate"` | 94 | Verifies rejection rate as percentage of non-Interested jobs |
 
 ### B2. CI and Meaningful Testing Evidence (3 min)
 
@@ -137,7 +178,7 @@ Runs on every PR/push to `main`:
 2. `bun prisma generate`
 3. `bun lint` (Biome)
 4. `bun run type-check` (`tsc --noEmit`)
-5. `bun run test` (Vitest — 31 files, 265 tests)
+5. `bun run test` (Vitest — 31 files, 211 tests)
 6. `bun run build` (Next.js production build)
 
 **Show specific tests:**
@@ -145,8 +186,11 @@ Runs on every PR/push to `main`:
 | Requirement | File | Test Name | Line |
 |-------------|------|-----------|------|
 | Dashboard workflow | `src/tests/services/jobs.test.ts` | `"creates stage history and STAGE activity when stage changes"` | 100 |
+| Timestamp integrity | `src/tests/services/jobs.test.ts` | `"bumps lastActivityAt on every update"` | 131 |
 | Profile completion | `src/tests/services/profile.test.ts` | `"updates existing, creates new, and deletes removed experiences"` | 148 |
-| Metrics computation | `src/tests/services/metrics.test.ts` | `"computes ghost rate"` | 121 |
+| Metrics computation | `src/tests/services/metrics.test.ts` | `"computes response rate based on current stage"` | 70 |
+| AI cover letter | `src/tests/api/ai-cover-letter.test.ts` | `"returns 201 with generated cover letter document"` | 112 |
+| AI rewrite | `src/tests/api/ai-rewrite.test.ts` | `"returns 400 when document has no content"` | 92 |
 | Non-happy-path (401) | `src/tests/api/jobs-id.test.ts` | `"returns 401 when not authenticated"` | 78 |
 | Non-happy-path (ownership) | `src/tests/api/jobs-id.test.ts` | `"returns 404 when user does not own the job"` | 86 |
 
@@ -154,7 +198,7 @@ Runs on every PR/push to `main`:
 
 > The ownership denial test (`jobs-id.test.ts:86`) verifies that when user A tries to update user B's job, the service returns null and the API responds with 404 — not 403. This prevents cross-account data access without leaking which resources exist. The `requireAuth()` gate at the top of every handler plus `userId` scoping in service queries provides defense-in-depth.
 
-**Test suite summary:** 31 files, 265 tests — covering dashboard workflow, profile sync, metrics computation, AI generation, document management, and negative-path (401/400/404/429/validation).
+**Test suite summary:** 31 files, 211 tests — covering dashboard workflow, profile sync, metrics computation, AI generation (resume + cover letter + rewrite), document management, and negative-path (401/400/404/429/validation).
 
 ### B3. Architecture and Implementation Q&A (2 min)
 
@@ -166,7 +210,7 @@ Runs on every PR/push to `main`:
 
 #### Q2: Where is stage transition logic implemented and why?
 
-> In `src/services/jobs.ts:107-162` — inside the `updateJob()` service function, wrapped in a single Prisma `$transaction()`. This ensures the job update, stage history record, activity log, and `lastActivityAt` bump are atomic. If any step fails, the whole change rolls back. Putting it in the service layer (not the API route) means it's reusable and testable independently of HTTP concerns.
+> In `src/services/jobs.ts:107-161` — inside the `updateJob()` service function, wrapped in a single Prisma `$transaction()`. This ensures the job update, stage history record, activity log, and `lastActivityAt` bump are atomic. If any step fails, the whole change rolls back. Putting it in the service layer (not the API route) means it's reusable and testable independently of HTTP concerns.
 
 #### Q3: How does Job Detail coordinate timeline, interview, and document actions?
 
@@ -180,7 +224,7 @@ Runs on every PR/push to `main`:
 
 > - Metrics are computed on-the-fly (no caching) — Sprint 3 can add a materialized view or computed column
 > - Activity `type` is a free-form string, not an enum — gives flexibility but no DB-level validation
-> - No E2E/integration tests yet — all 265 tests are unit tests with mocked Prisma
+> - No E2E/integration tests yet — all 211 tests are unit tests with mocked Prisma
 > - AI generation is synchronous (no streaming or queue) — could timeout for slow responses
 > - Document versioning stores full content (no diffs) — could grow large over time
 

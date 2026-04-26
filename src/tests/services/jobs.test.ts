@@ -127,6 +127,35 @@ describe("updateJob", () => {
     const result = await updateJob("missing", "u1", { title: "X" });
     expect(result).toBeNull();
   });
+
+  it("bumps lastActivityAt on every update", async () => {
+    const { updateJob } = await import("@/services/jobs");
+
+    mockJobFindFirst.mockResolvedValue({ id: "j1", userId: "u1", stage: "APPLIED" });
+    mockJobUpdate.mockResolvedValue({ id: "j1", stage: "APPLIED" });
+
+    await updateJob("j1", "u1", { title: "Updated" });
+
+    expect(mockJobUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ lastActivityAt: expect.any(Date) }),
+      })
+    );
+  });
+
+  it("clears deadline when leaving Interested stage", async () => {
+    const { updateJob } = await import("@/services/jobs");
+
+    mockJobFindFirst.mockResolvedValue({ id: "j1", userId: "u1", stage: "INTERESTED" });
+    mockJobUpdate.mockResolvedValue({ id: "j1", stage: "APPLIED" });
+    mockStageHistoryCreate.mockResolvedValue({});
+    mockActivityCreate.mockResolvedValue({});
+
+    await updateJob("j1", "u1", { stage: "Applied" });
+
+    const updateCall = mockJobUpdate.mock.calls[0][0];
+    expect(updateCall.data.deadline).toBeNull();
+  });
 });
 
 describe("cross-user access guards", () => {

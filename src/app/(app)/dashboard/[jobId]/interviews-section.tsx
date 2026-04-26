@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { showToast } from "@/components/ui/toast";
@@ -148,13 +149,13 @@ export function InterviewsSection({ activities, jobId, onActivitiesChanged }: Pr
                 ))}
               </select>
             </div>
-            <Input
+            <DatePicker
               id="scheduledAt"
               label="Date & time"
-              name="scheduledAt"
-              type="datetime-local"
               value={form.scheduledAt}
-              onChange={handleChange}
+              onChange={(v) => setForm((prev) => ({ ...prev, scheduledAt: v }))}
+              placeholder="Select date and time"
+              includeTime
             />
           </div>
           <Input

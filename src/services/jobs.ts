@@ -132,8 +132,6 @@ export async function updateJob(id: string, userId: string, data: UpdateJobInput
         ...(prismaStage !== undefined && { stage: prismaStage }),
         ...(leavingInterested && { deadline: null }),
         ...(data.priority !== undefined && { priority: data.priority }),
-        // Bumped on every save to surface "recently touched" jobs at the top of the
-        // dashboard. Intentionally not gated on field changes.
         lastActivityAt: new Date(),
       },
     });
