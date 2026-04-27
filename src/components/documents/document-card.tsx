@@ -24,6 +24,7 @@ const STATUS_STYLES: Record<string, string> = {
   DRAFT: "bg-yellow-500/10 text-yellow-400",
   READY: "bg-green-500/10 text-green-400",
   ARCHIVED: "bg-zinc-700 text-zinc-400",
+  UPLOADED: "bg-blue-500/10 text-blue-400",
 };
 
 export default function DocumentCard({ document, onDelete, onClick }: DocumentCardProps) {

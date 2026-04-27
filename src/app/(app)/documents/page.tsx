@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import DocumentFilterBar from "@/components/documents/document-filter-bar";
 import DocumentList from "@/components/documents/document-list";
 import { GenerateDocumentDropdown } from "@/components/documents/generate-document-dropdown";
+import { UploadDocumentDropdown } from "@/components/documents/upload-document-dropdown"; 
 import { JobPickerModal } from "@/components/documents/job-picker-modal";
 import { ConfirmDeleteModal } from "@/components/ui/confirm-delete-modal";
 import { DocumentsSkeleton } from "@/components/ui/skeletons/documents-skeleton";
@@ -79,6 +80,10 @@ export default function DocumentsPage() {
     router.push(`/documents/${documentId}`);
   }
 
+  function handleUploaded(document: DocumentResponse) {
+    setDocuments((current) => [document, ...current]);
+  }
+
   return (
     <>
       <div className="mb-8 flex items-center justify-between">
@@ -86,7 +91,10 @@ export default function DocumentsPage() {
           <h1 className="text-2xl font-semibold text-zinc-50">Document Library</h1>
           <p className="mt-1 text-sm text-zinc-400">Your resumes and cover letters.</p>
         </div>
-        <GenerateDocumentDropdown onPickMode={handlePickMode} />
+        <div className="flex items-center gap-2">
+          <UploadDocumentDropdown onUploaded={handleUploaded} />
+          <GenerateDocumentDropdown onPickMode={handlePickMode} />
+        </div>
       </div>
 
       {loading ? (

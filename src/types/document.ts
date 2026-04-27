@@ -1,5 +1,5 @@
 export type DocumentType = "RESUME" | "COVER_LETTER" | "OTHER";
-export type DocumentStatus = "DRAFT" | "READY" | "ARCHIVED";
+export type DocumentStatus = "DRAFT" | "READY" | "ARCHIVED" | "UPLOADED";
 
 export type DocumentResponse = {
   id: string;
@@ -7,6 +7,7 @@ export type DocumentResponse = {
   name: string;
   status: DocumentStatus;
   content?: string;
+  fileUrl?: string;
   versionNumber: number;
   createdAt: string;
   updatedAt: string;
