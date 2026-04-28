@@ -43,7 +43,8 @@ export async function downloadGenerated(name: string, type: string, content: str
   iframe.style.cssText = "position: fixed; left: -9999px; top: 0; width: 816px; height: 1px; border: none;";
   document.body.appendChild(iframe);
 
-  const iframeDoc = iframe.contentDocument!;
+  const iframeDoc = iframe.contentDocument;
+  if (!iframeDoc) return;
   iframeDoc.open();
   iframeDoc.write(`
     <!DOCTYPE html>
