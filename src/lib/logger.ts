@@ -6,6 +6,7 @@ import { env } from "@/lib/env";
 
 const IS_PROD = env.NODE_ENV === "production";
 const IS_TEST = env.NODE_ENV === "test";
+const IS_SERVERLESS = !!process.env.VERCEL;
 
 const LOG_LEVEL = env.LOG_LEVEL ?? (IS_PROD ? "info" : "debug");
 const LOG_DIR = env.LOG_DIR ?? path.join(process.cwd(), "logs");
@@ -85,23 +86,21 @@ const buildTransports = (): winston.transport[] => {
     new winston.transports.Console({ format: consoleFormat }),
   ];
 
-  if (IS_PROD) {
+  if (IS_PROD && !IS_SERVERLESS) {
     ensureLogsDir();
 
     transports.push(
-      // Errors only — small, fast to scan
       new winston.transports.File({
         filename: path.join(LOG_DIR, "error.log"),
         level: "error",
         format: fileFormat,
-        maxsize: 10 * 1024 * 1024, // 10 MB
+        maxsize: 10 * 1024 * 1024,
         maxFiles: 5,
       }),
-      // Everything
       new winston.transports.File({
         filename: path.join(LOG_DIR, "combined.log"),
         format: fileFormat,
-        maxsize: 20 * 1024 * 1024, // 20 MB
+        maxsize: 20 * 1024 * 1024,
         maxFiles: 10,
       })
     );
@@ -111,7 +110,7 @@ const buildTransports = (): winston.transport[] => {
 };
 
 const buildExceptionHandlers = (): winston.transport[] => {
-  if (!IS_PROD) return [];
+  if (!IS_PROD || IS_SERVERLESS) return [];
   ensureLogsDir();
   return [
     new winston.transports.File({
@@ -122,7 +121,7 @@ const buildExceptionHandlers = (): winston.transport[] => {
 };
 
 const buildRejectionHandlers = (): winston.transport[] => {
-  if (!IS_PROD) return [];
+  if (!IS_PROD || IS_SERVERLESS) return [];
   ensureLogsDir();
   return [
     new winston.transports.File({
