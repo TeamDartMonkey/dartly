@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { showToast } from "@/components/ui/toast";
+import { downloadDoc } from "@/components/documents/download-button";
 import type { DocumentResponse } from "@/types/document";
 import type { Job } from "@/types/job";
 
@@ -28,6 +29,7 @@ export function DocumentsSection({ job }: DocumentsSectionProps) {
   const [documents, setDocuments] = useState<DocumentResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   const fetchDocuments = useCallback(async () => {
     try {
@@ -148,34 +150,25 @@ export function DocumentsSection({ job }: DocumentsSectionProps) {
                     type="button"
                     onClick={async (e) => {
                       e.stopPropagation();
+                      setDownloadingId(doc.id);
                       try {
-                        if (doc.status === "UPLOADED") {
-                          const urlRes = await fetch(`/api/documents/${doc.id}/signed-url`);
-                          if (!urlRes.ok) throw new Error();
-                          const { url } = await urlRes.json();
-                          const res = await fetch(url);
-                          if (!res.ok) throw new Error();
-                          const blob = await res.blob();
-                          const a = document.createElement("a");
-                          a.href = URL.createObjectURL(blob);
-                          a.download = doc.name.endsWith(".pdf") ? doc.name : `${doc.name}.pdf`;
-                          a.click();
-                          URL.revokeObjectURL(a.href);
-                        } else {
-                          const { downloadGenerated } = await import("@/components/documents/download-button");
-                          await downloadGenerated(doc.name, doc.type, doc.content ?? "");
-                        }
+                        await downloadDoc(doc);
                       } catch {
                         showToast("Download failed", "error");
+                      } finally {
+                        setDownloadingId(null);
                       }
                     }}
-                    className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+                    disabled={downloadingId === doc.id}
+                    className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 disabled:opacity-50 transition-colors"
                     aria-label={`Download ${doc.name}`}
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                      <polyline points="7 10 12 15 17 10" />
-                      <line x1="12" y1="15" x2="12" y2="3" />
+                      {downloadingId === doc.id ? (
+                        <><circle cx="12" cy="12" r="10" opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" className="animate-spin origin-center" /></>
+                      ) : (
+                        <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></>
+                      )}
                     </svg>
                   </button>
                   <svg

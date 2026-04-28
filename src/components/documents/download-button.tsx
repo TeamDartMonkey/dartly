@@ -5,24 +5,38 @@ import { showToast } from "@/components/ui/toast";
 import type { DocumentResponse } from "@/types/document";
 
 interface DownloadButtonProps {
-    doc: DocumentResponse;
-    signedUrl?: string | null;
+  doc: DocumentResponse;
+  signedUrl?: string | null;
 }
 
 async function downloadUploaded(name: string, signedUrl?: string | null) {
-    if (!signedUrl) {
-        throw new Error("No file URL available");
-    }
+  if (!signedUrl) {
+    throw new Error("No file URL available");
+  }
 
-    const res = await fetch(signedUrl);
-    if (!res.ok) throw new Error("Failed to fetch file");
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = name.endsWith(".pdf") ? name : `${name}.pdf`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const res = await fetch(signedUrl);
+  if (!res.ok) throw new Error("Failed to fetch file");
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name.endsWith(".pdf") ? name : `${name}.pdf`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function downloadUploadedById(name: string, docId: string) {
+  const urlRes = await fetch(`/api/documents/${docId}/signed-url`);
+  if (!urlRes.ok) throw new Error("Failed to get download URL");
+  const { url } = await urlRes.json();
+  await downloadUploaded(name, url);
+}
+
+function stripDangerousHtml(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<iframe[\s\S]*?<\/iframe>/gi, "")
+    .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "");
 }
 
 export async function downloadGenerated(name: string, type: string, content: string) {
@@ -31,47 +45,48 @@ export async function downloadGenerated(name: string, type: string, content: str
   const { remark } = await import("remark");
   const { default: remarkHtml } = await import("remark-html");
 
-  //converts markdown to html
-  const result = await remark().use(remarkHtml, { sanitize: false }).process(content);
-  const htmlContent = String(result);
+  const result = await remark().use(remarkHtml).process(content);
+  const htmlContent = stripDangerousHtml(String(result));
 
-  //fetching the css from public to use in iframe
   const cssRes = await fetch("/jakes-resume.css");
   const cssText = cssRes.ok ? await cssRes.text() : "";
 
   const iframe = document.createElement("iframe");
-  iframe.style.cssText = "position: fixed; left: -9999px; top: 0; width: 816px; height: 1px; border: none;";
+  iframe.style.cssText =
+    "position: fixed; left: -9999px; top: 0; width: 816px; height: 1px; border: none;";
   document.body.appendChild(iframe);
 
   const iframeDoc = iframe.contentDocument;
-  if (!iframeDoc) return;
+  if (!iframeDoc) {
+    document.body.removeChild(iframe);
+    throw new Error("Failed to create document for PDF rendering");
+  }
+
   iframeDoc.open();
-  iframeDoc.write(`
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta charset="utf-8" />
-        <style>
-          * { box-sizing: border-box; margin: 0; padding: 0; }
-          body {
-            background: #ffffff;
-            color: #000000;
-            font-family: Georgia, serif;
-            font-size: 14px;
-            line-height: 1.5;
-            padding: 48px;
-            width: 816px;
-          }
-          ${cssText}
-        </style>
-      </head>
-      <body>
-        <div class="${type === "COVER_LETTER" ? "jakes-resume-preview cover-letter-preview" : "jakes-resume-preview"}">
-          ${htmlContent}
-        </div>
-      </body>
-    </html>
-  `);
+  iframeDoc.write(`<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        background: #ffffff;
+        color: #000000;
+        font-family: Georgia, serif;
+        font-size: 14px;
+        line-height: 1.5;
+        padding: 48px;
+        width: 816px;
+      }
+      ${cssText}
+    </style>
+  </head>
+  <body>
+    <div class="${type === "COVER_LETTER" ? "jakes-resume-preview cover-letter-preview" : "jakes-resume-preview"}">
+      ${htmlContent}
+    </div>
+  </body>
+</html>`);
   iframeDoc.close();
 
   await new Promise((resolve) => setTimeout(resolve, 300));
@@ -112,33 +127,40 @@ export async function downloadGenerated(name: string, type: string, content: str
   }
 }
 
-export function DownloadButton({ doc, signedUrl }: DownloadButtonProps) {
-    const [downloading, setDownloading] = useState(false);
-
-    async function handleDownload() {
-        setDownloading(true);
-        try {
-            if (doc.status === "UPLOADED") {
-                await downloadUploaded(doc.name, signedUrl);
-            } else {
-                await downloadGenerated(doc.name, doc.type, doc.content ?? "");
-            }
-        } catch (err) {
-            console.error(err)
-            showToast("Download failed", "error");
-        } finally {
-            setDownloading(false);
-        }
+export async function downloadDoc(doc: DocumentResponse, signedUrl?: string | null) {
+  if (doc.status === "UPLOADED") {
+    if (signedUrl) {
+      await downloadUploaded(doc.name, signedUrl);
+    } else {
+      await downloadUploadedById(doc.name, doc.id);
     }
+  } else {
+    await downloadGenerated(doc.name, doc.type, doc.content ?? "");
+  }
+}
 
-    return (
-        <button
-            type="button"
-            onClick={handleDownload}
-            disabled={downloading}
-            className="bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 disabled:opacity-50 text-zinc-50 px-4 py-2 rounded-md text-sm font-medium"
-        >
-            {downloading ? "Downloading..." : "Download PDF"}
-        </button>
-    );
+export function DownloadButton({ doc, signedUrl }: DownloadButtonProps) {
+  const [downloading, setDownloading] = useState(false);
+
+  async function handleDownload() {
+    setDownloading(true);
+    try {
+      await downloadDoc(doc, signedUrl);
+    } catch {
+      showToast("Download failed", "error");
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleDownload}
+      disabled={downloading}
+      className="bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 disabled:opacity-50 text-zinc-50 px-4 py-2 rounded-md text-sm font-medium"
+    >
+      {downloading ? "Downloading..." : "Download PDF"}
+    </button>
+  );
 }

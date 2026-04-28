@@ -358,10 +358,11 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                       key={opt.value}
                       type="button"
                       onClick={() => handleViewModeChange(opt.value)}
-                      className={`px-3 py-1.5 rounded-md text-sm font-medium ${viewMode === opt.value
+                      className={`px-3 py-1.5 rounded-md text-sm font-medium ${
+                        viewMode === opt.value
                           ? "bg-indigo-500 text-zinc-50"
                           : "bg-zinc-800 border border-zinc-700 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-50"
-                        }`}
+                      }`}
                     >
                       {opt.label}
                     </button>
