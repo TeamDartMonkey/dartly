@@ -8,6 +8,8 @@ type DocumentListProps = {
   viewMode: ViewMode;
   onClick: (id: string) => void;
   onDelete: (id: string) => void;
+  onDuplicate: (id: string) => void;
+  onRename: (id: string, newName: string) => void;
   onGenerate: () => void;
 };
 
@@ -16,6 +18,8 @@ export default function DocumentList({
   viewMode,
   onClick,
   onDelete,
+  onDuplicate,
+  onRename,
   onGenerate,
 }: DocumentListProps) {
   if (!documents || documents.length === 0) {
@@ -54,7 +58,7 @@ export default function DocumentList({
     return (
       <div className="flex flex-col gap-2">
         {documents.map((doc) => (
-          <DocumentListItem key={doc.id} document={doc} onDelete={onDelete} onClick={onClick} />
+          <DocumentListItem key={doc.id} document={doc} onDelete={onDelete} onClick={onClick} onDuplicate={onDuplicate} onRename={onRename} />
         ))}
       </div>
     );
@@ -63,7 +67,7 @@ export default function DocumentList({
   return (
     <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
       {documents.map((doc) => (
-        <DocumentCard key={doc.id} document={doc} onDelete={onDelete} onClick={onClick} />
+        <DocumentCard key={doc.id} document={doc} onDelete={onDelete} onClick={onClick} onDuplicate={onDuplicate} onRename={onRename} />
       ))}
     </div>
   );

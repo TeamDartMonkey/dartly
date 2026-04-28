@@ -4,7 +4,7 @@ import { withHttpLogging } from "@/lib/api-wrapper";
 import logger from "@/lib/logger";
 import { requireAuth } from "@/lib/requireAuth";
 import { validateBody } from "@/lib/validate-body";
-import { getDocumentById, softDeleteDocument, updateDocumentContent } from "@/services/documents";
+import { getDocumentById, softDeleteDocument, updateDocumentContent, renameDocument } from "@/services/documents";
 import { UpdateDocumentContentSchema } from "@/types/schemas";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -60,6 +60,30 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
 
       logger.info("Document deleted", { userId: user.id, documentId: id });
       return new NextResponse(null, { status: 204 });
+    } catch (err) {
+      return handleApiError(err);
+    }
+  });
+}
+
+export async function PATCH(request: NextRequest, context: RouteContext) {
+  return withHttpLogging(request, async () => {
+    try {
+      const user = await requireAuth();
+      const { id } = await context.params;
+      const body = await request.json();
+
+      if (!body.name || typeof body.name !== "string" || !body.name.trim()) {
+        return NextResponse.json({ error: "Name is required" }, { status: 400 });
+      }
+
+      const doc = await renameDocument(id, user.id, body.name.trim());
+      if (!doc) {
+        return NextResponse.json({ error: "Document not found" }, { status: 404 });
+      }
+
+      logger.info("Document renamed", { userId: user.id, documentId: id });
+      return NextResponse.json(doc, { status: 200 });
     } catch (err) {
       return handleApiError(err);
     }
