@@ -10,7 +10,7 @@ import { Select } from "@/components/ui/select";
 import { showToast } from "@/components/ui/toast";
 import "@/styles/jakes-resume.css";
 import type { DocumentResponse, DocumentVersionResponse } from "@/types/document";
-
+import { DownloadButton } from "@/components/documents/download-button";
 import dynamic from "next/dynamic";
 
 const PdfViewer = dynamic(
@@ -301,6 +301,9 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               v{doc.versionNumber} &middot; Created {new Date(doc.createdAt).toLocaleDateString()}{" "}
               &middot; Updated {new Date(doc.updatedAt).toLocaleDateString()}
             </p>
+          </div>
+          <div className="shrink-0">
+            <DownloadButton doc={doc} signedUrl={signedUrl} />
           </div>
         </div>
 
