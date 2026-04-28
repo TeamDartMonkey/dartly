@@ -10,7 +10,7 @@ import { Select } from "@/components/ui/select";
 import { showToast } from "@/components/ui/toast";
 import "@/styles/jakes-resume.css";
 import type { DocumentResponse, DocumentVersionResponse } from "@/types/document";
-
+import { DownloadButton } from "@/components/documents/download-button";
 import dynamic from "next/dynamic";
 
 const PdfViewer = dynamic(
@@ -302,6 +302,9 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               &middot; Updated {new Date(doc.updatedAt).toLocaleDateString()}
             </p>
           </div>
+          <div className="shrink-0">
+            <DownloadButton doc={doc} signedUrl={signedUrl} />
+          </div>
         </div>
 
         {!isUploaded && versions.length > 0 && (
@@ -355,11 +358,10 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                       key={opt.value}
                       type="button"
                       onClick={() => handleViewModeChange(opt.value)}
-                      className={`px-3 py-1.5 rounded-md text-sm font-medium ${
-                        viewMode === opt.value
+                      className={`px-3 py-1.5 rounded-md text-sm font-medium ${viewMode === opt.value
                           ? "bg-indigo-500 text-zinc-50"
                           : "bg-zinc-800 border border-zinc-700 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-50"
-                      }`}
+                        }`}
                     >
                       {opt.label}
                     </button>

@@ -119,14 +119,14 @@ export function DocumentsSection({ job }: DocumentsSectionProps) {
         <ul className="space-y-2">
           {documents.map((doc) => (
             <li key={doc.id}>
-              <button
-                type="button"
-                onClick={() => router.push(`/documents/${doc.id}`)}
-                className="w-full flex items-center justify-between gap-3 rounded-lg border border-zinc-700 bg-zinc-950/40 p-3 hover:border-zinc-600 transition-colors text-left"
-              >
-                <div className="min-w-0 flex items-center gap-3">
+              <div className="w-full flex items-center justify-between gap-3 rounded-lg border border-zinc-700 bg-zinc-950/40 hover:border-zinc-600 transition-colors">
+                <button
+                  type="button"
+                  onClick={() => router.push(`/documents/${doc.id}`)}
+                  className="flex-1 flex items-center gap-3 p-3 text-left min-w-0"
+                >
                   <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${TYPE_STYLES[doc.type] ?? TYPE_STYLES.OTHER}`}
+                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${TYPE_STYLES[doc.type] ?? TYPE_STYLES.OTHER}`}
                   >
                     {TYPE_LABELS[doc.type] ?? "Other"}
                   </span>
@@ -141,22 +141,52 @@ export function DocumentsSection({ job }: DocumentsSectionProps) {
                       })}
                     </p>
                   </div>
+                </button>
+
+                <div className="flex items-center gap-1 pr-3 shrink-0">
+                  <button
+                    type="button"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      try {
+                        if (doc.status === "UPLOADED") {
+                          const urlRes = await fetch(`/api/documents/${doc.id}/signed-url`);
+                          if (!urlRes.ok) throw new Error();
+                          const { url } = await urlRes.json();
+                          const res = await fetch(url);
+                          if (!res.ok) throw new Error();
+                          const blob = await res.blob();
+                          const a = document.createElement("a");
+                          a.href = URL.createObjectURL(blob);
+                          a.download = doc.name.endsWith(".pdf") ? doc.name : `${doc.name}.pdf`;
+                          a.click();
+                          URL.revokeObjectURL(a.href);
+                        } else {
+                          const { downloadGenerated } = await import("@/components/documents/download-button");
+                          await downloadGenerated(doc.name, doc.type, doc.content ?? "");
+                        }
+                      } catch {
+                        showToast("Download failed", "error");
+                      }
+                    }}
+                    className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+                    aria-label={`Download ${doc.name}`}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                  </button>
+                  <svg
+                    width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                    className="text-zinc-500" aria-hidden="true"
+                  >
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
                 </div>
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="shrink-0 text-zinc-500"
-                  aria-hidden="true"
-                >
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </button>
+              </div>
             </li>
           ))}
         </ul>
