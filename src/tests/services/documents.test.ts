@@ -12,6 +12,7 @@ const mockJobFindFirst = vi.fn();
 const mockLinkCreate = vi.fn();
 const mockLinkUpsert = vi.fn();
 const mockLinkFindFirst = vi.fn();
+const mockLinkFindMany = vi.fn();
 
 const tx = {
   document: { create: mockDocCreate, update: mockDocUpdate },
@@ -34,14 +35,23 @@ vi.mock("@/services/prisma", () => ({
       findMany: mockVersionFindMany,
     },
     job: { findFirst: mockJobFindFirst },
-    jobDocumentLink: { create: mockLinkCreate, upsert: mockLinkUpsert, findFirst: mockLinkFindFirst },
+    jobDocumentLink: {
+      create: mockLinkCreate,
+      upsert: mockLinkUpsert,
+      findFirst: mockLinkFindFirst,
+      findMany: mockLinkFindMany,
+    },
   },
 }));
 
 const {
   createDocument,
+  createDocumentVersion,
   findDocumentByJob,
   getDocumentById,
+  getDocumentVersions,
+  getDocumentsByUserId,
+  getDocumentsForJob,
   linkDocumentToJob,
   softDeleteDocument,
   updateDocumentContent,
@@ -297,5 +307,283 @@ describe("cross-user access guards", () => {
         }),
       })
     );
+  });
+});
+
+describe("updateDocumentContent (versioning)", () => {
+  it("increments versionNumber by 1 over the latest existing version", async () => {
+    const v3 = { ...baseVersion, id: "ver-3", versionNumber: 3 };
+    mockDocFindFirst.mockResolvedValue({ ...baseDoc, versions: [v3] });
+    mockVersionCreate.mockResolvedValue({
+      ...baseVersion,
+      id: "ver-4",
+      versionNumber: 4,
+      content: "v4",
+    });
+    mockDocUpdate.mockResolvedValue(baseDoc);
+
+    const result = await updateDocumentContent("doc-1", USER_ID, "v4");
+
+    expect(mockVersionCreate).toHaveBeenCalledWith({
+      data: { documentId: "doc-1", versionNumber: 4, content: "v4" },
+    });
+    expect(result?.versionNumber).toBe(4);
+  });
+
+  it("starts at versionNumber 1 when no versions exist (defensive)", async () => {
+    mockDocFindFirst.mockResolvedValue({ ...baseDoc, versions: [] });
+    mockVersionCreate.mockResolvedValue({ ...baseVersion, content: "first" });
+    mockDocUpdate.mockResolvedValue(baseDoc);
+
+    await updateDocumentContent("doc-1", USER_ID, "first");
+
+    expect(mockVersionCreate).toHaveBeenCalledWith({
+      data: { documentId: "doc-1", versionNumber: 1, content: "first" },
+    });
+  });
+
+  it("filters out soft-deleted documents (isDeleted: false in where clause)", async () => {
+    mockDocFindFirst.mockResolvedValue(null);
+
+    await updateDocumentContent("doc-1", USER_ID, "x");
+
+    expect(mockDocFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ isDeleted: false }),
+      })
+    );
+  });
+});
+
+describe("createDocumentVersion", () => {
+  const newVersion = { ...baseVersion, id: "ver-2", versionNumber: 2, content: "v2" };
+
+  it("creates the next version when document is owned by user", async () => {
+    mockDocFindFirst.mockResolvedValue({ ...baseDoc, versions: [baseVersion] });
+    mockVersionCreate.mockResolvedValue(newVersion);
+
+    const result = await createDocumentVersion("doc-1", USER_ID, "v2");
+
+    expect(result).toEqual({
+      id: "ver-2",
+      versionNumber: 2,
+      content: "v2",
+      createdAt: now.toISOString(),
+    });
+    expect(mockVersionCreate).toHaveBeenCalledWith({
+      data: { documentId: "doc-1", versionNumber: 2, content: "v2" },
+    });
+  });
+
+  it("returns null when document does not belong to user (no version created)", async () => {
+    mockDocFindFirst.mockResolvedValue(null);
+
+    const result = await createDocumentVersion("doc-1", "user-2", "tampered");
+
+    expect(result).toBeNull();
+    expect(mockVersionCreate).not.toHaveBeenCalled();
+  });
+
+  it("ignores soft-deleted documents", async () => {
+    mockDocFindFirst.mockResolvedValue(null);
+
+    await createDocumentVersion("doc-1", USER_ID, "x");
+
+    expect(mockDocFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ isDeleted: false }),
+      })
+    );
+  });
+});
+
+describe("getDocumentVersions", () => {
+  it("returns versions newest-first, mapped to DocumentVersionResponse", async () => {
+    mockDocFindFirst.mockResolvedValue(baseDoc);
+    mockVersionFindMany.mockResolvedValue([
+      { ...baseVersion, id: "ver-2", versionNumber: 2, content: "v2" },
+      { ...baseVersion, id: "ver-1", versionNumber: 1, content: "v1" },
+    ]);
+
+    const result = await getDocumentVersions("doc-1", USER_ID);
+
+    expect(result).toEqual([
+      { id: "ver-2", versionNumber: 2, content: "v2", createdAt: now.toISOString() },
+      { id: "ver-1", versionNumber: 1, content: "v1", createdAt: now.toISOString() },
+    ]);
+    expect(mockVersionFindMany).toHaveBeenCalledWith({
+      where: { documentId: "doc-1" },
+      orderBy: { versionNumber: "desc" },
+    });
+  });
+
+  it("returns null and does not fetch versions when document is not owned", async () => {
+    mockDocFindFirst.mockResolvedValue(null);
+
+    const result = await getDocumentVersions("doc-1", "user-2");
+
+    expect(result).toBeNull();
+    expect(mockVersionFindMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("getDocumentsByUserId", () => {
+  it("filters out documents with no versions", async () => {
+    const docWithVersion = { ...baseDoc, id: "doc-a", versions: [baseVersion] };
+    const docWithoutVersion = { ...baseDoc, id: "doc-b", versions: [] };
+    mockDocFindMany.mockResolvedValue([docWithVersion, docWithoutVersion]);
+
+    const result = await getDocumentsByUserId(USER_ID);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe("doc-a");
+  });
+
+  it("scopes by userId and excludes soft-deleted docs", async () => {
+    mockDocFindMany.mockResolvedValue([]);
+
+    await getDocumentsByUserId(USER_ID);
+
+    expect(mockDocFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: USER_ID, isDeleted: false },
+      })
+    );
+  });
+});
+
+describe("getDocumentsForJob", () => {
+  const job = { id: "job-1", userId: USER_ID };
+
+  it("returns null when the job does not belong to the user", async () => {
+    mockJobFindFirst.mockResolvedValue(null);
+
+    const result = await getDocumentsForJob("job-1", "user-2");
+
+    expect(result).toBeNull();
+    expect(mockLinkFindMany).not.toHaveBeenCalled();
+  });
+
+  it("filters out soft-deleted documents from links", async () => {
+    mockJobFindFirst.mockResolvedValue(job);
+    mockLinkFindMany.mockResolvedValue([
+      {
+        id: "link-1",
+        jobId: "job-1",
+        documentId: "doc-1",
+        documentVersionId: "ver-1",
+        linkedAt: now,
+        document: { ...baseDoc, isDeleted: false, versions: [baseVersion] },
+      },
+      {
+        id: "link-2",
+        jobId: "job-1",
+        documentId: "doc-2",
+        documentVersionId: "ver-2",
+        linkedAt: now,
+        document: {
+          ...baseDoc,
+          id: "doc-2",
+          isDeleted: true,
+          versions: [{ ...baseVersion, id: "ver-2", documentId: "doc-2" }],
+        },
+      },
+    ]);
+
+    const result = await getDocumentsForJob("job-1", USER_ID);
+
+    expect(result).toHaveLength(1);
+    expect(result?.[0].id).toBe("doc-1");
+    expect(result?.[0].linkedAt).toBe(now.toISOString());
+  });
+
+  it("filters out documents with no versions", async () => {
+    mockJobFindFirst.mockResolvedValue(job);
+    mockLinkFindMany.mockResolvedValue([
+      {
+        id: "link-1",
+        jobId: "job-1",
+        documentId: "doc-1",
+        documentVersionId: "ver-1",
+        linkedAt: now,
+        document: { ...baseDoc, versions: [] },
+      },
+    ]);
+
+    const result = await getDocumentsForJob("job-1", USER_ID);
+
+    expect(result).toEqual([]);
+  });
+});
+
+describe("findDocumentByJob (happy path)", () => {
+  it("returns the latest version of the linked document", async () => {
+    mockLinkFindFirst.mockResolvedValue({
+      id: "link-1",
+      jobId: "job-1",
+      documentId: "doc-1",
+      documentVersionId: "ver-2",
+      linkedAt: now,
+      document: {
+        ...baseDoc,
+        versions: [{ ...baseVersion, id: "ver-2", versionNumber: 2, content: "v2" }],
+      },
+    });
+
+    const result = await findDocumentByJob(USER_ID, "RESUME", "job-1");
+
+    expect(result?.doc.id).toBe("doc-1");
+    expect(result?.latestVersion.versionNumber).toBe(2);
+  });
+
+  it("returns null when the link exists but the document has no versions", async () => {
+    mockLinkFindFirst.mockResolvedValue({
+      id: "link-1",
+      jobId: "job-1",
+      documentId: "doc-1",
+      documentVersionId: "ver-1",
+      linkedAt: now,
+      document: { ...baseDoc, versions: [] },
+    });
+
+    const result = await findDocumentByJob(USER_ID, "RESUME", "job-1");
+
+    expect(result).toBeNull();
+  });
+});
+
+describe("linkDocumentToJob (cross-user ownership)", () => {
+  it("returns null when the document does not belong to the user", async () => {
+    mockJobFindFirst.mockResolvedValue({ id: "job-1", userId: USER_ID });
+    mockDocFindFirst.mockResolvedValue(null);
+    mockVersionFindFirst.mockResolvedValue(baseVersion);
+
+    const result = await linkDocumentToJob("job-1", "doc-1", "ver-1", USER_ID);
+
+    expect(result).toBeNull();
+    expect(mockLinkUpsert).not.toHaveBeenCalled();
+  });
+
+  it("returns null when the version does not belong to the document", async () => {
+    mockJobFindFirst.mockResolvedValue({ id: "job-1", userId: USER_ID });
+    mockDocFindFirst.mockResolvedValue(baseDoc);
+    mockVersionFindFirst.mockResolvedValue(null);
+
+    const result = await linkDocumentToJob("job-1", "doc-1", "ver-99", USER_ID);
+
+    expect(result).toBeNull();
+    expect(mockLinkUpsert).not.toHaveBeenCalled();
+  });
+
+  it("scopes the version lookup to the documentId so cross-doc versions cannot link", async () => {
+    mockJobFindFirst.mockResolvedValue({ id: "job-1", userId: USER_ID });
+    mockDocFindFirst.mockResolvedValue(baseDoc);
+    mockVersionFindFirst.mockResolvedValue(null);
+
+    await linkDocumentToJob("job-1", "doc-1", "ver-from-other-doc", USER_ID);
+
+    expect(mockVersionFindFirst).toHaveBeenCalledWith({
+      where: { id: "ver-from-other-doc", documentId: "doc-1" },
+    });
   });
 });
