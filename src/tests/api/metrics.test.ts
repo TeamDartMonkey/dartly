@@ -1,9 +1,10 @@
 import type { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { mockRequireAuth, mockGetDashboardMetrics } = vi.hoisted(() => ({
+const { mockRequireAuth, mockGetDashboardMetrics, mockGetAnalyticsBreakdown } = vi.hoisted(() => ({
   mockRequireAuth: vi.fn(),
   mockGetDashboardMetrics: vi.fn(),
+  mockGetAnalyticsBreakdown: vi.fn(),
 }));
 
 vi.mock("@/lib/api-wrapper", () => ({
@@ -20,6 +21,7 @@ vi.mock("@/lib/logger", () => ({
 
 vi.mock("@/services/metrics", () => ({
   getDashboardMetrics: mockGetDashboardMetrics,
+  getAnalyticsBreakdown: mockGetAnalyticsBreakdown,
 }));
 
 import { GET } from "@/app/api/metrics/route";
@@ -42,21 +44,43 @@ function makeRequest(): NextRequest {
   }) as unknown as NextRequest;
 }
 
+const mockAnalytics = {
+  velocity: {
+    last30Days: 4,
+    prior30Days: 2,
+    changePercent: 100,
+    weeklyCounts: [0, 1, 1, 2],
+    weekStartIsos: ["", "", "", ""],
+  },
+  funnel: {
+    reachedInterested: 6,
+    reachedApplied: 4,
+    reachedInterview: 2,
+    reachedOffer: 1,
+    appliedRate: 67,
+    interviewRate: 50,
+    offerRate: 50,
+  },
+  timeInStage: { APPLIED: 8 },
+};
+
 describe("GET /api/metrics", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockRequireAuth.mockResolvedValue(mockUser);
+    mockGetAnalyticsBreakdown.mockResolvedValue(mockAnalytics);
   });
 
-  it("returns 200 with metrics", async () => {
+  it("returns 200 with metrics merged with analytics", async () => {
     mockGetDashboardMetrics.mockResolvedValue(mockMetrics);
 
     const res = await GET(makeRequest());
     const body = await res.json();
 
     expect(res.status).toBe(200);
-    expect(body).toEqual(mockMetrics);
+    expect(body).toEqual({ ...mockMetrics, analytics: mockAnalytics });
     expect(mockGetDashboardMetrics).toHaveBeenCalledWith("user-123");
+    expect(mockGetAnalyticsBreakdown).toHaveBeenCalledWith("user-123");
   });
 
   it("returns 401 when not authenticated", async () => {
@@ -86,5 +110,6 @@ describe("GET /api/metrics", () => {
     expect(body.totalJobs).toBe(0);
     expect(body.ghostRate).toBe(0);
     expect(body.offerCount).toBe(0);
+    expect(body.analytics).toBeDefined();
   });
 });
