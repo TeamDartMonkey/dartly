@@ -4,7 +4,9 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { STAGE_STYLES } from "@/constants/job-stages";
 import type { JobStage } from "@/types/job";
-import type { DashboardMetrics } from "@/services/metrics";
+import type { AnalyticsBreakdown, DashboardMetrics } from "@/services/metrics";
+
+type MetricsResponse = DashboardMetrics & { analytics?: AnalyticsBreakdown };
 
 const PIPELINE_ORDER: JobStage[] = [
   "Interested",
@@ -20,7 +22,7 @@ const STORAGE_KEY = "dartly:metrics-expanded";
 
 export function MetricsPanel({ refreshKey }: { refreshKey: number }) {
   const router = useRouter();
-  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+  const [metrics, setMetrics] = useState<MetricsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<boolean | null>(null);
 
@@ -170,7 +172,9 @@ export function MetricsPanel({ refreshKey }: { refreshKey: number }) {
       )}
 
       {totalForBar > 0 && (
-        <div className={`rounded-lg border border-zinc-700 bg-zinc-800/50 p-4 ${expanded ? "mt-3" : "mt-2"}`}>
+        <div
+          className={`rounded-lg border border-zinc-700 bg-zinc-800/50 p-4 ${expanded ? "mt-3" : "mt-2"}`}
+        >
           <div className="flex h-3 overflow-hidden rounded-full bg-zinc-900">
             {PIPELINE_ORDER.map((stage) => {
               const count = metrics.stageCounts[stage] ?? 0;
@@ -203,6 +207,127 @@ export function MetricsPanel({ refreshKey }: { refreshKey: number }) {
           </div>
         </div>
       )}
+
+      {expanded && metrics.analytics && <AnalyticsSection analytics={metrics.analytics} />}
+    </div>
+  );
+}
+
+function AnalyticsSection({ analytics }: { analytics: AnalyticsBreakdown }) {
+  const { velocity, funnel, timeInStage } = analytics;
+  const maxWeekly = Math.max(1, ...velocity.weeklyCounts);
+  const maxFunnel = Math.max(1, funnel.reachedInterested);
+
+  const changeArrow = velocity.changePercent > 0 ? "▲" : velocity.changePercent < 0 ? "▼" : "•";
+  const changeColor =
+    velocity.changePercent > 0
+      ? "text-green-400"
+      : velocity.changePercent < 0
+        ? "text-red-400"
+        : "text-zinc-500";
+  const velocityInsight =
+    velocity.last30Days === 0
+      ? "No applications in the last 30 days"
+      : velocity.prior30Days === 0
+        ? `${velocity.last30Days} applications in the last 30 days`
+        : `${changeArrow} ${Math.abs(velocity.changePercent)}% vs prior 30 days`;
+
+  const funnelRows: { label: JobStage; count: number; rate: number | null }[] = [
+    { label: "Interested", count: funnel.reachedInterested, rate: null },
+    { label: "Applied", count: funnel.reachedApplied, rate: funnel.appliedRate },
+    { label: "Interview", count: funnel.reachedInterview, rate: funnel.interviewRate },
+    { label: "Offer", count: funnel.reachedOffer, rate: funnel.offerRate },
+  ];
+
+  const stagesWithTime = (["INTERESTED", "APPLIED", "INTERVIEW"] as const).filter(
+    (s) => typeof timeInStage[s] === "number"
+  );
+
+  return (
+    <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-3">
+      {/* Velocity */}
+      <div className="rounded-lg border border-zinc-700 border-l-[3px] border-l-blue-400 bg-zinc-800/50 p-4">
+        <div className="flex items-baseline justify-between">
+          <p className="text-xs text-zinc-400">Velocity (last 30 days)</p>
+          <p className={`text-xs font-medium ${changeColor}`}>{velocityInsight}</p>
+        </div>
+        <p className="mt-1.5 text-xl font-semibold text-zinc-50">
+          {velocity.last30Days}
+          <span className="ml-1.5 text-xs font-normal text-zinc-500">applications</span>
+        </p>
+        <div className="mt-3 flex h-10 items-end gap-1">
+          {velocity.weeklyCounts.map((count, i) => {
+            const height = (count / maxWeekly) * 100;
+            const weekStart = velocity.weekStartIsos[i];
+            return (
+              <div
+                key={weekStart || i}
+                className="flex-1 rounded-sm bg-blue-500/30 transition-all hover:bg-blue-500/60"
+                style={{ height: `${Math.max(height, 4)}%` }}
+                title={`${count} application${count === 1 ? "" : "s"} this week`}
+              />
+            );
+          })}
+        </div>
+        <div className="mt-1 flex justify-between text-[10px] text-zinc-500">
+          <span>4w ago</span>
+          <span>this week</span>
+        </div>
+      </div>
+
+      {/* Funnel */}
+      <div className="rounded-lg border border-zinc-700 border-l-[3px] border-l-yellow-400 bg-zinc-800/50 p-4">
+        <p className="text-xs text-zinc-400">Stage Conversion</p>
+        <div className="mt-3 space-y-2">
+          {funnelRows.map(({ label, count, rate }) => {
+            const width = (count / maxFunnel) * 100;
+            return (
+              <div key={label}>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-zinc-300">{label}</span>
+                  <span className="text-zinc-400">
+                    {count}
+                    {rate !== null && <span className="ml-1.5 text-zinc-500">({rate}%)</span>}
+                  </span>
+                </div>
+                <div className="mt-0.5 h-1.5 rounded-full bg-zinc-900">
+                  <div
+                    className={`h-full rounded-full ${STAGE_STYLES[label].dot} transition-all`}
+                    style={{ width: `${width}%`, minWidth: count > 0 ? "4px" : "0" }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Time in stage */}
+      <div className="rounded-lg border border-zinc-700 border-l-[3px] border-l-zinc-400 bg-zinc-800/50 p-4">
+        <p className="text-xs text-zinc-400">Avg. time in stage</p>
+        {stagesWithTime.length === 0 ? (
+          <p className="mt-3 text-xs text-zinc-500">
+            Move jobs between stages to see how long each stage takes.
+          </p>
+        ) : (
+          <ul className="mt-3 space-y-2">
+            {stagesWithTime.map((s) => {
+              const days = timeInStage[s] ?? 0;
+              const label =
+                s === "INTERESTED" ? "Interested" : s === "APPLIED" ? "Applied" : "Interview";
+              return (
+                <li key={s} className="flex items-baseline justify-between text-sm">
+                  <span className="text-zinc-300">{label}</span>
+                  <span className="text-zinc-50">
+                    {days}{" "}
+                    <span className="text-xs text-zinc-500">{days === 1 ? "day" : "days"}</span>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }
