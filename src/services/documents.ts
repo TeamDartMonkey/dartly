@@ -91,6 +91,58 @@ export async function createDocument(userId: string, input: CreateDocumentInput)
   });
 }
 
+export async function duplicateDocument(id: string, userId:string){
+  const doc = await prisma.document.findFirst({
+    where: { id, userId, isDeleted: false },
+    include: {
+      versions: { orderBy: { versionNumber: "desc" }, take: 1 },
+    },
+  });
+
+  if (!doc || doc.versions.length === 0) return null;
+  const sourceVersion = doc.versions[0];
+
+  return prisma.$transaction(async (tx) => {
+    const newDoc = await tx.document.create({
+      data: {
+        userId,
+        type: doc.type,
+        name: `Copy of ${doc.name}`,
+        status: doc.status,
+      },
+    });
+
+    const newVersion = await tx.documentVersion.create({
+      data: {
+        documentId: newDoc.id,
+        versionNumber: 1,
+        content: sourceVersion.content ?? null,
+        fileUrl: sourceVersion.fileUrl ?? null,
+      },
+    });
+
+    return toDocumentResponse(newDoc, newVersion);
+  });
+}
+
+export async function renameDocument(id: string, userId: string, name: string) {
+  const doc = await prisma.document.findFirst({
+    where: { id, userId, isDeleted: false },
+    include: {
+      versions: { orderBy: { versionNumber: "desc" }, take: 1 },
+    },
+  });
+
+  if (!doc || doc.versions.length === 0) return null;
+
+  const updated = await prisma.document.update({
+    where: { id },
+    data: { name, updatedAt: new Date() },
+  });
+
+  return toDocumentResponse(updated, doc.versions[0]);
+}
+
 export async function getDocumentsByUserId(userId: string) {
   const docs = await prisma.document.findMany({
     where: { userId, isDeleted: false },
