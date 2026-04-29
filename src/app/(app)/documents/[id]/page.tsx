@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Markdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import { RewritePanel } from "@/components/documents/rewrite-panel";
+import { ConfirmArchiveModal } from "@/components/ui/confirm-archive-modal";
 import { ConfirmDeleteModal } from "@/components/ui/confirm-delete-modal";
 import { Select } from "@/components/ui/select";
 import { showToast } from "@/components/ui/toast";
@@ -57,8 +58,13 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   const [saving, setSaving] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [pendingArchive, setPendingArchive] = useState(false);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [loadingSignedUrl, setLoadingSignedUrl] = useState(false);
+
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
+  const renameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     params.then((p) => setId(p.id));
@@ -90,6 +96,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
         const docData = await docRes.json();
         setDoc(docData);
         setEditContent(docData.content ?? "");
+        setRenameValue(docData.name);
 
         if (verRes.ok) {
           const verData = await verRes.json();
@@ -102,7 +109,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
         }
 
         //for uploaded docs
-        if (docData.status === "UPLOADED") {
+        if (docData.status === "UPLOADED" || docData.status === "ARCHIVED") {
           setLoadingSignedUrl(true);
           try {
             const urlRes = await fetch(`/api/documents/${id}/signed-url`);
@@ -221,6 +228,76 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     }
   }
 
+  async function confirmArchive() {
+    if (!doc) return;
+    const res = await fetch(`/api/documents/${doc.id}/archive`, { method: "PATCH" });
+    if (res.status === 401) { router.push("/login"); return; }
+    if (res.ok) {
+      const updated = await res.json();
+      setDoc(updated);
+      showToast("Document archived");
+    } else {
+      showToast("Failed to archive document", "error");
+    }
+    setPendingArchive(false);
+  }
+
+  async function handleRestoreArchived() {
+    if (!doc) return;
+    const res = await fetch(`/api/documents/${doc.id}/restore`, { method: "PATCH" });
+    if (res.status === 401) { router.push("/login"); return; }
+    if (res.ok) {
+      const updated = await res.json();
+      setDoc(updated);
+      showToast("Document restored");
+    } else {
+      showToast("Failed to restore document", "error");
+    }
+  }
+
+  async function handleDuplicate() {
+    if (!doc) return;
+    const res = await fetch(`/api/documents/${doc.id}/duplicate`, { method: "POST" });
+    if (res.status === 401) { router.push("/login"); return; }
+    if (res.ok) {
+      const newDoc = await res.json();
+      showToast("Document duplicated");
+      router.push(`/documents/${newDoc.id}`);
+    } else {
+      showToast("Failed to duplicate document", "error");
+    }
+  }
+
+  function startRename() {
+    setRenameValue(doc?.name ?? "");
+    setRenaming(true);
+    setTimeout(() => renameInputRef.current?.select(), 0);
+  }
+
+  async function commitRename() {
+    setRenaming(false);
+    const trimmed = renameValue.trim();
+    if (!doc || !trimmed || trimmed === doc.name) return;
+    const res = await fetch(`/api/documents/${doc.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: trimmed }),
+    });
+    if (res.status === 401) { router.push("/login"); return; }
+    if (res.ok) {
+      const updated = await res.json();
+      setDoc(updated);
+      showToast("Document renamed");
+    } else {
+      showToast("Failed to rename document", "error");
+    }
+  }
+
+  function handleRenameKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter") commitRename();
+    if (e.key === "Escape") setRenaming(false);
+  }
+
   function refreshDoc() {
     if (!id) return;
     fetch(`/api/documents/${id}`)
@@ -258,7 +335,8 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     return doc?.content ?? "";
   })();
 
-  const isUploaded = doc?.status === "UPLOADED";
+  const isUploaded = doc?.status === "UPLOADED" ||  (doc?.status === "ARCHIVED" && signedUrl);
+  const isArchived = doc?.status === "ARCHIVED";
 
   if (loading || !doc) {
     return (
@@ -282,18 +360,26 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           &larr;
         </button>
 
+        {/* Header */}
         <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-2xl font-semibold text-zinc-50 truncate">{doc.name}</h1>
-              <span
-                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${TYPE_STYLES[doc.type] ?? TYPE_STYLES.OTHER}`}
-              >
+              {renaming ? (
+                <input
+                  ref={renameInputRef}
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onBlur={commitRename}
+                  onKeyDown={handleRenameKeyDown}
+                  className="bg-zinc-800 border border-indigo-500 rounded-md px-2 py-1 text-2xl font-semibold text-zinc-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full max-w-md"
+                />
+              ) : (
+                <h1 className="text-2xl font-semibold text-zinc-50 truncate">{doc.name}</h1>
+              )}
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium shrink-0 ${TYPE_STYLES[doc.type] ?? TYPE_STYLES.OTHER}`}>
                 {TYPE_LABELS[doc.type] ?? "Other"}
               </span>
-              <span
-                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[doc.status] ?? STATUS_STYLES.DRAFT}`}
-              >
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium shrink-0 ${STATUS_STYLES[doc.status] ?? STATUS_STYLES.DRAFT}`}>
                 {doc.status}
               </span>
             </div>
@@ -302,7 +388,34 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               &middot; Updated {new Date(doc.updatedAt).toLocaleDateString()}
             </p>
           </div>
-          <div className="shrink-0">
+
+          {/* Header action buttons */}
+          <div className="flex items-center gap-2 shrink-0">
+            {!isArchived && (
+              <>
+                <button
+                  type="button"
+                  onClick={startRename}
+                  className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-md transition-colors"
+                  aria-label="Rename" title="Rename"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDuplicate}
+                  className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-md transition-colors"
+                  aria-label="Duplicate" title="Duplicate"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                  </svg>
+                </button>
+              </>
+            )}
             <DownloadButton doc={doc} signedUrl={signedUrl} />
           </div>
         </div>
@@ -336,7 +449,6 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
 
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
           {isUploaded ? (
-            //uploaded PDF preview
             <div className="w-full">
               {loadingSignedUrl ? (
                 <div className="h-[700px] bg-zinc-800 animate-pulse rounded-md" />
@@ -349,7 +461,6 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               )}
             </div>
           ) : (
-            // ai generated docs (shows preview/markdown/edit)
             <>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -358,11 +469,10 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                       key={opt.value}
                       type="button"
                       onClick={() => handleViewModeChange(opt.value)}
-                      className={`px-3 py-1.5 rounded-md text-sm font-medium ${
-                        viewMode === opt.value
+                      className={`px-3 py-1.5 rounded-md text-sm font-medium ${viewMode === opt.value
                           ? "bg-indigo-500 text-zinc-50"
                           : "bg-zinc-800 border border-zinc-700 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-50"
-                      }`}
+                        }`}
                     >
                       {opt.label}
                     </button>
@@ -399,9 +509,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               ) : viewMode === "preview" ? (
                 <div className="bg-zinc-950 rounded-md p-4 overflow-auto">
                   {displayContent ? (
-                    <div
-                      className={`jakes-resume-preview${doc.type === "COVER_LETTER" ? " cover-letter-preview" : ""}`}
-                    >
+                    <div className={`jakes-resume-preview${doc.type === "COVER_LETTER" ? " cover-letter-preview" : ""}`}>
                       <Markdown rehypePlugins={[rehypeRaw]}>{displayContent}</Markdown>
                     </div>
                   ) : (
@@ -423,7 +531,6 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           )}
         </div>
 
-        {/*only for ai docs, not uploaded ones*/}
         {!isUploaded && (
           <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
             <h2 className="text-sm font-medium text-zinc-400 mb-4">AI Rewrite</h2>
@@ -431,7 +538,25 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
           </div>
         )}
 
-        <div className="pt-4 border-t border-zinc-800">
+        {/* Danger zone */}
+        <div className="pt-4 border-t border-zinc-800 flex items-center gap-6">
+          {isArchived ? (
+            <button
+              type="button"
+              onClick={handleRestoreArchived}
+              className="text-sm text-green-400 hover:text-green-300 font-medium"
+            >
+              Restore this document
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setPendingArchive(true)}
+              className="text-sm text-orange-400 hover:text-orange-300 font-medium"
+            >
+              Archive this document
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setPendingDelete(true)}
@@ -442,6 +567,12 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
         </div>
       </div>
 
+      <ConfirmArchiveModal
+        open={pendingArchive}
+        onClose={() => setPendingArchive(false)}
+        onConfirm={confirmArchive}
+        itemName={doc.name}
+      />
       <ConfirmDeleteModal
         open={pendingDelete}
         onClose={() => setPendingDelete(false)}

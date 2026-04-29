@@ -288,3 +288,34 @@ export async function getDocumentsForJob(jobId: string, userId: string) {
       linkedAt: l.linkedAt.toISOString(),
     }));
 }
+
+export async function archiveDocument(id: string, userId: string) {
+  const doc = await prisma.document.findFirst({
+    where: { id, userId, isDeleted: false },
+    include: { versions: { orderBy: { versionNumber: "desc" }, take: 1 } },
+  });
+  if (!doc || doc.versions.length === 0) return null;
+
+  const updated = await prisma.document.update({
+    where: { id },
+    data: { status: "ARCHIVED", updatedAt: new Date() },
+  });
+  return toDocumentResponse(updated, doc.versions[0]);
+}
+
+export async function restoreDocument(id: string, userId: string) {
+  const doc = await prisma.document.findFirst({
+    where: { id, userId, isDeleted: false },
+    include: { versions: { orderBy: { versionNumber: "desc" }, take: 1 } },
+  });
+  if (!doc || doc.versions.length === 0) return null;
+
+  //makes sure that uploaded docs stay as uploaded after restoring
+  const restoredStatus = doc.versions[0].fileUrl ? "UPLOADED" : "DRAFT";
+
+  const updated = await prisma.document.update({
+    where: { id },
+    data: { status: restoredStatus, updatedAt: new Date() },
+  });
+  return toDocumentResponse(updated, doc.versions[0]);
+}
