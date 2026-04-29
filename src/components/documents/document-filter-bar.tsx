@@ -10,10 +10,12 @@ type DocumentFilterBarProps = {
   onFilteredChange: (filtered: DocumentResponse[]) => void;
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
+  showArchived: boolean;
+  onShowArchivedChange: (val: boolean) => void;
 };
 
 type TypeFilter = "" | DocumentType;
-type StatusFilter = "" | DocumentStatus;
+type StatusFilter = "" | Exclude<DocumentStatus, "ARCHIVED">;
 type SortKey = "recent" | "name" | "oldest";
 
 export default function DocumentFilterBar({
@@ -21,6 +23,8 @@ export default function DocumentFilterBar({
   onFilteredChange,
   viewMode,
   onViewModeChange,
+  showArchived,
+  onShowArchivedChange,
 }: DocumentFilterBarProps) {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("");
@@ -114,43 +118,62 @@ export default function DocumentFilterBar({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Select
-          value={typeFilter}
-          onChange={(val) => setTypeFilter(val as TypeFilter)}
-          options={[
-            { value: "", label: "All types" },
-            { value: "RESUME", label: "Resume" },
-            { value: "COVER_LETTER", label: "Cover Letter" },
-            { value: "OTHER", label: "Other" },
-          ]}
-          className="sm:w-36"
-        />
-
-        <Select
-          value={statusFilter}
-          onChange={(val) => setStatusFilter(val as StatusFilter)}
-          options={[
-            { value: "", label: "All statuses" },
-            { value: "DRAFT", label: "Draft" },
-            { value: "READY", label: "Ready" },
-            { value: "UPLOADED", label: "Uploaded"},
-            { value: "ARCHIVED", label: "Archived" },
-          ]}
-          className="sm:w-36"
-        />
-
-        <Select
-          value={sortBy}
-          onChange={(val) => setSortBy(val as SortKey)}
-          options={[
-            { value: "recent", label: "Most recent" },
-            { value: "name", label: "Name A-Z" },
-            { value: "oldest", label: "Oldest first" },
-          ]}
-          className="sm:w-36"
-        />
+        {!showArchived && (
+          <>
+            <Select
+              value={typeFilter}
+              onChange={(val) => setTypeFilter(val as TypeFilter)}
+              options={[
+                { value: "", label: "All types" },
+                { value: "RESUME", label: "Resume" },
+                { value: "COVER_LETTER", label: "Cover Letter" },
+                { value: "OTHER", label: "Other" },
+              ]}
+              className="sm:w-36"
+            />
+            <Select
+              value={statusFilter}
+              onChange={(val) => setStatusFilter(val as StatusFilter)}
+              options={[
+                { value: "", label: "All statuses" },
+                { value: "DRAFT", label: "Draft" },
+                { value: "READY", label: "Ready" },
+                { value: "UPLOADED", label: "Uploaded" },
+              ]}
+              className="sm:w-36"
+            />
+            <Select
+              value={sortBy}
+              onChange={(val) => setSortBy(val as SortKey)}
+              options={[
+                { value: "recent", label: "Most recent" },
+                { value: "name", label: "Name A-Z" },
+                { value: "oldest", label: "Oldest first" },
+              ]}
+              className="sm:w-36"
+            />
+          </>
+        )}
 
         <div className="flex-1" />
+
+        {/*archive button*/}
+        <button
+          type="button"
+          onClick={() => onShowArchivedChange(!showArchived)}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-xs font-medium transition-colors ${showArchived
+              ? "bg-orange-500/10 border-orange-500/30 text-orange-400 hover:bg-orange-500/20"
+              : "bg-zinc-800 border-zinc-700 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300"
+            }`}
+          aria-pressed={showArchived}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polyline points="21 8 21 21 3 21 3 8" />
+            <rect x="1" y="3" width="22" height="5" />
+            <line x1="10" y1="12" x2="14" y2="12" />
+          </svg>
+          {showArchived ? "Viewing archived" : "Archived"}
+        </button>
 
         {/* biome-ignore lint/a11y/useSemanticElements: visual toggle in flex toolbar, fieldset breaks layout */}
         <div
@@ -211,7 +234,7 @@ export default function DocumentFilterBar({
         </div>
       </div>
 
-      {hasActiveFilters && (
+      {!showArchived && hasActiveFilters && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {activeFilters.map((chip) => (
             <button
@@ -249,6 +272,7 @@ export default function DocumentFilterBar({
 
       <p className="mt-3 text-xs text-zinc-500">
         {filtered.length} {filtered.length === 1 ? "document" : "documents"}
+        {showArchived ? " archived" : ""}
         {search ? ` matching "${search}"` : ""}
       </p>
     </div>

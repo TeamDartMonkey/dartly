@@ -120,18 +120,19 @@ model JobActivity {
 }
 
 model Document {
-  id        String            @id @default(cuid())
-  userId    String
-  type      DocumentType
-  name      String
-  category  String?
-  status    DocumentStatus    @default(DRAFT)
-  isDeleted Boolean           @default(false)
-  deletedAt DateTime?
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
-  versions  DocumentVersion[]
-  jobLinks  JobDocumentLink[]
+  id             String            @id @default(cuid())
+  userId         String
+  type           DocumentType
+  name           String
+  category       String?
+  status         DocumentStatus    @default(DRAFT)
+  previousStatus DocumentStatus?
+  isDeleted      Boolean           @default(false)
+  deletedAt      DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  versions       DocumentVersion[]
+  jobLinks       JobDocumentLink[]
 }
 
 model DocumentVersion {

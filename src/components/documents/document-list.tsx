@@ -6,20 +6,26 @@ import type { ViewMode } from "@/types/job";
 type DocumentListProps = {
   documents: DocumentResponse[];
   viewMode: ViewMode;
+  showArchived: boolean;
   onClick: (id: string) => void;
   onDelete: (id: string) => void;
   onDuplicate: (id: string) => void;
   onRename: (id: string, newName: string) => void;
+  onArchive: (id: string) => void;
+  onRestore: (id: string) => void;
   onGenerate: () => void;
 };
 
 export default function DocumentList({
   documents,
   viewMode,
+  showArchived,
   onClick,
   onDelete,
   onDuplicate,
   onRename,
+  onArchive,
+  onRestore,
   onGenerate,
 }: DocumentListProps) {
   if (!documents || documents.length === 0) {
@@ -42,14 +48,20 @@ export default function DocumentList({
           <line x1="16" y1="13" x2="8" y2="13" />
           <line x1="16" y1="17" x2="8" y2="17" />
         </svg>
-        <p className="text-sm text-zinc-400">No documents yet.</p>
-        <button
-          type="button"
-          onClick={onGenerate}
-          className="mt-2 text-sm text-indigo-400 hover:text-indigo-300"
-        >
-          Generate your first document
-        </button>
+        {showArchived ? (
+          <p className="text-sm text-zinc-400">No archived documents.</p>
+        ) : (
+          <>
+            <p className="text-sm text-zinc-400">No documents yet.</p>
+            <button
+              type="button"
+              onClick={onGenerate}
+              className="mt-2 text-sm text-indigo-400 hover:text-indigo-300"
+            >
+              Generate your first document
+            </button>
+          </>
+        )}
       </div>
     );
   }
@@ -58,7 +70,7 @@ export default function DocumentList({
     return (
       <div className="flex flex-col gap-2">
         {documents.map((doc) => (
-          <DocumentListItem key={doc.id} document={doc} onDelete={onDelete} onClick={onClick} onDuplicate={onDuplicate} onRename={onRename} />
+          <DocumentListItem key={doc.id} document={doc} showArchived={showArchived} onDelete={onDelete} onClick={onClick} onDuplicate={onDuplicate} onRename={onRename} onArchive={onArchive} onRestore={onRestore} />
         ))}
       </div>
     );
@@ -67,7 +79,7 @@ export default function DocumentList({
   return (
     <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
       {documents.map((doc) => (
-        <DocumentCard key={doc.id} document={doc} onDelete={onDelete} onClick={onClick} onDuplicate={onDuplicate} onRename={onRename} />
+        <DocumentCard key={doc.id} document={doc} showArchived={showArchived} onDelete={onDelete} onClick={onClick} onDuplicate={onDuplicate} onRename={onRename} onArchive={onArchive} onRestore={onRestore} />
       ))}
     </div>
   );

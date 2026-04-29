@@ -1,11 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import DocumentFilterBar from "@/components/documents/document-filter-bar";
 import DocumentList from "@/components/documents/document-list";
 import { GenerateDocumentDropdown } from "@/components/documents/generate-document-dropdown";
-import { UploadDocumentDropdown } from "@/components/documents/upload-document-dropdown"; 
+import { UploadDocumentDropdown } from "@/components/documents/upload-document-dropdown";
 import { JobPickerModal } from "@/components/documents/job-picker-modal";
 import { ConfirmDeleteModal } from "@/components/ui/confirm-delete-modal";
 import { DocumentsSkeleton } from "@/components/ui/skeletons/documents-skeleton";
@@ -23,7 +23,14 @@ export default function DocumentsPage() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerMode, setPickerMode] = useState<"resume" | "cover-letter">("resume");
   const [viewMode, setViewMode] = useDocumentViewMode();
+  const [showArchived, setShowArchived] = useState(false);
   const onFilteredChange = useCallback((f: DocumentResponse[]) => setFiltered(f), []);
+
+  const visibleDocuments = useMemo(() => {
+    return showArchived
+      ? documents.filter((d) => d.status === "ARCHIVED")
+      : documents.filter((d) => d.status !== "ARCHIVED");
+  }, [documents, showArchived]);
 
   useEffect(() => {
     fetch("/api/documents")
@@ -93,6 +100,30 @@ export default function DocumentsPage() {
     }
   }
 
+  async function handleArchive(id: string) {
+    const res = await fetch(`/api/documents/${id}/archive`, { method: "PATCH" });
+    if (res.status === 401) { router.push("/login"); return; }
+    if (res.ok) {
+      const updated: DocumentResponse = await res.json();
+      setDocuments((prev) => prev.map((d) => (d.id === id ? updated : d)));
+      showToast("Document archived");
+    } else {
+      showToast("Failed to archive document", "error");
+    }
+  }
+
+  async function handleRestore(id: string) {
+    const res = await fetch(`/api/documents/${id}/restore`, { method: "PATCH" });
+    if (res.status === 401) { router.push("/login"); return; }
+    if (res.ok) {
+      const updated: DocumentResponse = await res.json();
+      setDocuments((prev) => prev.map((d) => (d.id === id ? updated : d)));
+      showToast("Document restored");
+    } else {
+      showToast("Failed to restore document", "error");
+    }
+  }
+
   function handleGenerateClick() {
     setPickerMode("resume");
     setPickerOpen(true);
@@ -130,18 +161,23 @@ export default function DocumentsPage() {
       ) : (
         <>
           <DocumentFilterBar
-            documents={documents}
+            documents={visibleDocuments}
             onFilteredChange={onFilteredChange}
             viewMode={viewMode}
             onViewModeChange={setViewMode}
+            showArchived={showArchived}
+            onShowArchivedChange={setShowArchived}
           />
           <DocumentList
             documents={filtered}
             viewMode={viewMode}
+            showArchived={showArchived}
             onClick={(id) => router.push(`/documents/${id}`)}
             onDelete={(id) => setPendingDeleteId(id)}
             onDuplicate={handleDuplicate}
             onRename={handleRename}
+            onArchive={handleArchive}
+            onRestore={handleRestore}
             onGenerate={handleGenerateClick}
           />
         </>
