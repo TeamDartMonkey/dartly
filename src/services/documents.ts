@@ -298,7 +298,7 @@ export async function archiveDocument(id: string, userId: string) {
 
   const updated = await prisma.document.update({
     where: { id },
-    data: { status: "ARCHIVED", updatedAt: new Date() },
+    data: { previousStatus: doc.status, status: "ARCHIVED", updatedAt: new Date() },
   });
   return toDocumentResponse(updated, doc.versions[0]);
 }
@@ -310,12 +310,11 @@ export async function restoreDocument(id: string, userId: string) {
   });
   if (!doc || doc.versions.length === 0) return null;
 
-  //makes sure that uploaded docs stay as uploaded after restoring
-  const restoredStatus = doc.versions[0].fileUrl ? "UPLOADED" : "DRAFT";
+  const restoredStatus = doc.previousStatus ?? (doc.versions[0].fileUrl ? "UPLOADED" : "DRAFT");
 
   const updated = await prisma.document.update({
     where: { id },
-    data: { status: restoredStatus, updatedAt: new Date() },
+    data: { status: restoredStatus, previousStatus: null, updatedAt: new Date() },
   });
   return toDocumentResponse(updated, doc.versions[0]);
 }

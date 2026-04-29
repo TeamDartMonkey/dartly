@@ -69,6 +69,7 @@ const baseDoc = {
   name: "My Resume",
   category: null,
   status: "DRAFT" as const,
+  previousStatus: null,
   isDeleted: false,
   deletedAt: null,
   createdAt: now,
