@@ -1,5 +1,3 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,13 +7,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ---------------------------------------------------------------------------
-// App models
-// ---------------------------------------------------------------------------
-
 model Profile {
-  id                 String   @id @default(cuid())
-  userId             String   @unique
+  id                 String       @id @default(cuid())
+  userId             String       @unique
   firstName          String?
   lastName           String?
   email              String?
@@ -28,12 +22,11 @@ model Profile {
   targetLocations    String[]
   workModePreference String?
   salaryPreference   Int?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-
-  experiences Experience[]
-  educations  Education[]
-  skills      Skill[]
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  educations         Education[]
+  experiences        Experience[]
+  skills             Skill[]
 }
 
 model Experience {
@@ -42,16 +35,15 @@ model Experience {
   type         ExperienceType
   title        String
   organization String?
-  location     String?
   startDate    DateTime?
   endDate      DateTime?
   isCurrent    Boolean        @default(false)
-  description  String?  
-  order        Int            @default(0)
+  description  String?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
-
-  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  location     String?
+  order        Int            @default(0)
+  profile      Profile        @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
 model Education {
@@ -65,27 +57,25 @@ model Education {
   gpa          String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
-
-  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profile      Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
 model Skill {
-  id        String   @id @default(cuid())
-  profileId String
-  name      String
+  id          String   @id @default(cuid())
+  profileId   String
+  name        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   category    String?
-  proficiency String?
   order       Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  proficiency String?
+  profile     Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   @@unique([profileId, name])
 }
 
 model Job {
-  id                String    @id @default(cuid())
+  id                String            @id @default(cuid())
   userId            String
   title             String
   company           String
@@ -93,18 +83,17 @@ model Job {
   description       String?
   compensationNotes String?
   applicationDate   DateTime?
-  stage             JobStage  @default(INTERESTED)
-  priority          Boolean   @default(false)
+  stage             JobStage          @default(INTERESTED)
+  priority          Boolean           @default(false)
   deadline          DateTime?
   recruiterNotes    String?
   customNotes       String?
   lastActivityAt    DateTime?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-
-  stageHistory  JobStageHistory[]
-  activities    JobActivity[]
-  documentLinks JobDocumentLink[]
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  activities        JobActivity[]
+  documentLinks     JobDocumentLink[]
+  stageHistory      JobStageHistory[]
 }
 
 model JobStageHistory {
@@ -113,8 +102,7 @@ model JobStageHistory {
   fromStage JobStage?
   toStage   JobStage
   changedAt DateTime  @default(now())
-
-  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  job       Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
 }
 
 model JobActivity {
@@ -128,48 +116,45 @@ model JobActivity {
   completed   Boolean   @default(false)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-
-  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  job         Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
 }
 
 model Document {
-  id        String         @id @default(cuid())
-  userId    String
-  type      DocumentType
-  name      String
-  category  String?
-  status    DocumentStatus @default(DRAFT)
-  isDeleted Boolean        @default(false)
-  deletedAt DateTime?
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-
-  versions DocumentVersion[]
-  jobLinks JobDocumentLink[]
+  id             String            @id @default(cuid())
+  userId         String
+  type           DocumentType
+  name           String
+  category       String?
+  status         DocumentStatus    @default(DRAFT)
+  previousStatus DocumentStatus?
+  isDeleted      Boolean           @default(false)
+  deletedAt      DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  versions       DocumentVersion[]
+  jobLinks       JobDocumentLink[]
 }
 
 model DocumentVersion {
-  id            String   @id @default(cuid())
+  id            String            @id @default(cuid())
   documentId    String
   versionNumber Int
   content       String?
   fileUrl       String?
-  createdAt     DateTime @default(now())
-
-  document Document          @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  jobLinks JobDocumentLink[]
+  createdAt     DateTime          @default(now())
+  document      Document          @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  jobLinks      JobDocumentLink[]
 }
 
 model JobDocumentLink {
-  id                String   @id @default(cuid())
+  id                String          @id @default(cuid())
   jobId             String
   documentId        String
   documentVersionId String
-  linkedAt          DateTime @default(now())
-
-  job             Job             @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  document        Document        @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  documentVersion DocumentVersion @relation(fields: [documentVersionId], references: [id], onDelete: Cascade)
+  linkedAt          DateTime        @default(now())
+  document          Document        @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentVersion   DocumentVersion @relation(fields: [documentVersionId], references: [id], onDelete: Cascade)
+  job               Job             @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
   @@unique([jobId, documentVersionId])
 }
@@ -182,18 +167,14 @@ model UserSettings {
   updatedAt   DateTime @updatedAt
 }
 
-// ---------------------------------------------------------------------------
-// Enums
-// ---------------------------------------------------------------------------
-
 enum JobStage {
   INTERESTED
   APPLIED
   INTERVIEW
   OFFER
   REJECTED
-  GHOSTED
   ARCHIVED
+  GHOSTED
 }
 
 enum ExperienceType {
@@ -211,4 +192,5 @@ enum DocumentStatus {
   DRAFT
   READY
   ARCHIVED
+  UPLOADED
 }

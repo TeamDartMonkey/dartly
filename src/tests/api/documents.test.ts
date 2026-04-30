@@ -5,12 +5,14 @@ const {
   mockGetDocumentById,
   mockSoftDeleteDocument,
   mockUpdateDocumentContent,
+  mockRenameDocument,
   mockRequireAuth,
   mockValidateBody,
 } = vi.hoisted(() => ({
   mockGetDocumentById: vi.fn(),
   mockSoftDeleteDocument: vi.fn(),
   mockUpdateDocumentContent: vi.fn(),
+  mockRenameDocument: vi.fn(),
   mockRequireAuth: vi.fn(),
   mockValidateBody: vi.fn(),
 }));
@@ -35,9 +37,10 @@ vi.mock("@/services/documents", () => ({
   getDocumentById: mockGetDocumentById,
   softDeleteDocument: mockSoftDeleteDocument,
   updateDocumentContent: mockUpdateDocumentContent,
+  renameDocument: mockRenameDocument,
 }));
 
-import { DELETE, GET, PUT } from "@/app/api/documents/[id]/route";
+import { DELETE, GET, PATCH, PUT } from "@/app/api/documents/[id]/route";
 
 const mockUser = { id: "user-123" };
 const mockDocResponse = {
@@ -154,5 +157,61 @@ describe("DELETE /api/documents/[id]", () => {
 
     const res = await DELETE(makeRequest("DELETE"), context);
     expect(res.status).toBe(401);
+  });
+});
+
+describe("PATCH /api/documents/[id]", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRequireAuth.mockResolvedValue(mockUser);
+  });
+
+  it("returns 200 with renamed document", async () => {
+    const renamed = { ...mockDocResponse, name: "New Name" };
+    mockRenameDocument.mockResolvedValue(renamed);
+
+    const res = await PATCH(makeRequest("PATCH", { name: "New Name" }), context);
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.name).toBe("New Name");
+    expect(mockRenameDocument).toHaveBeenCalledWith("doc-1", mockUser.id, "New Name");
+  });
+
+  it("returns 404 when document not found", async () => {
+    mockRenameDocument.mockResolvedValue(null);
+
+    const res = await PATCH(makeRequest("PATCH", { name: "New Name" }), context);
+    const body = await res.json();
+
+    expect(res.status).toBe(404);
+    expect(body.error).toBe("Document not found");
+  });
+
+  it("returns 400 when name is missing", async () => {
+    const res = await PATCH(makeRequest("PATCH", {}), context);
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toBe("Name is required");
+    expect(mockRenameDocument).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when name is only whitespace", async () => {
+    const res = await PATCH(makeRequest("PATCH", { name: "   " }), context);
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toBe("Name is required");
+    expect(mockRenameDocument).not.toHaveBeenCalled();
+  });
+
+  it("returns 401 when not authenticated", async () => {
+    const { ApiError } = await import("@/lib/api-error");
+    mockRequireAuth.mockRejectedValue(new ApiError(401, "Unauthorized"));
+
+    const res = await PATCH(makeRequest("PATCH", { name: "New Name" }), context);
+    expect(res.status).toBe(401);
+    expect(mockRenameDocument).not.toHaveBeenCalled();
   });
 });
