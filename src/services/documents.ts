@@ -8,7 +8,6 @@ type CreateDocumentInput = {
   content?: string;
   jobId?: string;
 };
-
 export function toDocumentResponse(
   doc: Document,
   latestVersion: DocumentVersion
@@ -19,7 +18,9 @@ export function toDocumentResponse(
     name: doc.name,
     status: doc.status,
     content: latestVersion.content ?? undefined,
-    fileUrl: latestVersion.fileUrl ?? undefined,
+    ...(latestVersion.fileUrl
+      ? { fileUrl: latestVersion.fileUrl }
+      : {}),
     versionNumber: latestVersion.versionNumber,
     createdAt: doc.createdAt.toISOString(),
     updatedAt: doc.updatedAt.toISOString(),
@@ -32,6 +33,16 @@ export function toVersionResponse(v: DocumentVersion): DocumentVersionResponse {
     versionNumber: v.versionNumber,
     content: v.content ?? undefined,
     createdAt: v.createdAt.toISOString(),
+  };
+}
+
+function withDocumentVersionId(
+  doc: Document,
+  version: DocumentVersion
+): DocumentResponse & { documentVersionId: string } {
+  return {
+    ...toDocumentResponse(doc, version),
+    documentVersionId: version.id,
   };
 }
 
@@ -91,7 +102,7 @@ export async function createDocument(userId: string, input: CreateDocumentInput)
   });
 }
 
-export async function duplicateDocument(id: string, userId:string){
+export async function duplicateDocument(id: string, userId: string) {
   const doc = await prisma.document.findFirst({
     where: { id, userId, isDeleted: false },
     include: {
@@ -121,7 +132,7 @@ export async function duplicateDocument(id: string, userId:string){
       },
     });
 
-    return toDocumentResponse(newDoc, newVersion);
+    return withDocumentVersionId(newDoc, newVersion);
   });
 }
 
@@ -140,7 +151,7 @@ export async function renameDocument(id: string, userId: string, name: string) {
     data: { name, updatedAt: new Date() },
   });
 
-  return toDocumentResponse(updated, doc.versions[0]);
+  return withDocumentVersionId(updated, doc.versions[0]);
 }
 
 export async function getDocumentsByUserId(userId: string) {
@@ -152,7 +163,9 @@ export async function getDocumentsByUserId(userId: string) {
     orderBy: { updatedAt: "desc" },
   });
 
-  return docs.filter((d) => d.versions.length > 0).map((d) => toDocumentResponse(d, d.versions[0]));
+  return docs
+    .filter((d) => d.versions.length > 0)
+    .map((d) => withDocumentVersionId(d, d.versions[0]));
 }
 
 export async function getDocumentById(id: string, userId: string) {
@@ -164,7 +177,7 @@ export async function getDocumentById(id: string, userId: string) {
   });
 
   if (!doc || doc.versions.length === 0) return null;
-  return toDocumentResponse(doc, doc.versions[0]);
+  return withDocumentVersionId(doc, doc.versions[0]);
 }
 
 export async function updateDocumentContent(id: string, userId: string, content: string) {
@@ -193,7 +206,7 @@ export async function updateDocumentContent(id: string, userId: string, content:
       data: { updatedAt: new Date() },
     });
 
-    return toDocumentResponse(updated, version);
+    return withDocumentVersionId(updated, version);
   });
 }
 
@@ -275,7 +288,9 @@ export async function getDocumentsForJob(jobId: string, userId: string) {
     where: { jobId },
     include: {
       document: {
-        include: { versions: { orderBy: { versionNumber: "desc" }, take: 1 } },
+        include: {
+          versions: { orderBy: { versionNumber: "desc" }, take: 1 },
+        },
       },
     },
     orderBy: { linkedAt: "desc" },
@@ -285,6 +300,7 @@ export async function getDocumentsForJob(jobId: string, userId: string) {
     .filter((l) => !l.document.isDeleted && l.document.versions.length > 0)
     .map((l) => ({
       ...toDocumentResponse(l.document, l.document.versions[0]),
+      documentVersionId: l.documentVersionId,
       linkedAt: l.linkedAt.toISOString(),
     }));
 }
@@ -300,7 +316,7 @@ export async function archiveDocument(id: string, userId: string) {
     where: { id },
     data: { previousStatus: doc.status, status: "ARCHIVED", updatedAt: new Date() },
   });
-  return toDocumentResponse(updated, doc.versions[0]);
+  return withDocumentVersionId(updated, doc.versions[0]);
 }
 
 export async function restoreDocument(id: string, userId: string) {
@@ -316,5 +332,5 @@ export async function restoreDocument(id: string, userId: string) {
     where: { id },
     data: { status: restoredStatus, previousStatus: null, updatedAt: new Date() },
   });
-  return toDocumentResponse(updated, doc.versions[0]);
+  return withDocumentVersionId(updated, doc.versions[0]);
 }

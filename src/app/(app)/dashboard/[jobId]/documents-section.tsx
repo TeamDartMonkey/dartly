@@ -1,9 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { showToast } from "@/components/ui/toast";
-import { downloadDoc } from "@/components/documents/download-button";
 import type { DocumentResponse } from "@/types/document";
 import type { Job } from "@/types/job";
 
@@ -24,38 +23,221 @@ const TYPE_LABELS: Record<string, string> = {
   OTHER: "Other",
 };
 
+function getDocumentVersionId(doc: DocumentResponse): string | null {
+  const docWithVersion = doc as DocumentResponse & {
+    documentVersionId?: string;
+    versionId?: string;
+    currentVersionId?: string;
+    latestVersionId?: string;
+  };
+
+  return (
+    docWithVersion.documentVersionId ??
+    docWithVersion.versionId ??
+    docWithVersion.currentVersionId ??
+    docWithVersion.latestVersionId ??
+    null
+  );
+}
+
 export function DocumentsSection({ job }: DocumentsSectionProps) {
   const router = useRouter();
+
   const [documents, setDocuments] = useState<DocumentResponse[]>([]);
+  const [libraryDocuments, setLibraryDocuments] = useState<DocumentResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [libraryLoading, setLibraryLoading] = useState(false);
   const [generating, setGenerating] = useState<string | null>(null);
-  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [linking, setLinking] = useState(false);
+  const [unlinkingId, setUnlinkingId] = useState<string | null>(null);
+  const [showLinkMenu, setShowLinkMenu] = useState(false);
+
+  const linkedVersionIds = useMemo(() => {
+    return new Set(
+      documents
+        .map((doc) => getDocumentVersionId(doc))
+        .filter((id): id is string => Boolean(id)),
+    );
+  }, [documents]);
+
+  const availableDocuments = useMemo(() => {
+    return libraryDocuments.filter((doc) => {
+      const versionId = getDocumentVersionId(doc);
+      return versionId && !linkedVersionIds.has(versionId);
+    });
+  }, [libraryDocuments, linkedVersionIds]);
 
   const fetchDocuments = useCallback(async () => {
+    setLoading(true);
+
     try {
       const res = await fetch(`/api/jobs/${job.id}/documents`);
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data)) setDocuments(data);
+
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
+
+      if (!res.ok) {
+        showToast("Failed to load documents", "error");
+        return;
+      }
+
+      const data = await res.json();
+
+      if (Array.isArray(data)) {
+        setDocuments(data);
       }
     } catch {
       showToast("Failed to load documents", "error");
     } finally {
       setLoading(false);
     }
-  }, [job.id]);
+  }, [job.id, router]);
+
+  const fetchLibraryDocuments = useCallback(async () => {
+    setLibraryLoading(true);
+
+    try {
+      const res = await fetch("/api/documents");
+
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
+
+      if (!res.ok) {
+        showToast("Failed to load library documents", "error");
+        return;
+      }
+
+      const data = await res.json();
+
+      if (Array.isArray(data)) {
+        setLibraryDocuments(data);
+      }
+    } catch {
+      showToast("Failed to load library documents", "error");
+    } finally {
+      setLibraryLoading(false);
+    }
+  }, [router]);
 
   useEffect(() => {
     fetchDocuments();
   }, [fetchDocuments]);
 
+  async function handleOpenLinkMenu() {
+    setShowLinkMenu((current) => !current);
+
+    if (libraryDocuments.length === 0) {
+      await fetchLibraryDocuments();
+    }
+  }
+
+  async function handleLinkDocument(doc: DocumentResponse) {
+    const documentVersionId = getDocumentVersionId(doc);
+
+    if (!documentVersionId) {
+      console.error("Missing documentVersionId:", doc);
+      showToast("Missing document version id", "error");
+      return;
+    }
+
+    setLinking(true);
+
+    try {
+      const res = await fetch(`/api/jobs/${job.id}/documents`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          documentId: doc.id,
+          documentVersionId,
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
+
+      if (!res.ok) {
+        console.error("Link document error:", data);
+        showToast(data?.error || "Failed to link document", "error");
+        return;
+      }
+
+      showToast("Document linked");
+      setShowLinkMenu(false);
+      await fetchDocuments();
+      await fetchLibraryDocuments();
+    } catch (error) {
+      console.error(error);
+      showToast("Failed to link document", "error");
+    } finally {
+      setLinking(false);
+    }
+  }
+
+  async function handleUnlinkDocument(doc: DocumentResponse) {
+    const documentVersionId = getDocumentVersionId(doc);
+
+    if (!documentVersionId) {
+      console.error("Missing documentVersionId:", doc);
+      showToast("Missing document version id", "error");
+      return;
+    }
+
+    setUnlinkingId(documentVersionId);
+
+    try {
+      const res = await fetch(
+        `/api/jobs/${job.id}/documents/${documentVersionId}`,
+        {
+          method: "DELETE",
+        },
+      );
+
+      const data = await res.json().catch(() => null);
+
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
+
+      if (!res.ok) {
+        console.error("Unlink document error:", data);
+        showToast(data?.error || "Failed to unlink document", "error");
+        return;
+      }
+
+      showToast("Document unlinked");
+      await fetchDocuments();
+      await fetchLibraryDocuments();
+    } catch (error) {
+      console.error(error);
+      showToast("Failed to unlink document", "error");
+    } finally {
+      setUnlinkingId(null);
+    }
+  }
+
   async function handleGenerate(type: "resume" | "cover-letter") {
     setGenerating(type);
+
     try {
-      const endpoint = type === "resume" ? "/api/ai/resume" : "/api/ai/cover-letter";
+      const endpoint =
+        type === "resume" ? "/api/ai/resume" : "/api/ai/cover-letter";
+
       const res = await fetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ jobId: job.id }),
       });
 
@@ -65,8 +247,8 @@ export function DocumentsSection({ job }: DocumentsSectionProps) {
       }
 
       if (!res.ok) {
-        const data = await res.json();
-        showToast(data.error || "Generation failed", "error");
+        const data = await res.json().catch(() => null);
+        showToast(data?.error || "Generation failed", "error");
         return;
       }
 
@@ -83,105 +265,159 @@ export function DocumentsSection({ job }: DocumentsSectionProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <h3 className="text-sm font-medium text-zinc-400">Documents</h3>
-        <div className="flex gap-2">
+
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={handleOpenLinkMenu}
+            disabled={linking}
+            className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm font-medium text-zinc-50 hover:bg-zinc-800 disabled:opacity-50"
+          >
+            + Link Document
+          </button>
+
           <button
             type="button"
             onClick={() => handleGenerate("resume")}
             disabled={generating !== null}
-            className="bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-zinc-50 px-3 py-1.5 rounded-md text-sm font-medium"
+            className="rounded-md bg-indigo-500 px-3 py-1.5 text-sm font-medium text-zinc-50 hover:bg-indigo-600 disabled:opacity-50"
           >
             {generating === "resume" ? "Generating..." : "Generate Resume"}
           </button>
+
           <button
             type="button"
             onClick={() => handleGenerate("cover-letter")}
             disabled={generating !== null}
-            className="bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 disabled:opacity-50 text-zinc-50 px-3 py-1.5 rounded-md text-sm font-medium"
+            className="rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-zinc-50 hover:bg-zinc-700 disabled:opacity-50"
           >
-            {generating === "cover-letter" ? "Generating..." : "Generate Cover Letter"}
+            {generating === "cover-letter"
+              ? "Generating..."
+              : "Generate Cover Letter"}
           </button>
         </div>
       </div>
 
+      {showLinkMenu && (
+        <div className="rounded-lg border border-zinc-700 bg-zinc-950/60 p-3">
+          <p className="mb-2 text-sm font-medium text-zinc-300">
+            Select a library document to link
+          </p>
+
+          {libraryLoading ? (
+            <p className="text-sm text-zinc-500">Loading library documents...</p>
+          ) : availableDocuments.length === 0 ? (
+            <p className="text-sm text-zinc-500">
+              No available library documents to link.
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {availableDocuments.map((doc) => (
+                <li key={getDocumentVersionId(doc) ?? doc.id}>
+                  <button
+                    type="button"
+                    onClick={() => handleLinkDocument(doc)}
+                    disabled={linking}
+                    className="flex w-full items-center justify-between gap-3 rounded-md border border-zinc-800 bg-zinc-900 p-3 text-left hover:border-zinc-600 disabled:opacity-50"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm text-zinc-200">{doc.name}</p>
+                      <p className="text-xs text-zinc-500">
+                        {TYPE_LABELS[doc.type] ?? "Other"}
+                      </p>
+                    </div>
+
+                    <span className="text-xs font-medium text-indigo-400">
+                      Link
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
       {loading ? (
         <div className="space-y-2">
-          <div className="h-12 bg-zinc-800 animate-pulse rounded-md" />
-          <div className="h-12 bg-zinc-800 animate-pulse rounded-md" />
+          <div className="h-12 animate-pulse rounded-md bg-zinc-800" />
+          <div className="h-12 animate-pulse rounded-md bg-zinc-800" />
         </div>
       ) : documents.length === 0 ? (
         <div className="rounded-lg border border-dashed border-zinc-700 py-8 text-center">
-          <p className="text-sm text-zinc-500">No documents yet</p>
-          <p className="text-xs text-zinc-600 mt-1">
-            Generate a resume or cover letter for this job
+          <p className="text-sm text-zinc-500">No linked documents yet</p>
+          <p className="mt-1 text-xs text-zinc-600">
+            Link a library document or generate a resume or cover letter for this job.
           </p>
         </div>
       ) : (
         <ul className="space-y-2">
-          {documents.map((doc) => (
-            <li key={doc.id}>
-              <div className="w-full flex items-center justify-between gap-3 rounded-lg border border-zinc-700 bg-zinc-950/40 hover:border-zinc-600 transition-colors">
+          {documents.map((doc) => {
+            const documentVersionId = getDocumentVersionId(doc);
+
+            return (
+              <li
+                key={documentVersionId ?? doc.id}
+                className="flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-950/40 p-3"
+              >
                 <button
                   type="button"
                   onClick={() => router.push(`/documents/${doc.id}`)}
-                  className="flex-1 flex items-center gap-3 p-3 text-left min-w-0"
+                  className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left"
                 >
-                  <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${TYPE_STYLES[doc.type] ?? TYPE_STYLES.OTHER}`}
-                  >
-                    {TYPE_LABELS[doc.type] ?? "Other"}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-sm text-zinc-200 truncate">{doc.name}</p>
-                    <p className="text-xs text-zinc-500">
-                      v{doc.versionNumber} &middot;{" "}
-                      {new Date(doc.updatedAt).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </p>
-                  </div>
-                </button>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span
+                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                        TYPE_STYLES[doc.type] ?? TYPE_STYLES.OTHER
+                      }`}
+                    >
+                      {TYPE_LABELS[doc.type] ?? "Other"}
+                    </span>
 
-                <div className="flex items-center gap-1 pr-3 shrink-0">
-                  <button
-                    type="button"
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      setDownloadingId(doc.id);
-                      try {
-                        await downloadDoc(doc);
-                      } catch {
-                        showToast("Download failed", "error");
-                      } finally {
-                        setDownloadingId(null);
-                      }
-                    }}
-                    disabled={downloadingId === doc.id}
-                    className="p-1.5 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 disabled:opacity-50 transition-colors"
-                    aria-label={`Download ${doc.name}`}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      {downloadingId === doc.id ? (
-                        <><circle cx="12" cy="12" r="10" opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" className="animate-spin origin-center" /></>
-                      ) : (
-                        <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></>
-                      )}
-                    </svg>
-                  </button>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm text-zinc-200">
+                        {doc.name}
+                      </p>
+                      <p className="text-xs text-zinc-500">
+                        v{doc.versionNumber} &middot;{" "}
+                        {new Date(doc.updatedAt).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+
                   <svg
-                    width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                    className="text-zinc-500" aria-hidden="true"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="shrink-0 text-zinc-500"
+                    aria-hidden="true"
                   >
                     <polyline points="9 18 15 12 9 6" />
                   </svg>
-                </div>
-              </div>
-            </li>
-          ))}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleUnlinkDocument(doc)}
+                  disabled={unlinkingId === documentVersionId}
+                  className="rounded-md border border-red-500/30 px-2 py-1 text-xs font-medium text-red-400 hover:bg-red-500/10 disabled:opacity-50"
+                >
+                  {unlinkingId === documentVersionId ? "Unlinking..." : "Unlink"}
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
