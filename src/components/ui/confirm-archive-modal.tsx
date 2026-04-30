@@ -68,7 +68,7 @@ export function ConfirmArchiveModal({
             disabled={isSubmitting}
             className="flex-1 bg-orange-600 hover:bg-orange-700 text-zinc-50 px-4 py-2.5 rounded-md text-sm font-medium transition-colors"
           >
-            { isSubmitting ? "Saving..." : "Archive" }
+            {isSubmitting ? "Saving..." : "Archive"}
           </button>
         </div>
       </div>

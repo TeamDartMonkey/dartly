@@ -15,12 +15,7 @@ type FormErrors = {
   name?: string;
 };
 
-const PROFICIENCY_OPTIONS = [
-  "Beginner",
-  "Intermediate",
-  "Advanced",
-  "Expert",
-] as const;
+const PROFICIENCY_OPTIONS = ["Beginner", "Intermediate", "Advanced", "Expert"] as const;
 
 export function SkillForm({ skill, existingNames, onSave, onCancel }: SkillFormProps) {
   const [name, setName] = useState(skill?.name ?? "");
@@ -78,10 +73,7 @@ export function SkillForm({ skill, existingNames, onSave, onCancel }: SkillFormP
       />
 
       <div className="space-y-1">
-        <label
-          htmlFor="skill-proficiency"
-          className="text-sm font-medium text-zinc-200"
-        >
+        <label htmlFor="skill-proficiency" className="text-sm font-medium text-zinc-200">
           Proficiency
         </label>
         <select

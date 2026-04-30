@@ -28,12 +28,16 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
         return NextResponse.json({ error: "Job not found" }, { status: 404 });
       }
 
-      await prisma.jobDocumentLink.deleteMany({
+      const { count } = await prisma.jobDocumentLink.deleteMany({
         where: {
           jobId,
           documentVersionId,
         },
       });
+
+      if (count === 0) {
+        return NextResponse.json({ error: "Document link not found" }, { status: 404 });
+      }
 
       return NextResponse.json({ success: true }, { status: 200 });
     } catch (err) {

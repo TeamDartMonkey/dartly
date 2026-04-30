@@ -18,9 +18,7 @@ export function toDocumentResponse(
     name: doc.name,
     status: doc.status,
     content: latestVersion.content ?? undefined,
-    ...(latestVersion.fileUrl
-      ? { fileUrl: latestVersion.fileUrl }
-      : {}),
+    ...(latestVersion.fileUrl ? { fileUrl: latestVersion.fileUrl } : {}),
     versionNumber: latestVersion.versionNumber,
     createdAt: doc.createdAt.toISOString(),
     updatedAt: doc.updatedAt.toISOString(),
@@ -36,10 +34,7 @@ export function toVersionResponse(v: DocumentVersion): DocumentVersionResponse {
   };
 }
 
-function withDocumentVersionId(
-  doc: Document,
-  version: DocumentVersion
-): DocumentResponse & { documentVersionId: string } {
+function withDocumentVersionId(doc: Document, version: DocumentVersion): DocumentResponse {
   return {
     ...toDocumentResponse(doc, version),
     documentVersionId: version.id,

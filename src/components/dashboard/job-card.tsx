@@ -202,7 +202,9 @@ export default function JobCard({
       >
         <div className="mt-4 space-y-1 text-sm text-zinc-500">
           {job.location && <p>{job.location}</p>}
-          {job.stage === "Interested" && job.deadline && <p className="whitespace-nowrap">Deadline: {job.deadline}</p>}
+          {job.stage === "Interested" && job.deadline && (
+            <p className="whitespace-nowrap">Deadline: {job.deadline}</p>
+          )}
           <p className="whitespace-nowrap">Last activity: {job.lastActivityDate}</p>
         </div>
       </button>

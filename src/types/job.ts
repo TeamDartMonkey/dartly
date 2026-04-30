@@ -1,4 +1,11 @@
-export type JobStage = "Interested" | "Applied" | "Interview" | "Offer" | "Rejected" | "Ghosted" | "Archived";
+export type JobStage =
+  | "Interested"
+  | "Applied"
+  | "Interview"
+  | "Offer"
+  | "Rejected"
+  | "Ghosted"
+  | "Archived";
 
 export type Job = {
   id: string;
