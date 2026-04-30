@@ -69,7 +69,7 @@ export function ConfirmDeleteModal({
             disabled={isSubmitting}
             className="flex-1 bg-red-600 hover:bg-red-700 text-zinc-50 px-4 py-2.5 rounded-md text-sm font-medium transition-colors"
           >
-            { isSubmitting ? "Saving..." : "Delete" }
+            {isSubmitting ? "Saving..." : "Delete"}
           </button>
         </div>
       </div>

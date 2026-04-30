@@ -22,7 +22,13 @@ function getStageOptions(_currentStage: JobStage) {
   });
 }
 
-export default function JobListItem({ job, onEdit, onDelete, onStageChange, onRestore }: JobListItemProps) {
+export default function JobListItem({
+  job,
+  onEdit,
+  onDelete,
+  onStageChange,
+  onRestore,
+}: JobListItemProps) {
   const router = useRouter();
   const [isChangingStage, setIsChangingStage] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
@@ -77,7 +83,9 @@ export default function JobListItem({ job, onEdit, onDelete, onStageChange, onRe
           </div>
           <div className="mt-1 flex items-center gap-3 text-xs text-zinc-500">
             {job.location && <span>{job.location}</span>}
-            {job.stage === "Interested" && job.deadline && <span className="whitespace-nowrap">Deadline: {job.deadline}</span>}
+            {job.stage === "Interested" && job.deadline && (
+              <span className="whitespace-nowrap">Deadline: {job.deadline}</span>
+            )}
             <span className="whitespace-nowrap">Last activity: {job.lastActivityDate}</span>
           </div>
         </button>

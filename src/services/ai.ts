@@ -190,11 +190,7 @@ export async function generateCoverLetterDraft(
   job: JobContext
 ): Promise<GenerateResult> {
   const name = [profile.firstName, profile.lastName].filter(Boolean).join(" ") || "Your Name";
-  const contactParts = [
-    profile.email,
-    profile.phone,
-    profile.location,
-  ].filter(Boolean);
+  const contactParts = [profile.email, profile.phone, profile.location].filter(Boolean);
 
   const currentDate = new Date().toLocaleDateString("en-US", {
     year: "numeric",

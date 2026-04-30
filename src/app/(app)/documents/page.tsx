@@ -74,7 +74,10 @@ export default function DocumentsPage() {
 
   async function handleDuplicate(id: string) {
     const res = await fetch(`/api/documents/${id}/duplicate`, { method: "POST" });
-    if (res.status === 401) { router.push("/login"); return; }
+    if (res.status === 401) {
+      router.push("/login");
+      return;
+    }
     if (res.ok) {
       const newDoc: DocumentResponse = await res.json();
       setDocuments((prev) => [newDoc, ...prev]);
@@ -90,7 +93,10 @@ export default function DocumentsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: newName }),
     });
-    if (res.status === 401) { router.push("/login"); return; }
+    if (res.status === 401) {
+      router.push("/login");
+      return;
+    }
     if (res.ok) {
       const updated: DocumentResponse = await res.json();
       setDocuments((prev) => prev.map((d) => (d.id === id ? updated : d)));
@@ -102,7 +108,10 @@ export default function DocumentsPage() {
 
   async function handleArchive(id: string) {
     const res = await fetch(`/api/documents/${id}/archive`, { method: "PATCH" });
-    if (res.status === 401) { router.push("/login"); return; }
+    if (res.status === 401) {
+      router.push("/login");
+      return;
+    }
     if (res.ok) {
       const updated: DocumentResponse = await res.json();
       setDocuments((prev) => prev.map((d) => (d.id === id ? updated : d)));
@@ -114,7 +123,10 @@ export default function DocumentsPage() {
 
   async function handleRestore(id: string) {
     const res = await fetch(`/api/documents/${id}/restore`, { method: "PATCH" });
-    if (res.status === 401) { router.push("/login"); return; }
+    if (res.status === 401) {
+      router.push("/login");
+      return;
+    }
     if (res.ok) {
       const updated: DocumentResponse = await res.json();
       setDocuments((prev) => prev.map((d) => (d.id === id ? updated : d)));

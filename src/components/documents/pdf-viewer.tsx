@@ -5,8 +5,10 @@ import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
-// ✅ FIXED: use CDN worker instead of local .mjs path
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  "pdfjs-dist/build/pdf.worker.min.mjs",
+  import.meta.url
+).toString();
 
 interface PdfViewerProps {
   url: string;
@@ -33,10 +35,7 @@ export function PdfViewer({ url }: PdfViewerProps) {
   }, []);
 
   return (
-    <div
-      ref={containerRef}
-      className="w-full overflow-y-auto max-h-[800px] rounded-md bg-zinc-950"
-    >
+    <div ref={containerRef} className="w-full overflow-y-auto max-h-[800px] rounded-md bg-zinc-950">
       <Document
         file={url}
         onLoadSuccess={({ numPages }) => setNumPages(numPages)}
@@ -55,10 +54,7 @@ export function PdfViewer({ url }: PdfViewerProps) {
           const pageNumber = i + 1;
 
           return (
-            <div
-              key={`page-${pageNumber}`}
-              className="flex justify-center mb-2 last:mb-0"
-            >
+            <div key={`page-${pageNumber}`} className="flex justify-center mb-2 last:mb-0">
               <Page
                 pageNumber={pageNumber}
                 width={containerWidth > 0 ? containerWidth - 32 : undefined}

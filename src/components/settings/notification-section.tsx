@@ -9,7 +9,12 @@ type NotificationSectionProps = {
   onToggle: (key: keyof NotificationSectionProps["preferences"]) => void;
 };
 
-function Toggle({ checked, onChange, label, description }: {
+function Toggle({
+  checked,
+  onChange,
+  label,
+  description,
+}: {
   checked: boolean;
   onChange: () => void;
   label: string;

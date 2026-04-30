@@ -9,9 +9,7 @@ import { createDocument } from "@/services/documents";
 import { prisma } from "@/services/prisma";
 import type { DocumentType } from "@/types/document";
 
-const ALLOWED_MIME_TYPES = [
-  "application/pdf",
-];
+const ALLOWED_MIME_TYPES = ["application/pdf"];
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; //10MB
 
@@ -41,10 +39,7 @@ export async function POST(request: NextRequest) {
         );
       }
       if (file.size > MAX_FILE_SIZE) {
-        return NextResponse.json(
-          { error: "File size must be under 10MB" },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: "File size must be under 10MB" }, { status: 400 });
       }
 
       //uploads to supabase storage

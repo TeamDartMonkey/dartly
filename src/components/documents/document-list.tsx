@@ -70,7 +70,17 @@ export default function DocumentList({
     return (
       <div className="flex flex-col gap-2">
         {documents.map((doc) => (
-          <DocumentListItem key={doc.id} document={doc} showArchived={showArchived} onDelete={onDelete} onClick={onClick} onDuplicate={onDuplicate} onRename={onRename} onArchive={onArchive} onRestore={onRestore} />
+          <DocumentListItem
+            key={doc.id}
+            document={doc}
+            showArchived={showArchived}
+            onDelete={onDelete}
+            onClick={onClick}
+            onDuplicate={onDuplicate}
+            onRename={onRename}
+            onArchive={onArchive}
+            onRestore={onRestore}
+          />
         ))}
       </div>
     );
@@ -79,7 +89,17 @@ export default function DocumentList({
   return (
     <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
       {documents.map((doc) => (
-        <DocumentCard key={doc.id} document={doc} showArchived={showArchived} onDelete={onDelete} onClick={onClick} onDuplicate={onDuplicate} onRename={onRename} onArchive={onArchive} onRestore={onRestore} />
+        <DocumentCard
+          key={doc.id}
+          document={doc}
+          showArchived={showArchived}
+          onDelete={onDelete}
+          onClick={onClick}
+          onDuplicate={onDuplicate}
+          onRename={onRename}
+          onArchive={onArchive}
+          onRestore={onRestore}
+        />
       ))}
     </div>
   );

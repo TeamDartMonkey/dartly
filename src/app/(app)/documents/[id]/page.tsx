@@ -231,7 +231,10 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   async function confirmArchive() {
     if (!doc) return;
     const res = await fetch(`/api/documents/${doc.id}/archive`, { method: "PATCH" });
-    if (res.status === 401) { router.push("/login"); return; }
+    if (res.status === 401) {
+      router.push("/login");
+      return;
+    }
     if (res.ok) {
       const updated = await res.json();
       setDoc(updated);
@@ -245,7 +248,10 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   async function handleRestoreArchived() {
     if (!doc) return;
     const res = await fetch(`/api/documents/${doc.id}/restore`, { method: "PATCH" });
-    if (res.status === 401) { router.push("/login"); return; }
+    if (res.status === 401) {
+      router.push("/login");
+      return;
+    }
     if (res.ok) {
       const updated = await res.json();
       setDoc(updated);
@@ -258,7 +264,10 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   async function handleDuplicate() {
     if (!doc) return;
     const res = await fetch(`/api/documents/${doc.id}/duplicate`, { method: "POST" });
-    if (res.status === 401) { router.push("/login"); return; }
+    if (res.status === 401) {
+      router.push("/login");
+      return;
+    }
     if (res.ok) {
       const newDoc = await res.json();
       showToast("Document duplicated");
@@ -283,7 +292,10 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: trimmed }),
     });
-    if (res.status === 401) { router.push("/login"); return; }
+    if (res.status === 401) {
+      router.push("/login");
+      return;
+    }
     if (res.ok) {
       const updated = await res.json();
       setDoc(updated);
@@ -335,7 +347,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     return doc?.content ?? "";
   })();
 
-  const isUploaded = doc?.status === "UPLOADED" ||  (doc?.status === "ARCHIVED" && signedUrl);
+  const isUploaded = doc?.status === "UPLOADED" || (doc?.status === "ARCHIVED" && signedUrl);
   const isArchived = doc?.status === "ARCHIVED";
 
   if (loading || !doc) {
@@ -376,10 +388,14 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               ) : (
                 <h1 className="text-2xl font-semibold text-zinc-50 truncate">{doc.name}</h1>
               )}
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium shrink-0 ${TYPE_STYLES[doc.type] ?? TYPE_STYLES.OTHER}`}>
+              <span
+                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium shrink-0 ${TYPE_STYLES[doc.type] ?? TYPE_STYLES.OTHER}`}
+              >
                 {TYPE_LABELS[doc.type] ?? "Other"}
               </span>
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium shrink-0 ${STATUS_STYLES[doc.status] ?? STATUS_STYLES.DRAFT}`}>
+              <span
+                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium shrink-0 ${STATUS_STYLES[doc.status] ?? STATUS_STYLES.DRAFT}`}
+              >
                 {doc.status}
               </span>
             </div>
@@ -397,9 +413,20 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                   type="button"
                   onClick={startRename}
                   className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-md transition-colors"
-                  aria-label="Rename" title="Rename"
+                  aria-label="Rename"
+                  title="Rename"
                 >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
                     <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
                   </svg>
                 </button>
@@ -407,9 +434,20 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                   type="button"
                   onClick={handleDuplicate}
                   className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-md transition-colors"
-                  aria-label="Duplicate" title="Duplicate"
+                  aria-label="Duplicate"
+                  title="Duplicate"
                 >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                   </svg>
@@ -469,10 +507,11 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                       key={opt.value}
                       type="button"
                       onClick={() => handleViewModeChange(opt.value)}
-                      className={`px-3 py-1.5 rounded-md text-sm font-medium ${viewMode === opt.value
+                      className={`px-3 py-1.5 rounded-md text-sm font-medium ${
+                        viewMode === opt.value
                           ? "bg-indigo-500 text-zinc-50"
                           : "bg-zinc-800 border border-zinc-700 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-50"
-                        }`}
+                      }`}
                     >
                       {opt.label}
                     </button>
@@ -509,7 +548,9 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               ) : viewMode === "preview" ? (
                 <div className="bg-zinc-950 rounded-md p-4 overflow-auto">
                   {displayContent ? (
-                    <div className={`jakes-resume-preview${doc.type === "COVER_LETTER" ? " cover-letter-preview" : ""}`}>
+                    <div
+                      className={`jakes-resume-preview${doc.type === "COVER_LETTER" ? " cover-letter-preview" : ""}`}
+                    >
                       <Markdown rehypePlugins={[rehypeRaw]}>{displayContent}</Markdown>
                     </div>
                   ) : (

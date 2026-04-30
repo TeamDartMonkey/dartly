@@ -161,7 +161,9 @@ describe("generateCoverLetterDraft", () => {
     const call = mockGenerateContent.mock.calls[0][0];
     expect(call).toContain("headerInfo");
     expect(call).not.toContain("[Current Date]");
-    expect(call).toMatch(/\b(January|February|March|April|May|June|July|August|September|October|November|December) \d{1,2}, \d{4}\b/);
+    expect(call).toMatch(
+      /\b(January|February|March|April|May|June|July|August|September|October|November|December) \d{1,2}, \d{4}\b/
+    );
   });
 
   it("throws on empty response", async () => {

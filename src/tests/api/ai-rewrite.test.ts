@@ -1,17 +1,14 @@
 import type { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const {
-  mockRequireAuth,
-  mockValidateBody,
-  mockRewriteContent,
-  mockGetDocumentById,
-} = vi.hoisted(() => ({
-  mockRequireAuth: vi.fn(),
-  mockValidateBody: vi.fn(),
-  mockRewriteContent: vi.fn(),
-  mockGetDocumentById: vi.fn(),
-}));
+const { mockRequireAuth, mockValidateBody, mockRewriteContent, mockGetDocumentById } = vi.hoisted(
+  () => ({
+    mockRequireAuth: vi.fn(),
+    mockValidateBody: vi.fn(),
+    mockRewriteContent: vi.fn(),
+    mockGetDocumentById: vi.fn(),
+  })
+);
 
 vi.mock("@/lib/api-wrapper", () => ({
   withHttpLogging: vi.fn((_req: unknown, handler: () => unknown) => handler()),

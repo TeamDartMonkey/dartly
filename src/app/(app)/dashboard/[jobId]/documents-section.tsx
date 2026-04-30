@@ -23,23 +23,6 @@ const TYPE_LABELS: Record<string, string> = {
   OTHER: "Other",
 };
 
-function getDocumentVersionId(doc: DocumentResponse): string | null {
-  const docWithVersion = doc as DocumentResponse & {
-    documentVersionId?: string;
-    versionId?: string;
-    currentVersionId?: string;
-    latestVersionId?: string;
-  };
-
-  return (
-    docWithVersion.documentVersionId ??
-    docWithVersion.versionId ??
-    docWithVersion.currentVersionId ??
-    docWithVersion.latestVersionId ??
-    null
-  );
-}
-
 export function DocumentsSection({ job }: DocumentsSectionProps) {
   const router = useRouter();
 
@@ -54,16 +37,13 @@ export function DocumentsSection({ job }: DocumentsSectionProps) {
 
   const linkedVersionIds = useMemo(() => {
     return new Set(
-      documents
-        .map((doc) => getDocumentVersionId(doc))
-        .filter((id): id is string => Boolean(id)),
+      documents.map((doc) => doc.documentVersionId).filter((id): id is string => Boolean(id))
     );
   }, [documents]);
 
   const availableDocuments = useMemo(() => {
     return libraryDocuments.filter((doc) => {
-      const versionId = getDocumentVersionId(doc);
-      return versionId && !linkedVersionIds.has(versionId);
+      return doc.documentVersionId && !linkedVersionIds.has(doc.documentVersionId);
     });
   }, [libraryDocuments, linkedVersionIds]);
 
@@ -136,10 +116,7 @@ export function DocumentsSection({ job }: DocumentsSectionProps) {
   }
 
   async function handleLinkDocument(doc: DocumentResponse) {
-    const documentVersionId = getDocumentVersionId(doc);
-
-    if (!documentVersionId) {
-      console.error("Missing documentVersionId:", doc);
+    if (!doc.documentVersionId) {
       showToast("Missing document version id", "error");
       return;
     }
@@ -154,7 +131,7 @@ export function DocumentsSection({ job }: DocumentsSectionProps) {
         },
         body: JSON.stringify({
           documentId: doc.id,
-          documentVersionId,
+          documentVersionId: doc.documentVersionId,
         }),
       });
 
@@ -166,7 +143,6 @@ export function DocumentsSection({ job }: DocumentsSectionProps) {
       }
 
       if (!res.ok) {
-        console.error("Link document error:", data);
         showToast(data?.error || "Failed to link document", "error");
         return;
       }
@@ -175,8 +151,7 @@ export function DocumentsSection({ job }: DocumentsSectionProps) {
       setShowLinkMenu(false);
       await fetchDocuments();
       await fetchLibraryDocuments();
-    } catch (error) {
-      console.error(error);
+    } catch {
       showToast("Failed to link document", "error");
     } finally {
       setLinking(false);
@@ -184,23 +159,17 @@ export function DocumentsSection({ job }: DocumentsSectionProps) {
   }
 
   async function handleUnlinkDocument(doc: DocumentResponse) {
-    const documentVersionId = getDocumentVersionId(doc);
-
-    if (!documentVersionId) {
-      console.error("Missing documentVersionId:", doc);
+    if (!doc.documentVersionId) {
       showToast("Missing document version id", "error");
       return;
     }
 
-    setUnlinkingId(documentVersionId);
+    setUnlinkingId(doc.documentVersionId);
 
     try {
-      const res = await fetch(
-        `/api/jobs/${job.id}/documents/${documentVersionId}`,
-        {
-          method: "DELETE",
-        },
-      );
+      const res = await fetch(`/api/jobs/${job.id}/documents/${doc.documentVersionId}`, {
+        method: "DELETE",
+      });
 
       const data = await res.json().catch(() => null);
 
@@ -210,7 +179,6 @@ export function DocumentsSection({ job }: DocumentsSectionProps) {
       }
 
       if (!res.ok) {
-        console.error("Unlink document error:", data);
         showToast(data?.error || "Failed to unlink document", "error");
         return;
       }
@@ -218,8 +186,7 @@ export function DocumentsSection({ job }: DocumentsSectionProps) {
       showToast("Document unlinked");
       await fetchDocuments();
       await fetchLibraryDocuments();
-    } catch (error) {
-      console.error(error);
+    } catch {
       showToast("Failed to unlink document", "error");
     } finally {
       setUnlinkingId(null);
@@ -230,8 +197,7 @@ export function DocumentsSection({ job }: DocumentsSectionProps) {
     setGenerating(type);
 
     try {
-      const endpoint =
-        type === "resume" ? "/api/ai/resume" : "/api/ai/cover-letter";
+      const endpoint = type === "resume" ? "/api/ai/resume" : "/api/ai/cover-letter";
 
       const res = await fetch(endpoint, {
         method: "POST",
@@ -293,9 +259,7 @@ export function DocumentsSection({ job }: DocumentsSectionProps) {
             disabled={generating !== null}
             className="rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-zinc-50 hover:bg-zinc-700 disabled:opacity-50"
           >
-            {generating === "cover-letter"
-              ? "Generating..."
-              : "Generate Cover Letter"}
+            {generating === "cover-letter" ? "Generating..." : "Generate Cover Letter"}
           </button>
         </div>
       </div>
@@ -309,13 +273,11 @@ export function DocumentsSection({ job }: DocumentsSectionProps) {
           {libraryLoading ? (
             <p className="text-sm text-zinc-500">Loading library documents...</p>
           ) : availableDocuments.length === 0 ? (
-            <p className="text-sm text-zinc-500">
-              No available library documents to link.
-            </p>
+            <p className="text-sm text-zinc-500">No available library documents to link.</p>
           ) : (
             <ul className="space-y-2">
               {availableDocuments.map((doc) => (
-                <li key={getDocumentVersionId(doc) ?? doc.id}>
+                <li key={doc.documentVersionId ?? doc.id}>
                   <button
                     type="button"
                     onClick={() => handleLinkDocument(doc)}
@@ -324,14 +286,10 @@ export function DocumentsSection({ job }: DocumentsSectionProps) {
                   >
                     <div className="min-w-0">
                       <p className="truncate text-sm text-zinc-200">{doc.name}</p>
-                      <p className="text-xs text-zinc-500">
-                        {TYPE_LABELS[doc.type] ?? "Other"}
-                      </p>
+                      <p className="text-xs text-zinc-500">{TYPE_LABELS[doc.type] ?? "Other"}</p>
                     </div>
 
-                    <span className="text-xs font-medium text-indigo-400">
-                      Link
-                    </span>
+                    <span className="text-xs font-medium text-indigo-400">Link</span>
                   </button>
                 </li>
               ))}
@@ -355,11 +313,9 @@ export function DocumentsSection({ job }: DocumentsSectionProps) {
       ) : (
         <ul className="space-y-2">
           {documents.map((doc) => {
-            const documentVersionId = getDocumentVersionId(doc);
-
             return (
               <li
-                key={documentVersionId ?? doc.id}
+                key={doc.documentVersionId ?? doc.id}
                 className="flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-950/40 p-3"
               >
                 <button
@@ -377,9 +333,7 @@ export function DocumentsSection({ job }: DocumentsSectionProps) {
                     </span>
 
                     <div className="min-w-0">
-                      <p className="truncate text-sm text-zinc-200">
-                        {doc.name}
-                      </p>
+                      <p className="truncate text-sm text-zinc-200">{doc.name}</p>
                       <p className="text-xs text-zinc-500">
                         v{doc.versionNumber} &middot;{" "}
                         {new Date(doc.updatedAt).toLocaleDateString("en-US", {
@@ -410,10 +364,10 @@ export function DocumentsSection({ job }: DocumentsSectionProps) {
                 <button
                   type="button"
                   onClick={() => handleUnlinkDocument(doc)}
-                  disabled={unlinkingId === documentVersionId}
+                  disabled={unlinkingId === doc.documentVersionId}
                   className="rounded-md border border-red-500/30 px-2 py-1 text-xs font-medium text-red-400 hover:bg-red-500/10 disabled:opacity-50"
                 >
-                  {unlinkingId === documentVersionId ? "Unlinking..." : "Unlink"}
+                  {unlinkingId === doc.documentVersionId ? "Unlinking..." : "Unlink"}
                 </button>
               </li>
             );

@@ -186,11 +186,14 @@ export function TimelineSection({ activities, jobId, onActivitiesChanged }: Prop
                       {activity.type.charAt(0) + activity.type.slice(1).toLowerCase()}
                     </span>
                     <span className="text-xs text-zinc-500">
-                      {new Date(activity.scheduledAt ?? activity.createdAt).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
+                      {new Date(activity.scheduledAt ?? activity.createdAt).toLocaleDateString(
+                        "en-US",
+                        {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        }
+                      )}
                     </span>
                   </div>
                 </div>

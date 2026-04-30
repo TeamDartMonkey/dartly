@@ -45,7 +45,7 @@ vi.mock("@/services/ai", () => ({
 }));
 
 vi.mock("@/services/documents", () => ({
-    createDocumentForJob: mockCreateForJob,
+  createDocumentForJob: mockCreateForJob,
   toDocumentResponse: mockToDocumentResponse,
 }));
 

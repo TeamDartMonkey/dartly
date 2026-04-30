@@ -16,7 +16,8 @@ const USER_A_JOBS = [
     deadline: null,
     compensationNotes: "Estimate: $190k–$220k based on Glassdoor",
     recruiterNotes: "Recruiter reached out on LinkedIn — sounds like a new team being formed",
-    customNotes: "Serverless DX team — very aligned with my interests. Rolling applications, no hard deadline.",
+    customNotes:
+      "Serverless DX team — very aligned with my interests. Rolling applications, no hard deadline.",
   },
   {
     title: "Staff Frontend Engineer",
@@ -29,7 +30,8 @@ const USER_A_JOBS = [
     deadline: new Date("2026-04-30"),
     compensationNotes: null,
     recruiterNotes: null,
-    customNotes: "Saw their tech talk at ReactConf. Impressive WASM-based editor. Need to tailor resume for this one.",
+    customNotes:
+      "Saw their tech talk at ReactConf. Impressive WASM-based editor. Need to tailor resume for this one.",
   },
   {
     title: "AI/ML Platform Engineer",
@@ -42,7 +44,8 @@ const USER_A_JOBS = [
     deadline: new Date("2026-05-01"),
     compensationNotes: "Estimate: $200k–$250k based on levels.fyi, pre-IPO equity",
     recruiterNotes: null,
-    customNotes: "Found through a friend who works there. Growing fast, Series B. Should apply before deadline.",
+    customNotes:
+      "Found through a friend who works there. Growing fast, Series B. Should apply before deadline.",
   },
   {
     title: "Frontend Developer",
@@ -146,7 +149,8 @@ const USER_A_JOBS = [
     deadline: null,
     compensationNotes: "Base: $140k–$160k, 0.1–0.3% equity, Series A",
     recruiterNotes: null,
-    customNotes: "Early stage so equity could be big. Risky but high upside. Need to research runway.",
+    customNotes:
+      "Early stage so equity could be big. Risky but high upside. Need to research runway.",
   },
   {
     title: "Full Stack Engineer",
@@ -171,7 +175,8 @@ const USER_A_JOBS = [
     applicationDate: new Date("2026-03-30"),
     deadline: null,
     compensationNotes: "Base: $180k–$220k, RSU package, annual bonus 15%",
-    recruiterNotes: "Spoke with Sarah from talent acquisition — team is growing fast, 2 positions open",
+    recruiterNotes:
+      "Spoke with Sarah from talent acquisition — team is growing fast, 2 positions open",
     customNotes: "Former colleague Marcus works here, can refer internally",
   },
   {
@@ -198,7 +203,8 @@ const USER_A_JOBS = [
     deadline: null,
     compensationNotes: "Base: $150k–$175k, 401k match 5%",
     recruiterNotes: "Generic rejection email — position filled internally",
-    customNotes: "Java is a stretch but I have academic experience. At least they got back to me quickly.",
+    customNotes:
+      "Java is a stretch but I have academic experience. At least they got back to me quickly.",
   },
   {
     title: "Senior Frontend Engineer",
@@ -250,7 +256,8 @@ const USER_A_JOBS = [
     deadline: null,
     compensationNotes: "Base: $175k–$200k, RSUs, commute credit",
     recruiterNotes: null,
-    customNotes: "Applied through their site. Got a 'we received your application' email then nothing.",
+    customNotes:
+      "Applied through their site. Got a 'we received your application' email then nothing.",
   },
   {
     title: "Software Developer",
@@ -275,7 +282,8 @@ const USER_A_JOBS = [
     applicationDate: new Date("2026-03-06"),
     deadline: null,
     compensationNotes: "Offered: $195k base, $25k sign-on, 401k match 6%, equity TBD",
-    recruiterNotes: "HR says offer is negotiable on equity. Benefits are strong — unlimited PTO, health/dental/vision.",
+    recruiterNotes:
+      "HR says offer is negotiable on equity. Benefits are strong — unlimited PTO, health/dental/vision.",
     customNotes: "Top choice right now. Need to respond soon. Leverage other offers for equity.",
   },
   {
@@ -575,7 +583,8 @@ const USER_A_JOBS = [
     deadline: null,
     compensationNotes: "Base: $90k–$110k",
     recruiterNotes: null,
-    customNotes: "Applied early in the cycle when I was casting a wide net. Not the direction I want.",
+    customNotes:
+      "Applied early in the cycle when I was casting a wide net. Not the direction I want.",
   },
 ];
 
@@ -695,7 +704,8 @@ const USER_B_JOBS = [
     deadline: null,
     compensationNotes: "Base: $180k–$210k, clearance bonus, RSUs",
     recruiterNotes: "Recruiter found me on LinkedIn. Need active clearance which I don't have.",
-    customNotes: "Applied anyway — they said they can sponsor clearance. Would take 3-6 months though.",
+    customNotes:
+      "Applied anyway — they said they can sponsor clearance. Would take 3-6 months though.",
   },
   {
     title: "ML Engineer",
@@ -707,7 +717,8 @@ const USER_B_JOBS = [
     applicationDate: new Date("2026-03-30"),
     deadline: null,
     compensationNotes: "Base: $190k–$230k, significant equity (pre-IPO), flexible PTO",
-    recruiterNotes: "Recruiter reached out via email — founding team is ex-Google Brain. High caliber.",
+    recruiterNotes:
+      "Recruiter reached out via email — founding team is ex-Google Brain. High caliber.",
     customNotes: "Exciting space. Need to review transformer architecture before technical screen.",
   },
   {
@@ -721,7 +732,8 @@ const USER_B_JOBS = [
     deadline: null,
     compensationNotes: "Base: $200k–$230k, bonus 20-40%, equity",
     recruiterNotes: "VP of Eng reached out directly on LinkedIn. Fast-tracking the process.",
-    customNotes: "FinTech in JC — easy commute via PATH. Very interested. Prepping for system design.",
+    customNotes:
+      "FinTech in JC — easy commute via PATH. Very interested. Prepping for system design.",
   },
   {
     title: "React Developer",
@@ -785,8 +797,10 @@ const USER_B_JOBS = [
     applicationDate: new Date("2026-03-18"),
     deadline: null,
     compensationNotes: "Base: $220k–$260k, performance bonus, equity refresh annually",
-    recruiterNotes: "Recruiter Tom — fast-tracked process due to competing offer. 3-person panel next.",
-    customNotes: "FinTech domain is new to me but interesting. Need to brush up on PCI compliance basics.",
+    recruiterNotes:
+      "Recruiter Tom — fast-tracked process due to competing offer. 3-person panel next.",
+    customNotes:
+      "FinTech domain is new to me but interesting. Need to brush up on PCI compliance basics.",
   },
   {
     title: "Staff Software Engineer",
@@ -798,7 +812,8 @@ const USER_B_JOBS = [
     applicationDate: new Date("2026-03-12"),
     deadline: null,
     compensationNotes: "Base: $210k–$250k, RSUs, annual bonus 20%",
-    recruiterNotes: "Recruiter Lisa — very responsive, team lead seemed enthusiastic after phone screen",
+    recruiterNotes:
+      "Recruiter Lisa — very responsive, team lead seemed enthusiastic after phone screen",
     customNotes: "Final round next Thursday. Prep for distributed systems deep-dive.",
   },
   {
@@ -812,7 +827,8 @@ const USER_B_JOBS = [
     deadline: null,
     compensationNotes: "Base: $170k–$195k, equity, remote-first",
     recruiterNotes: null,
-    customNotes: "Applied via referral. The person who referred me left the company a week later. Dead end.",
+    customNotes:
+      "Applied via referral. The person who referred me left the company a week later. Dead end.",
   },
   {
     title: "Cloud Architect",
@@ -851,7 +867,8 @@ const USER_B_JOBS = [
     deadline: null,
     compensationNotes: "Offered: $200k base, $30k sign-on, RSUs vesting 4yr",
     recruiterNotes: "Offer letter received. Benefits are solid — 401k 8% match, wellness stipend.",
-    customNotes: "Strong offer but CloudBase culture seems very on-call heavy. Weighing against GrowthLabs.",
+    customNotes:
+      "Strong offer but CloudBase culture seems very on-call heavy. Weighing against GrowthLabs.",
   },
   {
     title: "Software Engineer",
@@ -876,7 +893,8 @@ const USER_B_JOBS = [
     applicationDate: new Date("2026-03-05"),
     deadline: null,
     compensationNotes: "Base: $210k–$250k, equity, clearance bonus",
-    recruiterNotes: "Had one call with hiring manager. Said next steps would come in a week. Ghosted.",
+    recruiterNotes:
+      "Had one call with hiring manager. Said next steps would come in a week. Ghosted.",
     customNotes: "Got my hopes up after the call. Extremely frustrating.",
   },
   {
@@ -902,7 +920,8 @@ const USER_B_JOBS = [
     applicationDate: new Date("2026-03-03"),
     deadline: null,
     compensationNotes: "Base: $195k–$230k, equity, performance bonus",
-    recruiterNotes: "Recruiter messaged me on LinkedIn. We exchanged 2 emails then she disappeared.",
+    recruiterNotes:
+      "Recruiter messaged me on LinkedIn. We exchanged 2 emails then she disappeared.",
     customNotes: "Classic recruiter ghost. She probably left the company or the req got frozen.",
   },
   {
@@ -941,8 +960,10 @@ const USER_B_JOBS = [
     applicationDate: new Date("2026-02-25"),
     deadline: null,
     compensationNotes: "Offered: $195k base, $20k sign-on, RSUs, fully remote",
-    recruiterNotes: "Recruiter says team is distributed across East Coast. Very flexible on start date.",
-    customNotes: "Great WLB from what I hear. Lowest offer but best culture fit. Thinking about it.",
+    recruiterNotes:
+      "Recruiter says team is distributed across East Coast. Very flexible on start date.",
+    customNotes:
+      "Great WLB from what I hear. Lowest offer but best culture fit. Thinking about it.",
   },
   {
     title: "DevOps Lead",
@@ -1098,7 +1119,8 @@ const USER_B_JOBS = [
     deadline: null,
     compensationNotes: "Base: $145k–$165k, pension, 401k match",
     recruiterNotes: null,
-    customNotes: "Applied in January out of desperation. Wouldn't take it now even if they responded.",
+    customNotes:
+      "Applied in January out of desperation. Wouldn't take it now even if they responded.",
   },
 ];
 
@@ -1436,7 +1458,10 @@ const PROFILES: Record<
   },
 };
 
-const SEED_DOCUMENTS: Record<string, { type: "RESUME" | "COVER_LETTER"; name: string; content: string; jobIndex: number }[]> = {
+const SEED_DOCUMENTS: Record<
+  string,
+  { type: "RESUME" | "COVER_LETTER"; name: string; content: string; jobIndex: number }[]
+> = {
   [USER_A]: [
     {
       type: "RESUME",
@@ -1733,7 +1758,7 @@ async function seedProfile(userId: string, userLabel: string) {
     },
   });
 
-const expCreates = data.experiences.map((exp) =>
+  const expCreates = data.experiences.map((exp) =>
     prisma.experience.create({ data: { profileId: profile.id, ...exp } })
   );
   const eduCreates = data.educations.map((edu) =>
@@ -1844,7 +1869,8 @@ async function seedJobs(userId: string, jobs: SeedJob[], userLabel: string) {
           jobId: job.id,
           type: "INTERVIEW",
           title: "Onsite Interview Loop",
-          description: "Full day: 4 rounds including system design, coding, behavioral, and hiring manager",
+          description:
+            "Full day: 4 rounds including system design, coding, behavioral, and hiring manager",
           roundType: "ONSITE",
           scheduledAt: onsite,
           completed: false,
@@ -1956,10 +1982,7 @@ async function seedDocuments(userId: string, documents: SeedDocument[], userLabe
 async function main() {
   console.log("=== Dartly Demo Seed Script ===");
 
-  await Promise.all([
-    seedProfile(USER_A, "User A"),
-    seedProfile(USER_B, "User B"),
-  ]);
+  await Promise.all([seedProfile(USER_A, "User A"), seedProfile(USER_B, "User B")]);
 
   await Promise.all([
     seedJobs(USER_A, USER_A_JOBS, "User A"),

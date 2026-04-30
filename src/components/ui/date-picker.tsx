@@ -182,7 +182,9 @@ export function DatePicker({
     };
   }
 
-  const timeParts = timeValue ? time24ToParts(timeValue) : { hour: "9", minute: "00", period: "AM" as const };
+  const timeParts = timeValue
+    ? time24ToParts(timeValue)
+    : { hour: "9", minute: "00", period: "AM" as const };
 
   return (
     <div>
@@ -277,7 +279,9 @@ export function DatePicker({
                 />
                 <button
                   type="button"
-                  onClick={() => handleTimeChange("period", timeParts.period === "AM" ? "PM" : "AM")}
+                  onClick={() =>
+                    handleTimeChange("period", timeParts.period === "AM" ? "PM" : "AM")
+                  }
                   className="bg-zinc-800 border border-zinc-700 rounded-md px-2 py-1 text-xs text-zinc-50 hover:bg-zinc-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   aria-label="Toggle AM/PM"
                 >

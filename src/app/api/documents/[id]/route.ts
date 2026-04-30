@@ -4,7 +4,12 @@ import { withHttpLogging } from "@/lib/api-wrapper";
 import logger from "@/lib/logger";
 import { requireAuth } from "@/lib/requireAuth";
 import { validateBody } from "@/lib/validate-body";
-import { getDocumentById, softDeleteDocument, updateDocumentContent, renameDocument } from "@/services/documents";
+import {
+  getDocumentById,
+  softDeleteDocument,
+  updateDocumentContent,
+  renameDocument,
+} from "@/services/documents";
 import { UpdateDocumentContentSchema } from "@/types/schemas";
 
 type RouteContext = { params: Promise<{ id: string }> };

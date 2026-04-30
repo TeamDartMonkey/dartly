@@ -8,6 +8,7 @@ export type DocumentResponse = {
   status: DocumentStatus;
   content?: string;
   fileUrl?: string;
+  documentVersionId?: string;
   versionNumber: number;
   createdAt: string;
   updatedAt: string;

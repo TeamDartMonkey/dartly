@@ -83,7 +83,16 @@ function TypeIcon({ type }: { type: string }) {
   );
 }
 
-export default function DocumentListItem({ document, showArchived, onDelete, onClick, onDuplicate, onRename, onArchive, onRestore }: DocumentListItemProps) {
+export default function DocumentListItem({
+  document,
+  showArchived,
+  onDelete,
+  onClick,
+  onDuplicate,
+  onRename,
+  onArchive,
+  onRestore,
+}: DocumentListItemProps) {
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(document.name);
   const [pendingArchive, setPendingArchive] = useState(false);
@@ -115,7 +124,6 @@ export default function DocumentListItem({ document, showArchived, onDelete, onC
     if (e.key === "Escape") setRenaming(false);
   }
 
-
   return (
     <>
       <div className="bg-zinc-900 border border-zinc-700 hover:border-zinc-500 rounded-lg px-5 py-4 transition-colors">
@@ -142,7 +150,9 @@ export default function DocumentListItem({ document, showArchived, onDelete, onC
               ) : (
                 <span className="text-sm font-medium text-zinc-50 truncate">{document.name}</span>
               )}
-              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[document.status] ?? STATUS_STYLES.DRAFT}`}>
+              <span
+                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[document.status] ?? STATUS_STYLES.DRAFT}`}
+              >
                 {document.status}
               </span>
               <span className="text-xs text-zinc-500">v{document.versionNumber}</span>
@@ -155,12 +165,25 @@ export default function DocumentListItem({ document, showArchived, onDelete, onC
             {showArchived ? (
               <button
                 type="button"
-                onClick={(e) => { e.stopPropagation(); onRestore(document.id); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRestore(document.id);
+                }}
                 className="p-1.5 text-zinc-500 hover:text-green-400 transition-colors"
                 aria-label="Restore"
                 title="Restore"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
                   <polyline points="1 4 1 10 7 10" />
                   <path d="M3.51 15a9 9 0 1 0 .49-4.95" />
                 </svg>
@@ -171,30 +194,69 @@ export default function DocumentListItem({ document, showArchived, onDelete, onC
                   type="button"
                   onClick={startRename}
                   className="p-1.5 text-zinc-500 hover:text-zinc-300 transition-colors"
-                  aria-label="Rename" title="Rename"
+                  aria-label="Rename"
+                  title="Rename"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
                     <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
                   </svg>
                 </button>
                 <button
                   type="button"
-                  onClick={(e) => { e.stopPropagation(); onDuplicate(document.id); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDuplicate(document.id);
+                  }}
                   className="p-1.5 text-zinc-500 hover:text-zinc-300 transition-colors"
-                  aria-label="Duplicate" title="Duplicate"
+                  aria-label="Duplicate"
+                  title="Duplicate"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                   </svg>
                 </button>
                 <button
                   type="button"
-                  onClick={(e) => { e.stopPropagation(); setPendingArchive(true); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPendingArchive(true);
+                  }}
                   className="p-1.5 text-zinc-500 hover:text-orange-400 transition-colors"
-                  aria-label="Archive" title="Archive"
+                  aria-label="Archive"
+                  title="Archive"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
                     <polyline points="21 8 21 21 3 21 3 8" />
                     <rect x="1" y="3" width="22" height="5" />
                     <line x1="10" y1="12" x2="14" y2="12" />
@@ -202,11 +264,25 @@ export default function DocumentListItem({ document, showArchived, onDelete, onC
                 </button>
                 <button
                   type="button"
-                  onClick={(e) => { e.stopPropagation(); onDelete(document.id); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(document.id);
+                  }}
                   className="p-1.5 text-zinc-500 hover:text-red-400 transition-colors"
-                  aria-label="Delete" title="Delete"
+                  aria-label="Delete"
+                  title="Delete"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
                     <path d="M18 6L6 18M6 6l12 12" />
                   </svg>
                 </button>
@@ -219,7 +295,10 @@ export default function DocumentListItem({ document, showArchived, onDelete, onC
       <ConfirmArchiveModal
         open={pendingArchive}
         onClose={() => setPendingArchive(false)}
-        onConfirm={() => { onArchive(document.id); setPendingArchive(false); }}
+        onConfirm={() => {
+          onArchive(document.id);
+          setPendingArchive(false);
+        }}
         itemName={document.name}
       />
     </>

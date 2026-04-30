@@ -30,9 +30,7 @@ export const STAGES: JobStage[] = [
   "Archived",
 ];
 
-export const ACTIVE_STAGES: JobStage[] = STAGES.filter(
-  (s) => s !== "Archived" && s !== "Ghosted"
-);
+export const ACTIVE_STAGES: JobStage[] = STAGES.filter((s) => s !== "Archived" && s !== "Ghosted");
 
 type StageStyle = {
   badge: string;
