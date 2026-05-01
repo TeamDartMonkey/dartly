@@ -91,6 +91,8 @@ model Job {
   lastActivityAt    DateTime?
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
+  companyResearch   String?
+  prepNotes         String?
   activities        JobActivity[]
   documentLinks     JobDocumentLink[]
   stageHistory      JobStageHistory[]
