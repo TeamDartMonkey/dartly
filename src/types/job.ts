@@ -17,13 +17,13 @@ export type Job = {
   location?: string;
   description?: string;
   compensationNotes?: string;
-  companyResearch?: string;
-  prepNotes?: string;
   applicationDate?: string;
   deadline?: string;
   recruiterNotes?: string;
   customNotes?: string;
   priority?: boolean;
+  companyResearch?: string;
+  prepNotes?: string;
 };
 
 export type ViewMode = "card" | "list";
