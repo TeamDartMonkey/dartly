@@ -23,6 +23,8 @@ type CreateJobInput = {
   applicationDate?: string | null;
   deadline?: string | null;
   recruiterNotes?: string | null;
+  companyResearch?: string | null;
+  prepNotes?: string | null;
   customNotes?: string | null;
   stage?: JobStage;
   priority?: boolean;
@@ -37,6 +39,8 @@ type UpdateJobInput = {
   applicationDate?: string | null;
   deadline?: string | null;
   recruiterNotes?: string | null;
+  companyResearch?: string | null;
+  prepNotes?: string | null;
   customNotes?: string | null;
   stage?: JobStage;
   priority?: boolean;
@@ -56,6 +60,8 @@ export function toJobResponse(job: PrismaJob): Job {
     applicationDate: job.applicationDate?.toISOString().slice(0, 10) ?? undefined,
     deadline: job.deadline?.toISOString().slice(0, 10) ?? undefined,
     recruiterNotes: job.recruiterNotes ?? undefined,
+    companyResearch: job.companyResearch ?? undefined,
+    prepNotes: job.prepNotes ?? undefined,
     customNotes: job.customNotes ?? undefined,
     priority: job.priority,
   };
@@ -85,6 +91,8 @@ export async function createJob(data: CreateJobInput) {
         applicationDate: data.applicationDate ? new Date(data.applicationDate) : null,
         deadline: data.deadline ? new Date(data.deadline) : null,
         recruiterNotes: data.recruiterNotes,
+        companyResearch: data.companyResearch,
+        prepNotes: data.prepNotes,
         customNotes: data.customNotes,
         stage: prismaStage,
         priority: data.priority ?? false,
@@ -128,6 +136,8 @@ export async function updateJob(id: string, userId: string, data: UpdateJobInput
           deadline: data.deadline ? new Date(data.deadline) : null,
         }),
         ...(data.recruiterNotes !== undefined && { recruiterNotes: data.recruiterNotes }),
+        ...(data.companyResearch !== undefined && { companyResearch: data.companyResearch }),
+        ...(data.prepNotes !== undefined && { prepNotes: data.prepNotes }),
         ...(data.customNotes !== undefined && { customNotes: data.customNotes }),
         ...(prismaStage !== undefined && { stage: prismaStage }),
         ...(leavingInterested && { deadline: null }),

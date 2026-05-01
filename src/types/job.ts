@@ -22,6 +22,8 @@ export type Job = {
   recruiterNotes?: string;
   customNotes?: string;
   priority?: boolean;
+  companyResearch?: string;
+  prepNotes?: string;
 };
 
 export type ViewMode = "card" | "list";

@@ -9,9 +9,18 @@ import { DocumentsSection } from "./documents-section";
 import { FollowUpsSection } from "./followups-section";
 import { InterviewsSection } from "./interviews-section";
 import { OverviewSection } from "./overview-section";
+import { PrepNotesSection } from "./prep-notes-section";
+import { ResearchSection } from "./research-section";
 import { TimelineSection } from "./timeline-section";
 
-type Tab = "overview" | "timeline" | "interviews" | "followups" | "documents";
+type Tab =
+  | "overview"
+  | "timeline"
+  | "interviews"
+  | "followups"
+  | "documents"
+  | "research"
+  | "prepnotes";
 
 const STAGE_STYLES: Record<string, string> = {
   Interested: "bg-zinc-800 text-zinc-400",
@@ -89,6 +98,8 @@ export default function JobDetailPage({ params }: { params: Promise<{ jobId: str
     { id: "interviews", label: "Interviews" },
     { id: "followups", label: "Follow-ups" },
     { id: "documents", label: "Documents" },
+    { id: "research", label: "Research" },
+    { id: "prepnotes", label: "Prep Notes" },
   ];
 
   return (
@@ -122,7 +133,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ jobId: str
       <div
         role="tablist"
         aria-label="Job sections"
-        className="flex gap-1 border-b border-zinc-800 mb-6"
+        className="flex gap-1 border-b border-zinc-800 mb-6 overflow-x-auto"
       >
         {TABS.map((tab) => (
           <button
@@ -133,7 +144,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ jobId: str
             aria-controls={`panel-${tab.id}`}
             id={`tab-${tab.id}`}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
               activeTab === tab.id
                 ? "border-indigo-500 text-indigo-400"
                 : "border-transparent text-zinc-400 hover:text-zinc-50"
@@ -179,6 +190,16 @@ export default function JobDetailPage({ params }: { params: Promise<{ jobId: str
       {activeTab === "documents" && (
         <div role="tabpanel" id="panel-documents" aria-labelledby="tab-documents">
           <DocumentsSection job={job} />
+        </div>
+      )}
+      {activeTab === "research" && (
+        <div role="tabpanel" id="panel-research" aria-labelledby="tab-research">
+          <ResearchSection job={job} onJobUpdated={(updated) => setJob(updated)} />
+        </div>
+      )}
+      {activeTab === "prepnotes" && (
+        <div role="tabpanel" id="panel-prepnotes" aria-labelledby="tab-prepnotes">
+          <PrepNotesSection job={job} onJobUpdated={(updated) => setJob(updated)} />
         </div>
       )}
     </div>

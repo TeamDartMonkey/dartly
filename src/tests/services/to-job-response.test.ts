@@ -27,6 +27,8 @@ describe("toJobResponse", () => {
       lastActivityAt: new Date("2026-01-10"),
       createdAt: new Date("2026-01-01"),
       updatedAt: new Date("2026-01-10"),
+      companyResearch: null,
+      prepNotes: null,
     } satisfies PrismaJob;
 
     const result = toJobResponse(prismaJob);
