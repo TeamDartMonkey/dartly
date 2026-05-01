@@ -22,6 +22,16 @@ export const CreateJobSchema = z.object({
   customNotes: z.string().trim().max(5000).or(z.null()).optional(),
   stage: JobStageSchema.optional(),
   priority: z.boolean().optional(),
+  companyResearch: z.string().trim().or(z.null()).optional(),
+  prepNotes: z.string().trim().or(z.null()).optional(),
 });
 
 export const UpdateJobSchema = CreateJobSchema.partial();
+
+// POST /api/ai/research
+export const GenerateResearchSchema = z.object({
+  jobId: z.string().min(1, "jobId is required"),
+  userContext: z.string().trim().max(2000).optional(),
+});
+
+export type GenerateResearchInput = z.infer<typeof GenerateResearchSchema>;
