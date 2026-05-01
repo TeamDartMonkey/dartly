@@ -17,6 +17,8 @@ export type Job = {
   location?: string;
   description?: string;
   compensationNotes?: string;
+  companyResearch?: string;
+  prepNotes?: string;
   applicationDate?: string;
   deadline?: string;
   recruiterNotes?: string;
