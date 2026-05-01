@@ -278,3 +278,42 @@ ${input.content}`;
 }
 
 export type { GenerateResult, JobContext, RewriteInput };
+
+type CompanyResearchInput = {
+  company: string;
+  jobTitle: string;
+  jobDescription?: string;
+  userContext?: string; // anything the user typed into the prompt box
+};
+
+export async function generateCompanyResearch(
+  input: CompanyResearchInput
+): Promise<GenerateResult> {
+  const prompt = `You are a professional career coach helping a job candidate research a company before an interview or application.
+
+COMPANY: ${input.company}
+ROLE THEY'RE APPLYING FOR: ${input.jobTitle}
+${input.jobDescription ? `JOB DESCRIPTION:\n${input.jobDescription}\n` : ""}
+${input.userContext ? `ADDITIONAL CONTEXT FROM CANDIDATE:\n${input.userContext}\n` : ""}
+
+Generate structured company research notes to help this candidate prepare. Cover the following:
+
+1. **Company Overview** — what the company does, industry, size/stage if known
+2. **Products & Services** — key offerings relevant to this role
+3. **Culture & Values** — known workplace culture, mission, values
+4. **Recent News & Developments** — notable recent events (funding, launches, layoffs, expansions)
+5. **Role Fit** — how this candidate's role fits into the company's goals and structure
+6. **Suggested Questions to Ask** — 3-5 thoughtful questions the candidate could ask interviewers
+
+FORMAT RULES:
+- Use markdown with "## " section headings for each of the 6 sections above
+- Keep each section concise — 2-5 bullet points or a short paragraph
+- Use "- " bullet points where appropriate
+- If you don't have reliable information about something, say "Research recommended:" and suggest what to look up rather than guessing
+- Output ONLY the research notes, no preamble, no explanation`;
+
+  const content = await generateWithRetry(prompt);
+  return { content };
+}
+
+export type { CompanyResearchInput };
