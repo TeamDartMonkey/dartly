@@ -292,18 +292,29 @@ export async function linkDocumentToJob(
   documentVersionId: string,
   userId: string
 ) {
-  const [job, doc, version] = await Promise.all([
-    prisma.job.findFirst({ where: { id: jobId, userId } }),
-    prisma.document.findFirst({ where: { id: documentId, userId, isDeleted: false } }),
-    prisma.documentVersion.findFirst({ where: { id: documentVersionId, documentId } }),
-  ]);
+  // Transactional so ownership checks and the upsert are a single atomic
+  // unit; otherwise a concurrent delete between the read and the upsert can
+  // produce a foreign-key violation surfaced as a generic 500.
+  return prisma.$transaction(async (tx) => {
+    const [job, doc, version] = await Promise.all([
+      tx.job.findFirst({ where: { id: jobId, userId }, select: { id: true } }),
+      tx.document.findFirst({
+        where: { id: documentId, userId, isDeleted: false },
+        select: { id: true },
+      }),
+      tx.documentVersion.findFirst({
+        where: { id: documentVersionId, documentId },
+        select: { id: true },
+      }),
+    ]);
 
-  if (!job || !doc || !version) return null;
+    if (!job || !doc || !version) return null;
 
-  return prisma.jobDocumentLink.upsert({
-    where: { jobId_documentVersionId: { jobId, documentVersionId } },
-    create: { jobId, documentId, documentVersionId },
-    update: {},
+    return tx.jobDocumentLink.upsert({
+      where: { jobId_documentVersionId: { jobId, documentVersionId } },
+      create: { jobId, documentId, documentVersionId },
+      update: {},
+    });
   });
 }
 

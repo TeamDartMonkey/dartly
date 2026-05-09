@@ -379,7 +379,11 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     return doc?.content ?? "";
   })();
 
-  const isUploaded = doc?.status === "UPLOADED" || (doc?.status === "ARCHIVED" && signedUrl);
+  // File-backed status is derived from the document itself (the version has a
+  // fileUrl), not from a runtime state that depends on whether the signed-URL
+  // fetch happened to succeed. Otherwise a transient signed-URL fetch failure
+  // on an archived PDF flips the page into the markdown-editor branch.
+  const isUploaded = doc?.status === "UPLOADED" || !!doc?.fileUrl;
   const isArchived = doc?.status === "ARCHIVED";
 
   if (loading || !doc) {

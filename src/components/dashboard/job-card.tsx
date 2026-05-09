@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { memo, useState } from "react";
 import { BadgePicker } from "@/components/ui/badge-picker";
 import { STAGES, STAGE_STYLES } from "@/constants/job-stages";
 import type { Job, JobStage } from "@/types/job";
@@ -23,7 +23,7 @@ function getStageOptions(_currentStage: JobStage) {
   });
 }
 
-export default function JobCard({
+function JobCardImpl({
   job,
   onEdit,
   onDelete,
@@ -297,3 +297,10 @@ export default function JobCard({
     </div>
   );
 }
+
+// Memoize to avoid re-rendering every card on every keystroke when the
+// parent's filtered array reference changes. With JSON-stringify-based
+// equality on the job prop and stable callback references from the parent,
+// re-renders are limited to cards whose job actually changed.
+const JobCard = memo(JobCardImpl);
+export default JobCard;

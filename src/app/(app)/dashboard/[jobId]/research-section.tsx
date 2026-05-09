@@ -21,6 +21,16 @@ export function ResearchSection({ job, onJobUpdated }: Props) {
 
   async function handleGenerate() {
     if (generating || saving) return;
+    // Confirm before destroying unsaved edits — the static caption below the
+    // button warns about overwrite, but if the user is sitting on dirty
+    // content they need an explicit prompt to avoid silent data loss.
+    if (
+      isDirty &&
+      typeof window !== "undefined" &&
+      !window.confirm("You have unsaved edits. Regenerating will overwrite them. Continue?")
+    ) {
+      return;
+    }
     setGenerating(true);
     try {
       const res = await fetch("/api/ai/research", {

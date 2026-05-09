@@ -76,9 +76,16 @@ const baseVersion = {
 };
 
 // jsdom's Request cannot parse multipart bodies, so we stub formData() directly.
-function makeRequest(formData: StubForm): NextRequest {
+// We also stub headers.get so the Content-Length pre-check in the route works.
+function makeRequest(formData: StubForm, contentLength?: number): NextRequest {
   return {
     formData: async () => formData,
+    headers: {
+      get: (name: string) =>
+        name.toLowerCase() === "content-length" && contentLength !== undefined
+          ? String(contentLength)
+          : null,
+    },
   } as unknown as NextRequest;
 }
 

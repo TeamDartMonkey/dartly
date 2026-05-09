@@ -27,8 +27,14 @@ const tx = {
     findFirst: mockDocFindFirst,
     findFirstOrThrow: mockDocFindFirstOrThrow,
   },
-  documentVersion: { create: mockVersionCreate },
-  jobDocumentLink: { create: mockLinkCreate },
+  documentVersion: {
+    create: mockVersionCreate,
+    findFirst: mockVersionFindFirst,
+  },
+  jobDocumentLink: {
+    create: mockLinkCreate,
+    upsert: mockLinkUpsert,
+  },
   job: { findFirst: mockJobFindFirst },
 };
 
@@ -587,8 +593,10 @@ describe("linkDocumentToJob (cross-user ownership)", () => {
 
     await linkDocumentToJob("job-1", "doc-1", "ver-from-other-doc", USER_ID);
 
-    expect(mockVersionFindFirst).toHaveBeenCalledWith({
-      where: { id: "ver-from-other-doc", documentId: "doc-1" },
-    });
+    expect(mockVersionFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "ver-from-other-doc", documentId: "doc-1" },
+      })
+    );
   });
 });

@@ -49,6 +49,14 @@ export async function POST(request: NextRequest) {
     try {
       const user = await requireAuth();
 
+      // Pre-check Content-Length so a malicious multi-GB multipart body is
+      // rejected before request.formData() buffers it into memory. We allow
+      // some multipart slack on top of MAX_FILE_SIZE for boundaries/fields.
+      const contentLength = request.headers.get("content-length");
+      if (contentLength && Number(contentLength) > MAX_FILE_SIZE + 16 * 1024) {
+        return NextResponse.json({ error: "File size must be under 10MB" }, { status: 413 });
+      }
+
       const formData = await request.formData();
       const fileEntry = formData.get("file");
 

@@ -1,4 +1,5 @@
 import { ApiError } from "@/lib/api-error";
+import logger from "@/lib/logger";
 import { createClient } from "@/lib/supabase-server";
 
 export async function registerUser(email: string, password: string) {
@@ -31,6 +32,9 @@ export async function logoutUser() {
   const supabase = await createClient();
   const { error } = await supabase.auth.signOut();
   if (error) {
+    // Log so an operator can diagnose persistent failures (cookie issues,
+    // upstream Supabase outage). The user-facing message stays generic.
+    logger.warn("Logout failed", { message: error.message });
     throw new ApiError(500, "Failed to log out.");
   }
 }

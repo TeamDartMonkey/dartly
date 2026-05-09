@@ -104,7 +104,17 @@ export function DocumentsSection({ job }: DocumentsSectionProps) {
   }, [router]);
 
   useEffect(() => {
-    fetchDocuments();
+    let cancelled = false;
+    (async () => {
+      // We can't pass an AbortSignal through fetchDocuments without changing
+      // its signature in many call sites; gate setState on a cancelled flag
+      // so an in-flight fetch on unmount cannot overwrite a newer page mount.
+      await fetchDocuments();
+      if (cancelled) return;
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [fetchDocuments]);
 
   async function handleOpenLinkMenu() {

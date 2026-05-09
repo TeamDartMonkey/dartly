@@ -147,7 +147,10 @@ export async function updateJob(id: string, userId: string, data: UpdateJobInput
         ...(data.prepNotes !== undefined && { prepNotes: data.prepNotes }),
         ...(data.customNotes !== undefined && { customNotes: data.customNotes }),
         ...(prismaStage !== undefined && { stage: prismaStage }),
-        ...(leavingInterested && { deadline: null }),
+        // Auto-clear deadline when leaving INTERESTED, but only if the
+        // request didn't explicitly set a deadline — otherwise an explicit
+        // user-supplied deadline would be silently dropped on stage change.
+        ...(leavingInterested && data.deadline === undefined && { deadline: null }),
         ...(data.priority !== undefined && { priority: data.priority }),
         lastActivityAt: new Date(),
       },
