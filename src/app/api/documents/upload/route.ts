@@ -19,6 +19,10 @@ const UploadFieldsSchema = z.object({
 
 const ALLOWED_MIME_TYPES = new Set(["application/pdf"]);
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MiB
+// 100 bytes is well below any real PDF (the smallest valid PDFs are ~300B);
+// rejecting tiny files prevents a user from creating a Document that is
+// pure header bytes with no actual content.
+const MIN_FILE_SIZE = 100;
 const PDF_MAGIC = new TextEncoder().encode("%PDF-");
 
 function startsWithPdfMagic(buf: Uint8Array): boolean {
@@ -73,6 +77,9 @@ export async function POST(request: NextRequest) {
       if (file.size > MAX_FILE_SIZE) {
         return NextResponse.json({ error: "File size must be under 10MB" }, { status: 400 });
       }
+      if (file.size < MIN_FILE_SIZE) {
+        return NextResponse.json({ error: "File is too small to be a valid PDF" }, { status: 400 });
+      }
 
       const arrayBuffer = await file.arrayBuffer();
       const bytes = new Uint8Array(arrayBuffer);
@@ -126,12 +133,17 @@ export async function POST(request: NextRequest) {
           return { doc, version };
         });
       } catch (dbError) {
-        // Best-effort rollback of the storage upload so the bucket stays clean.
+        // Best-effort rollback of the storage upload so the bucket stays
+        // clean. Log if the rollback itself fails so an orphan can be
+        // diagnosed instead of silently lingering in the bucket.
         await supabase.storage
           .from(env.SUPABASE_DOCUMENTS_BUCKET)
           .remove([storagePath])
-          .catch(() => {
-            /* swallow — already in error path */
+          .catch((removeErr) => {
+            logger.error("Failed to remove storage object after DB rollback", {
+              storagePath,
+              message: removeErr instanceof Error ? removeErr.message : String(removeErr),
+            });
           });
         logger.error("Document upload DB write failed; storage object removed", {
           userId: user.id,

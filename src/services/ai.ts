@@ -30,10 +30,17 @@ function getModel() {
 const MAX_RETRIES = 1;
 const GENERATE_TIMEOUT_MS = 30_000;
 
+// Cap parsed retry delays so a malformed upstream message can't pin the route
+// open for hours.
+const MAX_RETRY_DELAY_MS = 30_000;
+
 function parseRetryDelay(error: unknown): number | null {
   if (error instanceof Error) {
     const match = error.message.match(/retryDelay["':\s]+(\d+)s/i);
-    if (match) return Number.parseInt(match[1], 10) * 1000;
+    if (match) {
+      const ms = Number.parseInt(match[1], 10) * 1000;
+      return Math.min(ms, MAX_RETRY_DELAY_MS);
+    }
   }
   return null;
 }

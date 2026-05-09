@@ -10,13 +10,16 @@ import { localTodayString } from "@/utils/datetime";
 // preserves them and the server can clear previously-set values. Sending
 // `undefined` strips the keys, and the partial-update service layer treats
 // missing keys as "do not update".
+//
+// Note: lastActivityDate is server-managed (lastActivityAt is set to new Date()
+// on every create/update in services/jobs.ts), so it is not part of the
+// payload — the form does not need to collect it.
 export type JobFormPayload = {
   id?: string;
   title: string;
   company: string;
   location: string | null;
   stage: JobStage;
-  lastActivityDate: string;
   priority: boolean;
   deadline: string | null;
   customNotes: string | null;
@@ -40,9 +43,6 @@ export default function JobForm({ initialValues, onSubmit, onCancel }: JobFormPr
   const [company, setCompany] = useState(initialValues?.company ?? "");
   const [location, setLocation] = useState(initialValues?.location ?? "");
   const [stage, setStage] = useState<JobStage>(initialValues?.stage ?? "Interested");
-  const [lastActivityDate, setLastActivityDate] = useState(
-    initialValues?.lastActivityDate ?? localTodayString()
-  );
   const [priority, setPriority] = useState(initialValues?.priority ?? false);
   const [deadline, setDeadline] = useState(initialValues?.deadline ?? "");
   const [customNotes, setCustomNotes] = useState(initialValues?.customNotes ?? "");
@@ -64,7 +64,6 @@ export default function JobForm({ initialValues, onSubmit, onCancel }: JobFormPr
         company: company.trim(),
         location: location.trim() || null,
         stage,
-        lastActivityDate,
         priority,
         deadline: deadline || null,
         customNotes: customNotes.trim() || null,
@@ -139,15 +138,6 @@ export default function JobForm({ initialValues, onSubmit, onCancel }: JobFormPr
         onChange={setDeadline}
         placeholder="Select deadline"
         minDate={!initialValues ? localTodayString() : undefined}
-      />
-
-      <DatePicker
-        id="lastActivityDate"
-        label="Last Activity Date"
-        value={lastActivityDate}
-        onChange={setLastActivityDate}
-        placeholder="Select date"
-        required
       />
 
       <div>

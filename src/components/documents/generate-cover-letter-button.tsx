@@ -14,6 +14,7 @@ export function GenerateCoverLetterButton({ jobId, onGenerated }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   async function handleGenerate() {
+    if (loading) return;
     setLoading(true);
     setError(null);
 
@@ -30,8 +31,8 @@ export function GenerateCoverLetterButton({ jobId, onGenerated }: Props) {
       }
 
       if (!res.ok) {
-        const data = await res.json();
-        setError(data.error || "Failed to generate cover letter");
+        const data = await res.json().catch(() => ({}) as { error?: string });
+        setError(data.error || `Failed to generate cover letter (${res.status})`);
         return;
       }
 

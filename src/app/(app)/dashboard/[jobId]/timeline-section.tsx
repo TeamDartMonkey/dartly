@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { showToast } from "@/components/ui/toast";
 import type { JobActivity } from "@/types/activity";
+import { localTodayString } from "@/utils/datetime";
 
 interface Props {
   activities: JobActivity[];
@@ -19,7 +20,8 @@ export function TimelineSection({ activities, jobId, onActivitiesChanged }: Prop
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
 
-  const today = () => new Date().toISOString().split("T")[0];
+  // Local-day, not UTC — see utils/datetime.ts.
+  const today = () => localTodayString();
   const emptyForm = { title: "", date: today(), description: "" };
   const [form, setForm] = useState(emptyForm);
 
