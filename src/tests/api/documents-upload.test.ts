@@ -212,7 +212,7 @@ describe("POST /api/documents/upload", () => {
     const body = await res.json();
 
     expect(res.status).toBe(400);
-    expect(body.error).toBe("Valid document type is required");
+    expect(body.error).toMatch(/type/i);
   });
 
   it("returns 400 when type is invalid", async () => {
@@ -220,7 +220,7 @@ describe("POST /api/documents/upload", () => {
     const body = await res.json();
 
     expect(res.status).toBe(400);
-    expect(body.error).toBe("Valid document type is required");
+    expect(body.error).toMatch(/type/i);
   });
 
   it("returns 400 when name is empty/whitespace", async () => {
@@ -228,7 +228,7 @@ describe("POST /api/documents/upload", () => {
     const body = await res.json();
 
     expect(res.status).toBe(400);
-    expect(body.error).toBe("Document name is required");
+    expect(body.error).toMatch(/name/i);
   });
 
   it("returns 400 when MIME type is not allowed", async () => {

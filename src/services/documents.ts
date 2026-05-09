@@ -1,6 +1,16 @@
-import type { Document, DocumentType, DocumentVersion } from "@prisma/client";
+import { Prisma, type Document, type DocumentType, type DocumentVersion } from "@prisma/client";
 import { prisma } from "@/services/prisma";
 import type { DocumentResponse, DocumentVersionResponse } from "@/types/document";
+
+// Two concurrent saves on the same document can both compute the same
+// nextVersion under READ COMMITTED isolation, then collide on the
+// (documentId, versionNumber) unique index. Retry a small number of times
+// so users do not see a generic 500 with their work lost.
+const VERSION_CONFLICT_MAX_RETRIES = 3;
+
+function isUniqueViolation(err: unknown): boolean {
+  return err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002";
+}
 
 type CreateDocumentInput = {
   type: DocumentType;
@@ -192,27 +202,39 @@ export async function getDocumentById(id: string, userId: string) {
 
 // Computes the next version number INSIDE the transaction so two concurrent
 // saves cannot both compute the same value and produce duplicate versions.
+// On READ COMMITTED, two transactions can still see the same baseline; the
+// (documentId, versionNumber) unique index causes one to fail with P2002,
+// which we retry a small number of times.
 export async function updateDocumentContent(id: string, userId: string, content: string) {
-  return prisma.$transaction(async (tx) => {
-    const doc = await tx.document.findFirst({
-      where: { id, userId, isDeleted: false },
-      include: { versions: { orderBy: { versionNumber: "desc" }, take: 1 } },
-    });
-    if (!doc) return null;
+  for (let attempt = 0; attempt < VERSION_CONFLICT_MAX_RETRIES; attempt++) {
+    try {
+      return await prisma.$transaction(async (tx) => {
+        const doc = await tx.document.findFirst({
+          where: { id, userId, isDeleted: false },
+          include: { versions: { orderBy: { versionNumber: "desc" }, take: 1 } },
+        });
+        if (!doc) return null;
 
-    const nextVersion = doc.versions.length > 0 ? doc.versions[0].versionNumber + 1 : 1;
+        const nextVersion = doc.versions.length > 0 ? doc.versions[0].versionNumber + 1 : 1;
 
-    const version = await tx.documentVersion.create({
-      data: { documentId: id, versionNumber: nextVersion, content },
-    });
+        const version = await tx.documentVersion.create({
+          data: { documentId: id, versionNumber: nextVersion, content },
+        });
 
-    const updated = await tx.document.update({
-      where: { id },
-      data: { updatedAt: new Date() },
-    });
+        const updated = await tx.document.update({
+          where: { id },
+          data: { updatedAt: new Date() },
+        });
 
-    return withDocumentVersionId(updated, version);
-  });
+        return withDocumentVersionId(updated, version);
+      });
+    } catch (err) {
+      if (!isUniqueViolation(err) || attempt === VERSION_CONFLICT_MAX_RETRIES - 1) throw err;
+      // Tiny backoff before retry to let the conflicting transaction commit.
+      await new Promise((resolve) => setTimeout(resolve, 25 * (attempt + 1)));
+    }
+  }
+  return null;
 }
 
 export async function softDeleteDocument(id: string, userId: string): Promise<boolean> {
@@ -236,23 +258,32 @@ export async function getDocumentVersions(documentId: string, userId: string) {
   return versions.map(toVersionResponse);
 }
 
-// Same race-fix as updateDocumentContent: compute nextVersion inside the txn.
+// Same race-fix as updateDocumentContent: compute nextVersion inside the txn,
+// retry on P2002 unique-constraint conflicts caused by concurrent saves.
 export async function createDocumentVersion(documentId: string, userId: string, content: string) {
-  return prisma.$transaction(async (tx) => {
-    const doc = await tx.document.findFirst({
-      where: { id: documentId, userId, isDeleted: false },
-      include: { versions: { orderBy: { versionNumber: "desc" }, take: 1 } },
-    });
-    if (!doc) return null;
+  for (let attempt = 0; attempt < VERSION_CONFLICT_MAX_RETRIES; attempt++) {
+    try {
+      return await prisma.$transaction(async (tx) => {
+        const doc = await tx.document.findFirst({
+          where: { id: documentId, userId, isDeleted: false },
+          include: { versions: { orderBy: { versionNumber: "desc" }, take: 1 } },
+        });
+        if (!doc) return null;
 
-    const nextVersion = doc.versions.length > 0 ? doc.versions[0].versionNumber + 1 : 1;
+        const nextVersion = doc.versions.length > 0 ? doc.versions[0].versionNumber + 1 : 1;
 
-    const version = await tx.documentVersion.create({
-      data: { documentId, versionNumber: nextVersion, content },
-    });
+        const version = await tx.documentVersion.create({
+          data: { documentId, versionNumber: nextVersion, content },
+        });
 
-    return toVersionResponse(version);
-  });
+        return toVersionResponse(version);
+      });
+    } catch (err) {
+      if (!isUniqueViolation(err) || attempt === VERSION_CONFLICT_MAX_RETRIES - 1) throw err;
+      await new Promise((resolve) => setTimeout(resolve, 25 * (attempt + 1)));
+    }
+  }
+  return null;
 }
 
 export async function linkDocumentToJob(

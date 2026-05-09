@@ -71,7 +71,13 @@ export function RewritePanel({ documentId, onAccept }: Props) {
         setRewritten(null);
         setInstruction("");
         onAccept?.();
+        return;
       }
+
+      // Surface non-ok responses so the user knows the accept failed instead
+      // of silently leaving the panel open with the rewrite still on screen.
+      const data = await res.json().catch(() => ({}) as { error?: string });
+      setError(data.error || "Failed to save rewrite");
     } catch {
       setError("Failed to save");
     } finally {

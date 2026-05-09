@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { z } from "zod/v4";
 import { ApiError, handleApiError } from "@/lib/api-error";
 import { withHttpLogging } from "@/lib/api-wrapper";
 import { env } from "@/lib/env";
@@ -7,7 +8,14 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { requireAuth } from "@/lib/requireAuth";
 import { createClient } from "@/lib/supabase-server";
 import { prisma } from "@/services/prisma";
-import type { DocumentType } from "@/types/document";
+import { DocumentTypeSchema } from "@/types/schemas/document";
+
+// Zod schema for the multipart text fields. The file itself is validated
+// separately because validateBody only handles JSON.
+const UploadFieldsSchema = z.object({
+  type: DocumentTypeSchema,
+  name: z.string().trim().min(1, "Document name is required").max(200),
+});
 
 const ALLOWED_MIME_TYPES = new Set(["application/pdf"]);
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MiB
@@ -39,20 +47,26 @@ export async function POST(request: NextRequest) {
 
       const formData = await request.formData();
       const fileEntry = formData.get("file");
-      const type = formData.get("type") as DocumentType | null;
-      const name = formData.get("name") as string | null;
 
       if (!(fileEntry instanceof File)) {
         return NextResponse.json({ error: "File is required" }, { status: 400 });
       }
       const file = fileEntry;
 
-      if (!type || !["RESUME", "COVER_LETTER", "OTHER"].includes(type)) {
-        return NextResponse.json({ error: "Valid document type is required" }, { status: 400 });
+      // Validate text fields with Zod so length and shape are enforced
+      // identically to the JSON-bodied document creation path.
+      const fieldsResult = UploadFieldsSchema.safeParse({
+        type: formData.get("type"),
+        name: formData.get("name"),
+      });
+      if (!fieldsResult.success) {
+        return NextResponse.json(
+          { error: z.prettifyError(fieldsResult.error) },
+          { status: 400 }
+        );
       }
-      if (!name || name.trim().length === 0) {
-        return NextResponse.json({ error: "Document name is required" }, { status: 400 });
-      }
+      const { type, name } = fieldsResult.data;
+
       if (!ALLOWED_MIME_TYPES.has(file.type)) {
         return NextResponse.json({ error: "Only PDF files are supported" }, { status: 400 });
       }
@@ -99,7 +113,7 @@ export async function POST(request: NextRequest) {
       try {
         result = await prisma.$transaction(async (tx) => {
           const doc = await tx.document.create({
-            data: { userId: user.id, type, name: name.trim(), status: "UPLOADED" },
+            data: { userId: user.id, type, name, status: "UPLOADED" },
           });
           const version = await tx.documentVersion.create({
             data: {

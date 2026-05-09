@@ -44,6 +44,7 @@ export function TimelineSection({ activities, jobId, onActivitiesChanged }: Prop
   }
 
   async function handleSave() {
+    if (saving) return;
     if (!form.title.trim()) {
       showToast("Note title is required", "error");
       return;
@@ -54,7 +55,9 @@ export function TimelineSection({ activities, jobId, onActivitiesChanged }: Prop
         type: "NOTE",
         title: form.title.trim(),
         description: form.description.trim() || undefined,
-        scheduledAt: new Date(`${form.date}T00:00:00`).toISOString(),
+        // Parse the user-entered YYYY-MM-DD as UTC midnight so the calendar
+        // date round-trips identically regardless of the user's timezone.
+        scheduledAt: new Date(`${form.date}T00:00:00.000Z`).toISOString(),
       };
       const url = editingId
         ? `/api/jobs/${jobId}/activities/${editingId}`

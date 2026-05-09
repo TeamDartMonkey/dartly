@@ -206,29 +206,30 @@ async function syncExperiences(
     await tx.experience.deleteMany({ where: { id: { in: toDelete } } });
   }
 
-  // Issue all per-row writes in parallel inside the transaction so a profile
-  // with N experiences is N round-trips wide instead of N deep.
-  await Promise.all(
-    incoming.map((e, index) => {
-      const data = {
-        profileId,
-        type: e.type,
-        title: e.title,
-        organization: e.organization || null,
-        location: e.type === "EMPLOYMENT" ? e.location || null : null,
-        startDate: fromIsoDate(e.startDate),
-        endDate: e.isCurrent ? null : fromIsoDate(e.endDate),
-        isCurrent: e.isCurrent,
-        description: e.description || null,
-        order: index,
-      };
+  // Prisma's interactive transaction serializes statements over a single
+  // connection, so Promise.all here is misleading and makes failure
+  // semantics harder to reason about. Issue writes sequentially.
+  for (let index = 0; index < incoming.length; index++) {
+    const e = incoming[index];
+    const data = {
+      profileId,
+      type: e.type,
+      title: e.title,
+      organization: e.organization || null,
+      location: e.type === "EMPLOYMENT" ? e.location || null : null,
+      startDate: fromIsoDate(e.startDate),
+      endDate: e.isCurrent ? null : fromIsoDate(e.endDate),
+      isCurrent: e.isCurrent,
+      description: e.description || null,
+      order: index,
+    };
 
-      if (e.id && existingIds.has(e.id)) {
-        return tx.experience.update({ where: { id: e.id }, data });
-      }
-      return tx.experience.create({ data });
-    })
-  );
+    if (e.id && existingIds.has(e.id)) {
+      await tx.experience.update({ where: { id: e.id }, data });
+    } else {
+      await tx.experience.create({ data });
+    }
+  }
 }
 
 async function syncEducations(
@@ -249,24 +250,23 @@ async function syncEducations(
     await tx.education.deleteMany({ where: { id: { in: toDelete } } });
   }
 
-  await Promise.all(
-    incoming.map((e) => {
-      const data = {
-        profileId,
-        institution: e.institution,
-        degree: e.degree || null,
-        fieldOfStudy: e.fieldOfStudy || null,
-        startDate: fromIsoDate(e.startDate),
-        endDate: fromIsoDate(e.endDate),
-        gpa: e.gpa || null,
-      };
+  for (const e of incoming) {
+    const data = {
+      profileId,
+      institution: e.institution,
+      degree: e.degree || null,
+      fieldOfStudy: e.fieldOfStudy || null,
+      startDate: fromIsoDate(e.startDate),
+      endDate: fromIsoDate(e.endDate),
+      gpa: e.gpa || null,
+    };
 
-      if (e.id && existingIds.has(e.id)) {
-        return tx.education.update({ where: { id: e.id }, data });
-      }
-      return tx.education.create({ data });
-    })
-  );
+    if (e.id && existingIds.has(e.id)) {
+      await tx.education.update({ where: { id: e.id }, data });
+    } else {
+      await tx.education.create({ data });
+    }
+  }
 }
 
 async function syncSkills(tx: Prisma.TransactionClient, profileId: string, incoming: Skill[]) {
@@ -291,30 +291,24 @@ async function syncSkills(tx: Prisma.TransactionClient, profileId: string, incom
     await tx.skill.deleteMany({ where: { id: { in: toDelete } } });
   }
 
-  await Promise.all(
-    deduped.map((s, index) => {
-      const data: {
-        profileId: string;
-        name: string;
-        category: string | null;
-        proficiency: string | null;
-        order: number;
-      } = {
-        profileId,
-        name: s.name,
-        // Always set order on update too — single-skill saves now stay in sync
-        // with the create branch instead of preserving a stale order value.
-        order: index,
-        category: s.category ?? null,
-        proficiency: s.proficiency ?? null,
-      };
+  for (let index = 0; index < deduped.length; index++) {
+    const s = deduped[index];
+    const data = {
+      profileId,
+      name: s.name,
+      // Always set order on update too — single-skill saves stay in sync
+      // with the create branch instead of preserving a stale order value.
+      order: index,
+      category: s.category ?? null,
+      proficiency: s.proficiency ?? null,
+    };
 
-      if (s.id && existingIds.has(s.id)) {
-        return tx.skill.update({ where: { id: s.id }, data });
-      }
-      return tx.skill.create({ data });
-    })
-  );
+    if (s.id && existingIds.has(s.id)) {
+      await tx.skill.update({ where: { id: s.id }, data });
+    } else {
+      await tx.skill.create({ data });
+    }
+  }
 }
 
 export async function upsertProfile(userId: string, data: ProfilePatchInput): Promise<ProfileData> {
