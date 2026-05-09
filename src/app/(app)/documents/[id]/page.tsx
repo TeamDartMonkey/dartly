@@ -432,8 +432,18 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               </span>
             </div>
             <p className="text-xs text-zinc-500">
-              v{doc.versionNumber} &middot; Created {new Date(doc.createdAt).toLocaleDateString()}{" "}
-              &middot; Updated {new Date(doc.updatedAt).toLocaleDateString()}
+              v{doc.versionNumber} &middot; Created{" "}
+              {new Date(doc.createdAt).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}{" "}
+              &middot; Updated{" "}
+              {new Date(doc.updatedAt).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
             </p>
           </div>
 

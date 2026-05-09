@@ -63,22 +63,25 @@ export default function JobCard({
     }
   }
 
+  // Single outer button covers the title + meta. Action icons inside
+  // call e.stopPropagation() so they don't navigate.
   return (
     <div className="group relative flex flex-col bg-zinc-900 border border-zinc-700 hover:border-zinc-500 rounded-lg shadow-sm p-6 transition-colors">
-      <div className="flex items-start justify-between gap-3">
-        <button
-          type="button"
-          className="flex-1 min-w-0 text-left"
-          onClick={() => router.push(`/dashboard/${job.id}`)}
-          aria-label={`View details for ${job.title} at ${job.company}`}
-        >
+      <button
+        type="button"
+        className="absolute inset-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        onClick={() => router.push(`/dashboard/${job.id}`)}
+        aria-label={`View details for ${job.title} at ${job.company}`}
+      />
+      <div className="relative flex items-start justify-between gap-3 pointer-events-none">
+        <div className="flex-1 min-w-0">
           <div className="min-w-0">
             <h2 className="text-base font-medium text-zinc-50 truncate">{job.title}</h2>
             <p className="text-sm text-zinc-400">{job.company}</p>
           </div>
-        </button>
+        </div>
 
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1 pointer-events-auto relative">
           {onEdit && (
             <button
               type="button"
@@ -196,22 +199,15 @@ export default function JobCard({
         </div>
       </div>
 
-      <button
-        type="button"
-        className="flex-1 min-w-0 text-left"
-        onClick={() => router.push(`/dashboard/${job.id}`)}
-        aria-label={`View details for ${job.title} at ${job.company}`}
-      >
-        <div className="mt-4 space-y-1 text-sm text-zinc-500">
-          {job.location && <p>{job.location}</p>}
-          {job.stage === "Interested" && job.deadline && (
-            <p className="whitespace-nowrap">Deadline: {job.deadline}</p>
-          )}
-          <p className="whitespace-nowrap">Last activity: {job.lastActivityDate}</p>
-        </div>
-      </button>
+      <div className="relative pointer-events-none mt-4 space-y-1 text-sm text-zinc-500">
+        {job.location && <p>{job.location}</p>}
+        {job.stage === "Interested" && job.deadline && (
+          <p className="whitespace-nowrap">Deadline: {job.deadline}</p>
+        )}
+        <p className="whitespace-nowrap">Last activity: {job.lastActivityDate}</p>
+      </div>
 
-      <div className="mt-auto flex items-center justify-between pt-4">
+      <div className="relative pointer-events-auto mt-auto flex items-center justify-between pt-4">
         <div className="flex items-center gap-1.5">
           {isChangingStage && (
             <svg

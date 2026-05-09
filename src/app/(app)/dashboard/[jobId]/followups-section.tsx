@@ -44,6 +44,7 @@ export function FollowUpsSection({ activities, jobId, onActivitiesChanged }: Pro
   }
 
   async function handleSave() {
+    if (saving) return;
     if (!form.title.trim()) {
       showToast("Follow-up title is required", "error");
       return;

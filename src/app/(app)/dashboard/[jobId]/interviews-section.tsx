@@ -57,6 +57,7 @@ export function InterviewsSection({ activities, jobId, onActivitiesChanged }: Pr
   }
 
   async function handleSave() {
+    if (saving) return;
     if (!form.title.trim()) {
       showToast("Interview title is required", "error");
       return;

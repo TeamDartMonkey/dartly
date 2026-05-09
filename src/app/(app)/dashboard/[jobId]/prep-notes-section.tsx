@@ -24,6 +24,7 @@ export function PrepNotesSection({ job, onJobUpdated }: Props) {
   const [isDirty, setIsDirty] = useState(false);
 
   async function handleSave() {
+    if (saving) return;
     setSaving(true);
     try {
       const res = await fetch(`/api/jobs/${job.id}`, {

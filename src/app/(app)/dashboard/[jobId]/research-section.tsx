@@ -20,6 +20,7 @@ export function ResearchSection({ job, onJobUpdated }: Props) {
   const [isDirty, setIsDirty] = useState(false);
 
   async function handleGenerate() {
+    if (generating || saving) return;
     setGenerating(true);
     try {
       const res = await fetch("/api/ai/research", {
@@ -50,6 +51,7 @@ export function ResearchSection({ job, onJobUpdated }: Props) {
   }
 
   async function handleSave() {
+    if (saving || generating) return;
     setSaving(true);
     try {
       const res = await fetch(`/api/jobs/${job.id}`, {

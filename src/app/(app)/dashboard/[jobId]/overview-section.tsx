@@ -72,6 +72,7 @@ export function OverviewSection({ job, onJobUpdated }: Props) {
   }
 
   async function handleSave() {
+    if (saving) return;
     if (!form.title.trim()) {
       showToast("Job title is required", "error");
       return;

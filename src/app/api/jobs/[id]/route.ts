@@ -50,7 +50,6 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   });
 }
 
-// Unchanged from Sprint 1
 export async function DELETE(request: NextRequest, context: RouteContext) {
   return withHttpLogging(request, async () => {
     try {

@@ -344,7 +344,11 @@ export async function upsertProfile(userId: string, data: ProfilePatchInput): Pr
         experiences: {
           orderBy: { order: "asc" },
         },
-        educations: true,
+        // Mirror getProfile's ordering so the post-save response and a
+        // page-refresh response display educations in the same order.
+        educations: {
+          orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
+        },
         skills: {
           orderBy: { order: "asc" },
         },
