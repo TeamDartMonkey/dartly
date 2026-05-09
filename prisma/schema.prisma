@@ -96,6 +96,10 @@ model Job {
   activities        JobActivity[]
   documentLinks     JobDocumentLink[]
   stageHistory      JobStageHistory[]
+
+  @@index([userId])
+  @@index([userId, stage])
+  @@index([userId, lastActivityAt])
 }
 
 model JobStageHistory {
@@ -105,6 +109,8 @@ model JobStageHistory {
   toStage   JobStage
   changedAt DateTime  @default(now())
   job       Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId, changedAt])
 }
 
 model JobActivity {
@@ -119,6 +125,8 @@ model JobActivity {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   job         Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId, createdAt])
 }
 
 model Document {
@@ -135,6 +143,9 @@ model Document {
   updatedAt      DateTime          @updatedAt
   versions       DocumentVersion[]
   jobLinks       JobDocumentLink[]
+
+  @@index([userId, isDeleted])
+  @@index([userId, updatedAt])
 }
 
 model DocumentVersion {
@@ -146,6 +157,9 @@ model DocumentVersion {
   createdAt     DateTime          @default(now())
   document      Document          @relation(fields: [documentId], references: [id], onDelete: Cascade)
   jobLinks      JobDocumentLink[]
+
+  @@unique([documentId, versionNumber])
+  @@index([documentId, versionNumber])
 }
 
 model JobDocumentLink {
@@ -159,6 +173,8 @@ model JobDocumentLink {
   job               Job             @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
   @@unique([jobId, documentVersionId])
+  @@index([jobId, linkedAt])
+  @@index([documentId])
 }
 
 model UserSettings {
