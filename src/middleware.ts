@@ -4,9 +4,15 @@ import { NextResponse } from "next/server";
 
 const publicRoutes = ["/login", "/register", "/forgot-password", "/reset-password"];
 
-export async function proxy(request: NextRequest) {
+function isPublicRoute(pathname: string): boolean {
+  // Exact match or path-segment boundary match — prevents prefix collisions
+  // like /loginadmin or /registerme being treated as public.
+  return publicRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
+}
+
+export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
+  const publicRoute = isPublicRoute(pathname);
 
   let supabaseResponse = NextResponse.next({ request });
 
@@ -38,11 +44,11 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user && !isPublicRoute) {
+  if (!user && !publicRoute) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (user && isPublicRoute) {
+  if (user && publicRoute) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 

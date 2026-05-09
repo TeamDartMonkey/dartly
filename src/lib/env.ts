@@ -18,16 +18,17 @@ const envSchema = z.object({
   GEMINI_API_KEY: z.string().min(1).optional(),
   SUPABASE_DOCUMENTS_BUCKET: z.string().min(1),
 });
-// safeParse allows us to provide a custom error message and exit gracefully
-// instead of throwing an unhandled exception on invalid env vars.
+// safeParse allows us to provide a custom error message and surface a clear
+// error on invalid env vars. We throw rather than process.exit so tests and
+// other host processes can fail without being hard-killed.
 
 function parseEnv() {
   const result = envSchema.safeParse(process.env);
 
   if (!result.success) {
-    process.stderr.write("Invalid environment variables:\n");
-    process.stderr.write(`${z.prettifyError(result.error)}\n`);
-    process.exit(1);
+    const message = `Invalid environment variables:\n${z.prettifyError(result.error)}`;
+    process.stderr.write(`${message}\n`);
+    throw new Error(message);
   }
 
   return result.data;

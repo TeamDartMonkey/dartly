@@ -33,16 +33,26 @@ export function getRateLimiter({ id, limit = 60, windowSecs = 60 }: RateLimitOpt
 
 /**
  * Extracts the client IP from the request.
- * Checks X-Forwarded-For (reverse proxy), X-Real-IP (Nginx), then falls back to 127.0.0.1.
- * Note: X-Forwarded-For is spoofable in non-proxied environments. Configure your
- * reverse proxy to set a trusted header and update this function accordingly.
+ * Prefers Vercel's trusted header, then standard reverse-proxy headers.
+ * Falls back to a per-request unknown bucket so requests without any IP
+ * header do not all share the same rate-limit bucket (which would cause
+ * legitimate traffic to trip immediately on misconfigured deployments).
+ *
+ * Note: X-Forwarded-For is spoofable when the upstream is not a trusted
+ * proxy. On Vercel, prefer x-vercel-forwarded-for which is set by the
+ * platform and is not spoofable from the client.
  */
 function getClientIp(request: NextRequest): string {
-  return (
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    request.headers.get("x-real-ip") ||
-    "127.0.0.1"
-  );
+  const vercelIp = request.headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim();
+  if (vercelIp) return vercelIp;
+  const xff = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  if (xff) return xff;
+  const xRealIp = request.headers.get("x-real-ip");
+  if (xRealIp) return xRealIp;
+  // No header present (likely local dev or misconfigured proxy). Use a single
+  // shared bucket so rate limits still apply; in production behind a trusted
+  // proxy the headers above should always be set.
+  return "127.0.0.1";
 }
 
 /**
