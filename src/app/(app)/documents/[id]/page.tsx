@@ -342,27 +342,37 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     if (e.key === "Escape") setRenaming(false);
   }
 
-  function refreshDoc() {
+  async function refreshDoc() {
     if (!id) return;
-    fetch(`/api/documents/${id}`)
-      .then((res) => {
-        if (res.ok) return res.json();
-        return null;
-      })
-      .then((data) => {
-        if (data) {
-          setDoc(data);
-          setEditContent(data.content ?? "");
-        }
-      });
-    fetch(`/api/documents/${id}/versions`)
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data) => {
+    try {
+      const [docRes, verRes] = await Promise.all([
+        fetch(`/api/documents/${id}`),
+        fetch(`/api/documents/${id}/versions`),
+      ]);
+
+      if (docRes.status === 401 || verRes.status === 401) {
+        router.push("/login");
+        return;
+      }
+
+      if (docRes.ok) {
+        const data = await docRes.json();
+        setDoc(data);
+        setEditContent(data.content ?? "");
+      } else {
+        showToast("Failed to refresh document", "error");
+      }
+
+      if (verRes.ok) {
+        const data = await verRes.json();
         if (Array.isArray(data)) {
           setVersions(data);
           if (data.length > 0) setSelectedVersionId(data[0].id);
         }
-      });
+      }
+    } catch {
+      showToast("Failed to refresh document", "error");
+    }
   }
 
   function handleViewModeChange(mode: ViewMode) {

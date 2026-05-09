@@ -1,17 +1,7 @@
 import type { Job as PrismaJob, JobStage as PrismaJobStage } from "@prisma/client";
-import { STAGE_PRISMA_TO_UI, STAGE_UI_TO_PRISMA } from "@/constants/job-stages";
+import { STAGE_LABELS, STAGE_PRISMA_TO_UI, STAGE_UI_TO_PRISMA } from "@/constants/job-stages";
 import { prisma } from "@/services/prisma";
 import type { Job, JobStage } from "@/types/job";
-
-const STAGE_LABELS: Record<string, string> = {
-  INTERESTED: "Interested",
-  APPLIED: "Applied",
-  INTERVIEW: "Interview",
-  OFFER: "Offer",
-  REJECTED: "Rejected",
-  GHOSTED: "Ghosted",
-  ARCHIVED: "Archived",
-};
 
 type CreateJobInput = {
   userId: string;

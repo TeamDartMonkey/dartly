@@ -13,8 +13,10 @@ type ExperienceSectionProps = {
 
 function formatDate(date: string | undefined): string {
   if (!date) return "";
+  // Profile dates come from the API as YYYY-MM-DD (UTC-derived). Format in UTC
+  // so a Jan 1 start doesn't render as "Dec" for west-of-UTC users.
   const d = new Date(date);
-  return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  return d.toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
 }
 
 function formatDateRange(exp: Experience): string {

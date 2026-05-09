@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { showToast } from "@/components/ui/toast";
+import { STAGE_STYLES } from "@/constants/job-stages";
 import type { JobActivity } from "@/types/activity";
 import type { Job } from "@/types/job";
 import { DocumentsSection } from "./documents-section";
@@ -21,16 +22,6 @@ type Tab =
   | "documents"
   | "research"
   | "prepnotes";
-
-const STAGE_STYLES: Record<string, string> = {
-  Interested: "bg-zinc-800 text-zinc-400",
-  Applied: "bg-blue-950 text-blue-400",
-  Interview: "bg-yellow-950 text-yellow-400",
-  Offer: "bg-green-950 text-green-400",
-  Rejected: "bg-red-950 text-red-400",
-  Ghosted: "bg-purple-950 text-purple-400",
-  Archived: "bg-orange-950 text-orange-400",
-};
 
 export default function JobDetailPage({ params }: { params: Promise<{ jobId: string }> }) {
   const router = useRouter();
@@ -141,7 +132,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ jobId: str
             </p>
           </div>
           <span
-            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STAGE_STYLES[job.stage] ?? "bg-zinc-800 text-zinc-300"}`}
+            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STAGE_STYLES[job.stage]?.badge ?? "bg-zinc-800 text-zinc-300"}`}
           >
             {job.stage}
           </span>

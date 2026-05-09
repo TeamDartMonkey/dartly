@@ -1,4 +1,5 @@
 import type { JobStage } from "@prisma/client";
+import { STAGE_LABELS } from "@/constants/job-stages";
 import { prisma } from "@/services/prisma";
 
 // Refuse to run against production. Seeding overwrites data for the two
@@ -1723,15 +1724,7 @@ const STAGE_TRANSITIONS: Record<string, { from: string | null; to: string }[]> =
   INTERESTED: [{ from: null, to: "INTERESTED" }],
 };
 
-const STAGE_LABELS: Record<string, string> = {
-  INTERESTED: "Interested",
-  APPLIED: "Applied",
-  INTERVIEW: "Interview",
-  OFFER: "Offer",
-  REJECTED: "Rejected",
-  GHOSTED: "Ghosted",
-  ARCHIVED: "Archived",
-};
+
 
 function getActivityDateForStage(_stage: string, transitionIndex: number, baseDate: Date): Date {
   const daysOffset = transitionIndex * 5;

@@ -198,6 +198,10 @@ export function TimelineSection({ activities, jobId, onActivitiesChanged }: Prop
                           month: "short",
                           day: "numeric",
                           year: "numeric",
+                          // Notes are stored as UTC midnight on the user-picked
+                          // calendar day (see handleSave). Format in UTC so the
+                          // displayed date matches what the user typed.
+                          timeZone: "UTC",
                         }
                       )}
                     </span>

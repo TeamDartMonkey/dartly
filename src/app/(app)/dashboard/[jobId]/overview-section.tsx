@@ -11,12 +11,14 @@ import type { Job, JobStage } from "@/types/job";
 import { localTodayString } from "@/utils/datetime";
 
 function formatRelativeDate(dateStr: string) {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  // dateStr is a YYYY-MM-DD string (UTC-derived on the server). Compute the
+  // diff in calendar days against today's local date so users near day
+  // boundaries don't see "Yesterday" for an event from earlier today.
+  const todayStr = localTodayString();
+  const toUtcMidnight = (s: string) => Date.parse(`${s}T00:00:00.000Z`);
+  const diffDays = Math.round((toUtcMidnight(todayStr) - toUtcMidnight(dateStr)) / 86_400_000);
 
-  if (diffDays === 0) return "Today";
+  if (diffDays <= 0) return "Today";
   if (diffDays === 1) return "Yesterday";
   if (diffDays < 30) return `${diffDays} days ago`;
   if (diffDays < 60) return "1 month ago";
