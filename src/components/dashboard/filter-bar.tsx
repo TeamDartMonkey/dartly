@@ -130,7 +130,7 @@ export default function FilterBar({
   }
 
   return (
-    <div className="mb-6">
+    <div className="sticky top-0 z-10 mb-6 bg-zinc-950 pt-1 pb-2 -mx-4 sm:-mx-8 px-4 sm:px-8">
       {/* Row 1: Search */}
       <div className="mb-3">
         <div className="relative">
