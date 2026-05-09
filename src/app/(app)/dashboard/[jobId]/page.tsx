@@ -164,53 +164,77 @@ export default function JobDetailPage({ params }: { params: Promise<{ jobId: str
         ))}
       </div>
 
-      {activeTab === "overview" && (
-        <div role="tabpanel" id="panel-overview" aria-labelledby="tab-overview">
-          <OverviewSection job={job} onJobUpdated={(updated) => setJob(updated)} />
-        </div>
-      )}
-      {activeTab === "timeline" && (
-        <div role="tabpanel" id="panel-timeline" aria-labelledby="tab-timeline">
-          <TimelineSection
-            activities={activities}
-            jobId={job.id}
-            onActivitiesChanged={fetchActivities}
-          />
-        </div>
-      )}
-      {activeTab === "interviews" && (
-        <div role="tabpanel" id="panel-interviews" aria-labelledby="tab-interviews">
-          <InterviewsSection
-            activities={activities.filter((a) => a.type === "INTERVIEW")}
-            jobId={job.id}
-            onActivitiesChanged={fetchActivities}
-          />
-        </div>
-      )}
-      {activeTab === "followups" && (
-        <div role="tabpanel" id="panel-followups" aria-labelledby="tab-followups">
-          <FollowUpsSection
-            activities={activities.filter((a) => a.type === "FOLLOWUP")}
-            jobId={job.id}
-            onActivitiesChanged={fetchActivities}
-          />
-        </div>
-      )}
-      {activeTab === "documents" && (
-        <div role="tabpanel" id="panel-documents" aria-labelledby="tab-documents">
-          <DocumentsSection job={job} />
-        </div>
-      )}
-      {activeTab === "research" && (
-        <div role="tabpanel" id="panel-research" aria-labelledby="tab-research">
-          <ResearchSection job={job} onJobUpdated={(updated) => setJob(updated)} />
-        </div>
-      )}
-      {activeTab === "prepnotes" && (
-        <div role="tabpanel" id="panel-prepnotes" aria-labelledby="tab-prepnotes">
-          <PrepNotesSection job={job} onJobUpdated={(updated) => setJob(updated)} />
-        </div>
-      )}
+      {/* All panels are always mounted to preserve in-progress edits and
+          avoid re-fetching on every tab switch. The hidden attribute (display:none)
+          keeps inactive panels out of the visual flow and inaccessible to AT. */}
+      <div
+        role="tabpanel"
+        id="panel-overview"
+        aria-labelledby="tab-overview"
+        hidden={activeTab !== "overview"}
+      >
+        <OverviewSection job={job} onJobUpdated={(updated) => setJob(updated)} />
+      </div>
+      <div
+        role="tabpanel"
+        id="panel-timeline"
+        aria-labelledby="tab-timeline"
+        hidden={activeTab !== "timeline"}
+      >
+        <TimelineSection
+          activities={activities}
+          jobId={job.id}
+          onActivitiesChanged={fetchActivities}
+        />
+      </div>
+      <div
+        role="tabpanel"
+        id="panel-interviews"
+        aria-labelledby="tab-interviews"
+        hidden={activeTab !== "interviews"}
+      >
+        <InterviewsSection
+          activities={activities.filter((a) => a.type === "INTERVIEW")}
+          jobId={job.id}
+          onActivitiesChanged={fetchActivities}
+        />
+      </div>
+      <div
+        role="tabpanel"
+        id="panel-followups"
+        aria-labelledby="tab-followups"
+        hidden={activeTab !== "followups"}
+      >
+        <FollowUpsSection
+          activities={activities.filter((a) => a.type === "FOLLOWUP")}
+          jobId={job.id}
+          onActivitiesChanged={fetchActivities}
+        />
+      </div>
+      <div
+        role="tabpanel"
+        id="panel-documents"
+        aria-labelledby="tab-documents"
+        hidden={activeTab !== "documents"}
+      >
+        <DocumentsSection job={job} />
+      </div>
+      <div
+        role="tabpanel"
+        id="panel-research"
+        aria-labelledby="tab-research"
+        hidden={activeTab !== "research"}
+      >
+        <ResearchSection job={job} onJobUpdated={(updated) => setJob(updated)} />
+      </div>
+      <div
+        role="tabpanel"
+        id="panel-prepnotes"
+        aria-labelledby="tab-prepnotes"
+        hidden={activeTab !== "prepnotes"}
+      >
+        <PrepNotesSection job={job} onJobUpdated={(updated) => setJob(updated)} />
+      </div>
     </div>
   );
 }
