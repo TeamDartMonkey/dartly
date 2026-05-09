@@ -48,7 +48,10 @@ async function sanitizeResumeHtml(html: string): Promise<string> {
     },
     tagNames: Array.from(new Set([...(defaultSchema.tagNames ?? []), "span", "div"])),
   };
-  const file = await rehype().data("settings", { fragment: true }).use(rehypeSanitize, schema).process(html);
+  const file = await rehype()
+    .data("settings", { fragment: true })
+    .use(rehypeSanitize, schema)
+    .process(html);
   return String(file);
 }
 

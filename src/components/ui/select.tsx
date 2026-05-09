@@ -67,21 +67,25 @@ export function Select({
     el?.scrollIntoView({ block: "nearest" });
   }, [activeIndex]);
 
+  // Keyboard handler bound to the trigger so navigation works whether the
+  // listbox has focus or not. Focus stays on the trigger; the active option
+  // is highlighted via aria-activedescendant + visual styling.
   function handleTriggerKey(event: React.KeyboardEvent) {
-    switch (event.key) {
-      case "ArrowDown":
-      case "Enter":
-      case " ":
-        event.preventDefault();
-        setOpen(true);
-        break;
-      case "Escape":
-        setOpen(false);
-        break;
+    if (!open) {
+      switch (event.key) {
+        case "ArrowDown":
+        case "Enter":
+        case " ":
+          event.preventDefault();
+          setOpen(true);
+          break;
+        case "Escape":
+          setOpen(false);
+          break;
+      }
+      return;
     }
-  }
-
-  function handleListboxKey(event: React.KeyboardEvent) {
+    // Open: route nav keys through.
     switch (event.key) {
       case "ArrowDown":
         event.preventDefault();
@@ -92,12 +96,18 @@ export function Select({
         setActiveIndex((prev) => (prev > 0 ? prev - 1 : prev));
         break;
       case "Enter":
+      case " ":
         event.preventDefault();
         if (activeIndex >= 0 && activeIndex < options.length) {
           handleSelect(options[activeIndex].value);
         }
         break;
       case "Escape":
+        event.preventDefault();
+        setOpen(false);
+        break;
+      case "Tab":
+        // Allow tab to move focus naturally — also close the menu.
         setOpen(false);
         break;
     }
@@ -112,6 +122,11 @@ export function Select({
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-controls={listboxId}
+        aria-activedescendant={
+          open && activeIndex >= 0 && activeIndex < options.length
+            ? `${listboxId}-option-${activeIndex}`
+            : undefined
+        }
         disabled={disabled}
         onClick={() => !disabled && setOpen((prev) => !prev)}
         onKeyDown={handleTriggerKey}
@@ -143,25 +158,23 @@ export function Select({
           id={listboxId}
           role="listbox"
           tabIndex={-1}
-          onKeyDown={handleListboxKey}
           className="absolute z-50 mt-1 w-full bg-zinc-800 border border-zinc-700 rounded-md shadow-lg py-1 max-h-60 overflow-auto"
         >
           {options.map((option, i) => (
+            // biome-ignore lint/a11y/useKeyWithClickEvents: keyboard interaction is on the trigger via aria-activedescendant; options themselves are not focusable.
             <div
               key={option.value}
+              id={`${listboxId}-option-${i}`}
               ref={(el) => {
                 optionRefs.current[i] = el;
               }}
               role="option"
-              tabIndex={0}
+              // tabIndex=-1 so Tab does not step through every option;
+              // keyboard navigation is via aria-activedescendant on the trigger.
+              tabIndex={-1}
               aria-selected={option.value === value}
+              onMouseEnter={() => setActiveIndex(i)}
               onClick={() => handleSelect(option.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  handleSelect(option.value);
-                }
-              }}
               className={`px-3 py-2 text-sm cursor-pointer transition-colors ${
                 option.value === value
                   ? "bg-indigo-500/10 text-indigo-400"

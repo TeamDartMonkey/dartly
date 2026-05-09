@@ -1,5 +1,9 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // Include linux-musl binary so the Docker runner stage (node:22-alpine)
+  // can load Prisma. Without this, the engine binary built on the Debian
+  // builder stage cannot run on Alpine.
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {

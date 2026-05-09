@@ -2,7 +2,6 @@
 
 import { type SyntheticEvent, useState } from "react";
 import { Input } from "@/components/ui/input";
-import { createClient } from "@/services/supabase";
 import type { ForgotPasswordFormData } from "@/types";
 
 export function ForgotPasswordForm() {
@@ -27,22 +26,32 @@ export function ForgotPasswordForm() {
     }
 
     try {
-      const supabase = createClient();
-      // Fall back to the current origin so a missing NEXT_PUBLIC_APP_URL
-      // produces a usable reset link instead of "undefined/reset-password".
-      const baseUrl =
-        process.env.NEXT_PUBLIC_APP_URL ||
-        (typeof window !== "undefined" ? window.location.origin : "");
-      const { error } = await supabase.auth.resetPasswordForEmail(values.email, {
-        redirectTo: `${baseUrl}/reset-password`,
+      // Hit the server endpoint instead of calling Supabase directly so that
+      // (a) IP rate-limiting and (b) the deliberate uniform-success response
+      // (account-enumeration defense) take effect. We always show the success
+      // state on a non-network response, regardless of whether the email is
+      // actually registered.
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: values.email }),
       });
 
-      if (error) {
-        setError(error.message);
+      if (res.status === 429) {
+        setError("Too many requests — please wait a moment and try again.");
         return;
       }
 
-      setSuccess(true);
+      // The server responds 200 with a generic message regardless of whether
+      // the email exists. Treat any 2xx as success.
+      if (res.ok) {
+        setSuccess(true);
+        return;
+      }
+
+      // 4xx other than 429 means malformed input (e.g. invalid email format).
+      const data = await res.json().catch(() => ({}) as { error?: string });
+      setError(data.error || "Something went wrong. Please try again.");
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {

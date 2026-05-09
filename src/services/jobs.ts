@@ -120,14 +120,17 @@ export async function createJob(data: CreateJobInput) {
 }
 
 export async function updateJob(id: string, userId: string, data: UpdateJobInput) {
-  const existing = await prisma.job.findFirst({ where: { id, userId } });
-  if (!existing) return null;
-
   const prismaStage = toPrismaStage(data.stage);
-  const stageChanged = prismaStage !== undefined && prismaStage !== existing.stage;
-  const leavingInterested = stageChanged && existing.stage === "INTERESTED";
 
   return prisma.$transaction(async (tx) => {
+    // Re-read inside the transaction so two concurrent updates can't both
+    // observe the same fromStage and write incorrect JobStageHistory rows.
+    const existing = await tx.job.findFirst({ where: { id, userId } });
+    if (!existing) return null;
+
+    const stageChanged = prismaStage !== undefined && prismaStage !== existing.stage;
+    const leavingInterested = stageChanged && existing.stage === "INTERESTED";
+
     const updated = await tx.job.update({
       where: { id },
       data: {

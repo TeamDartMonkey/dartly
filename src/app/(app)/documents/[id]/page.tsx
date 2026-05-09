@@ -597,7 +597,9 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                     <div
                       className={`jakes-resume-preview${doc.type === "COVER_LETTER" ? " cover-letter-preview" : ""}`}
                     >
-                      <Markdown rehypePlugins={[rehypeRaw, [rehypeSanitize, RESUME_SANITIZE_SCHEMA]]}>
+                      <Markdown
+                        rehypePlugins={[rehypeRaw, [rehypeSanitize, RESUME_SANITIZE_SCHEMA]]}
+                      >
                         {displayContent}
                       </Markdown>
                     </div>
@@ -609,7 +611,9 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                 <div className="bg-zinc-950 rounded-md p-4 overflow-auto">
                   {displayContent ? (
                     <div className="markdown-viewer max-w-3xl mx-auto">
-                      <Markdown rehypePlugins={[rehypeRaw, [rehypeSanitize, RESUME_SANITIZE_SCHEMA]]}>
+                      <Markdown
+                        rehypePlugins={[rehypeRaw, [rehypeSanitize, RESUME_SANITIZE_SCHEMA]]}
+                      >
                         {displayContent}
                       </Markdown>
                     </div>

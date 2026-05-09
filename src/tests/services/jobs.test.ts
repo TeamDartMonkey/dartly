@@ -6,8 +6,11 @@ const mockJobUpdate = vi.fn();
 const mockJobDeleteMany = vi.fn();
 const mockStageHistoryCreate = vi.fn();
 const mockActivityCreate = vi.fn();
+// updateJob now re-reads existing inside the transaction, so the tx's
+// findFirst must share the same fn as the top-level mock for assertions
+// to keep working.
 const mockTx = {
-  job: { create: mockJobCreate, update: mockJobUpdate, findFirst: vi.fn() },
+  job: { create: mockJobCreate, update: mockJobUpdate, findFirst: mockJobFindFirst },
   jobStageHistory: { create: mockStageHistoryCreate },
   jobActivity: { create: mockActivityCreate },
 };

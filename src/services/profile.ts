@@ -1,4 +1,5 @@
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import { ApiError } from "@/lib/api-error";
 import { prisma } from "@/services/prisma";
 import type { Education, Experience, ProfileData, Skill } from "@/types/profile";
 
@@ -314,48 +315,62 @@ async function syncSkills(tx: Prisma.TransactionClient, profileId: string, incom
 export async function upsertProfile(userId: string, data: ProfilePatchInput): Promise<ProfileData> {
   const fields = buildUpdateFields(data);
 
-  return await prisma.$transaction(async (tx) => {
-    const profile = await tx.profile.upsert({
-      where: { userId },
-      create: {
-        userId,
-        targetRoles: [],
-        targetLocations: [],
-        ...fields,
-      },
-      update: fields,
+  try {
+    return await runUpsert();
+  } catch (err) {
+    // Skill has @@unique([profileId, name]); two concurrent saves can both
+    // pass the in-memory dedup and collide. Translate to a 409 so the client
+    // can prompt the user to retry rather than reporting a generic 500.
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      throw new ApiError(409, "Profile was modified concurrently — please retry.");
+    }
+    throw err;
+  }
+
+  async function runUpsert(): Promise<ProfileData> {
+    return prisma.$transaction(async (tx) => {
+      const profile = await tx.profile.upsert({
+        where: { userId },
+        create: {
+          userId,
+          targetRoles: [],
+          targetLocations: [],
+          ...fields,
+        },
+        update: fields,
+      });
+
+      if (data.experiences !== undefined) {
+        await syncExperiences(tx, profile.id, data.experiences);
+      }
+
+      if (data.educations !== undefined) {
+        await syncEducations(tx, profile.id, data.educations);
+      }
+
+      if (data.skills !== undefined) {
+        await syncSkills(tx, profile.id, data.skills);
+      }
+
+      const fresh = await tx.profile.findUnique({
+        where: { id: profile.id },
+        include: {
+          experiences: {
+            orderBy: { order: "asc" },
+          },
+          // Mirror getProfile's ordering so the post-save response and a
+          // page-refresh response display educations in the same order.
+          educations: {
+            orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
+          },
+          skills: {
+            orderBy: { order: "asc" },
+          },
+        },
+      });
+
+      if (!fresh) throw new Error("Profile not found after upsert");
+      return toProfileData(fresh);
     });
-
-    if (data.experiences !== undefined) {
-      await syncExperiences(tx, profile.id, data.experiences);
-    }
-
-    if (data.educations !== undefined) {
-      await syncEducations(tx, profile.id, data.educations);
-    }
-
-    if (data.skills !== undefined) {
-      await syncSkills(tx, profile.id, data.skills);
-    }
-
-    const fresh = await tx.profile.findUnique({
-      where: { id: profile.id },
-      include: {
-        experiences: {
-          orderBy: { order: "asc" },
-        },
-        // Mirror getProfile's ordering so the post-save response and a
-        // page-refresh response display educations in the same order.
-        educations: {
-          orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
-        },
-        skills: {
-          orderBy: { order: "asc" },
-        },
-      },
-    });
-
-    if (!fresh) throw new Error("Profile not found after upsert");
-    return toProfileData(fresh);
-  });
+  }
 }

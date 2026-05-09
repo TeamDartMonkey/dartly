@@ -92,8 +92,8 @@ export function ResearchSection({ job, onJobUpdated }: Props) {
             <h2 className="text-base font-medium text-zinc-50">Company Research</h2>
             <p className="mt-1 text-sm text-zinc-400">
               Generate AI-assisted research about{" "}
-              <span className="text-zinc-300">{job.company}</span> to help you
-              prepare for interviews and tailor your application.
+              <span className="text-zinc-300">{job.company}</span> to help you prepare for
+              interviews and tailor your application.
             </p>
           </div>
           {/* Gemini badge — makes it clear this is AI-generated */}
@@ -111,8 +111,7 @@ export function ResearchSection({ job, onJobUpdated }: Props) {
             htmlFor="research-context"
             className="block text-xs font-medium text-zinc-400 mb-1"
           >
-            Additional context{" "}
-            <span className="text-zinc-600 font-normal">(optional)</span>
+            Additional context <span className="text-zinc-600 font-normal">(optional)</span>
           </label>
           <textarea
             id="research-context"
@@ -123,9 +122,7 @@ export function ResearchSection({ job, onJobUpdated }: Props) {
             maxLength={2000}
             className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-y"
           />
-          <p className="mt-1 text-xs text-zinc-600 text-right">
-            {userContext.length}/2000
-          </p>
+          <p className="mt-1 text-xs text-zinc-600 text-right">{userContext.length}/2000</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -158,9 +155,7 @@ export function ResearchSection({ job, onJobUpdated }: Props) {
             )}
           </button>
           {hasContent && !generating && (
-            <p className="text-xs text-zinc-500">
-              Regenerating will overwrite the current notes.
-            </p>
+            <p className="text-xs text-zinc-500">Regenerating will overwrite the current notes.</p>
           )}
         </div>
       </div>
@@ -171,9 +166,7 @@ export function ResearchSection({ job, onJobUpdated }: Props) {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-medium text-zinc-50">Research notes</h3>
             <div className="flex items-center gap-2">
-              {isDirty && (
-                <span className="text-xs text-amber-400">Unsaved changes</span>
-              )}
+              {isDirty && <span className="text-xs text-amber-400">Unsaved changes</span>}
               <button
                 type="button"
                 onClick={handleSave}
@@ -196,8 +189,7 @@ export function ResearchSection({ job, onJobUpdated }: Props) {
             aria-label="Company research notes"
           />
           <p className="mt-2 text-xs text-zinc-600">
-            Edit these notes freely — they are saved only to this job and never
-            used as AI input.
+            Edit these notes freely — they are saved only to this job and never used as AI input.
           </p>
         </div>
       )}

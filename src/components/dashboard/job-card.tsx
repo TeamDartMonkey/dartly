@@ -23,14 +23,7 @@ function getStageOptions(_currentStage: JobStage) {
   });
 }
 
-function JobCardImpl({
-  job,
-  onEdit,
-  onDelete,
-  onStageChange,
-  onArchive,
-  onRestore,
-}: JobCardProps) {
+function JobCardImpl({ job, onEdit, onDelete, onStageChange, onArchive, onRestore }: JobCardProps) {
   const router = useRouter();
   const [isChangingStage, setIsChangingStage] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
@@ -298,9 +291,10 @@ function JobCardImpl({
   );
 }
 
-// Memoize to avoid re-rendering every card on every keystroke when the
-// parent's filtered array reference changes. With JSON-stringify-based
-// equality on the job prop and stable callback references from the parent,
-// re-renders are limited to cards whose job actually changed.
+// Wrap with memo so that, when the parent passes stable (useCallback-wrapped)
+// handlers, re-renders are limited to cards whose `job` prop actually
+// changed. Today the parent passes some inline arrow handlers which defeats
+// memoization, but adding memo at the leaf is cheap and lets parent
+// optimization (when added) take effect without further changes here.
 const JobCard = memo(JobCardImpl);
 export default JobCard;

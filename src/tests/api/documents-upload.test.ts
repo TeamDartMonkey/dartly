@@ -97,7 +97,9 @@ type StubFile = {
 };
 
 // Real-PDF-like buffer must start with the magic bytes "%PDF-".
-function pdfFile(opts: { size?: number; type?: string; name?: string; magic?: boolean } = {}): StubFile {
+function pdfFile(
+  opts: { size?: number; type?: string; name?: string; magic?: boolean } = {}
+): StubFile {
   const size = opts.size ?? 1024;
   const useMagic = opts.magic !== false;
   return {

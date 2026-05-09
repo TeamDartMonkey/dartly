@@ -55,15 +55,12 @@ export function PrepNotesSection({ job, onJobUpdated }: Props) {
         <div>
           <h2 className="text-base font-medium text-zinc-50">Interview Prep Notes</h2>
           <p className="mt-1 text-sm text-zinc-400">
-            Keep your preparation notes for{" "}
-            <span className="text-zinc-300">{job.company}</span> in one place.
-            These notes are private to this job.
+            Keep your preparation notes for <span className="text-zinc-300">{job.company}</span> in
+            one place. These notes are private to this job.
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          {isDirty && (
-            <span className="text-xs text-amber-400">Unsaved changes</span>
-          )}
+          {isDirty && <span className="text-xs text-amber-400">Unsaved changes</span>}
           <button
             type="button"
             onClick={handleSave}
@@ -86,13 +83,11 @@ export function PrepNotesSection({ job, onJobUpdated }: Props) {
 
       <div className="mt-3 flex items-center justify-between">
         <p className="text-xs text-zinc-600">
-          Tip: Use the Research tab to generate company background, then come
-          back here to build your prep around it.
+          Tip: Use the Research tab to generate company background, then come back here to build
+          your prep around it.
         </p>
         {notes.length > 0 && (
-          <p className="text-xs text-zinc-600 shrink-0 ml-4">
-            {notes.length} characters
-          </p>
+          <p className="text-xs text-zinc-600 shrink-0 ml-4">{notes.length} characters</p>
         )}
       </div>
     </div>

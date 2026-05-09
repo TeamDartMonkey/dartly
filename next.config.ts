@@ -43,6 +43,10 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob:",
       "font-src 'self'",
+      // pdfjs-dist may fall back to a blob:-URL worker when the configured
+      // workerSrc fails to load. Without 'worker-src self blob:', CSP would
+      // block that fallback and the PDF viewer breaks silently.
+      "worker-src 'self' blob:",
       // Add wss:// origin for Supabase Realtime; without it CSP blocks the
       // websocket connection.
       `connect-src 'self' ${supabaseHost} ${supabaseWsOrigin}`.trim(),

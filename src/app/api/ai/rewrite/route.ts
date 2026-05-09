@@ -36,10 +36,13 @@ export async function POST(request: NextRequest) {
         instruction,
       });
 
+      // Log only the length of the user-supplied instruction, not the
+      // content itself, to avoid persisting arbitrary user prose (which can
+      // include PII or sensitive context) into log files.
       logger.info("AI rewrite generated", {
         userId: user.id,
         documentId,
-        instruction,
+        instructionLength: instruction.length,
       });
 
       return NextResponse.json(

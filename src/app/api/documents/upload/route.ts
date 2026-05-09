@@ -72,10 +72,7 @@ export async function POST(request: NextRequest) {
         name: formData.get("name"),
       });
       if (!fieldsResult.success) {
-        return NextResponse.json(
-          { error: z.prettifyError(fieldsResult.error) },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: z.prettifyError(fieldsResult.error) }, { status: 400 });
       }
       const { type, name } = fieldsResult.data;
 
@@ -124,7 +121,10 @@ export async function POST(request: NextRequest) {
       // is inside the rollback-guarding try; later serialization runs after
       // the commit so a JSON serialization error does not delete a real
       // storage object.
-      let result: { doc: Awaited<ReturnType<typeof prisma.document.create>>; version: Awaited<ReturnType<typeof prisma.documentVersion.create>> };
+      let result: {
+        doc: Awaited<ReturnType<typeof prisma.document.create>>;
+        version: Awaited<ReturnType<typeof prisma.documentVersion.create>>;
+      };
       try {
         result = await prisma.$transaction(async (tx) => {
           const doc = await tx.document.create({

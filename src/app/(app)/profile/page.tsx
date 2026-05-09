@@ -83,8 +83,12 @@ export default function ProfilePage() {
     );
     if (!isDirty) return;
 
-    const merged = { ...profile, ...fields };
-    setProfile(merged);
+    // Snapshot only the fields this update modifies so a concurrent
+    // sibling save isn't reverted on this request's failure.
+    const previousValues = Object.fromEntries(
+      (Object.keys(fields) as (keyof ProfileData)[]).map((k) => [k, profile[k]])
+    );
+    setProfile((prev) => ({ ...prev, ...fields }));
 
     const payload = Object.fromEntries(
       Object.entries(fields).map(([k, v]) => [k, v === undefined ? null : v])
@@ -106,7 +110,9 @@ export default function ProfilePage() {
       showToast(message ?? "Profile updated");
       router.refresh();
     } else {
-      setProfile(profile);
+      // Revert only the fields this request set. Using a functional setter
+      // means a concurrent sibling save's optimistic update is preserved.
+      setProfile((prev) => ({ ...prev, ...previousValues }));
       showToast("Failed to update profile", "error");
     }
   }
