@@ -10,7 +10,7 @@ function isPublicRoute(pathname: string): boolean {
   return publicRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const publicRoute = isPublicRoute(pathname);
 
