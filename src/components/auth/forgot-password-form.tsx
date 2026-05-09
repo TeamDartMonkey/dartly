@@ -54,14 +54,21 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} noValidate className="space-y-4">
       {error && (
         <div className="rounded-md bg-red-500/10 border border-red-500/20 px-3 py-2 text-sm text-red-400">
           {error}
         </div>
       )}
 
-      <Input id="email" label="Email" name="email" type="text" placeholder="you@example.com" />
+      <Input
+        id="email"
+        label="Email"
+        name="email"
+        type="email"
+        autoComplete="email"
+        placeholder="you@example.com"
+      />
 
       <button
         type="submit"

@@ -1,10 +1,24 @@
 "use client";
 
+import { defaultSchema } from "hast-util-sanitize";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import Markdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
+import rehypeSanitize from "rehype-sanitize";
 import { RewritePanel } from "@/components/documents/rewrite-panel";
+
+// Resume content (especially Jake's-Resume format) embeds inline span/div/br
+// with `class` attributes for layout. We extend the default sanitize schema
+// to allow exactly those elements/attributes — never script, iframe, on*, etc.
+const RESUME_SANITIZE_SCHEMA = {
+  ...defaultSchema,
+  attributes: {
+    ...defaultSchema.attributes,
+    "*": [...(defaultSchema.attributes?.["*"] ?? []), "className", "class"],
+  },
+  tagNames: [...(defaultSchema.tagNames ?? []), "span", "div", "br"],
+};
 import { ConfirmArchiveModal } from "@/components/ui/confirm-archive-modal";
 import { ConfirmDeleteModal } from "@/components/ui/confirm-delete-modal";
 import { Select } from "@/components/ui/select";
@@ -551,7 +565,9 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                     <div
                       className={`jakes-resume-preview${doc.type === "COVER_LETTER" ? " cover-letter-preview" : ""}`}
                     >
-                      <Markdown rehypePlugins={[rehypeRaw]}>{displayContent}</Markdown>
+                      <Markdown rehypePlugins={[rehypeRaw, [rehypeSanitize, RESUME_SANITIZE_SCHEMA]]}>
+                        {displayContent}
+                      </Markdown>
                     </div>
                   ) : (
                     <span className="text-zinc-500 italic">No content</span>
@@ -561,7 +577,9 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                 <div className="bg-zinc-950 rounded-md p-4 overflow-auto">
                   {displayContent ? (
                     <div className="markdown-viewer max-w-3xl mx-auto">
-                      <Markdown rehypePlugins={[rehypeRaw]}>{displayContent}</Markdown>
+                      <Markdown rehypePlugins={[rehypeRaw, [rehypeSanitize, RESUME_SANITIZE_SCHEMA]]}>
+                        {displayContent}
+                      </Markdown>
                     </div>
                   ) : (
                     <span className="text-zinc-500 italic">No content</span>

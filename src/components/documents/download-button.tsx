@@ -32,11 +32,23 @@ async function downloadUploadedById(name: string, docId: string) {
   await downloadUploaded(name, url);
 }
 
-function stripDangerousHtml(html: string): string {
-  return html
-    .replace(/<script[\s\S]*?<\/script>/gi, "")
-    .replace(/<iframe[\s\S]*?<\/iframe>/gi, "")
-    .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "");
+// Sanitizes HTML using hast-util-sanitize (same approach as the in-app
+// markdown renderer). The previous regex-based blacklist could not stop
+// attribute-encoded handlers, namespaced events, javascript: URLs, etc.
+async function sanitizeResumeHtml(html: string): Promise<string> {
+  const { rehype } = await import("rehype");
+  const rehypeSanitize = (await import("rehype-sanitize")).default;
+  const { defaultSchema } = await import("hast-util-sanitize");
+  const schema = {
+    ...defaultSchema,
+    attributes: {
+      ...defaultSchema.attributes,
+      "*": [...(defaultSchema.attributes?.["*"] ?? []), "className", "class"],
+    },
+    tagNames: [...(defaultSchema.tagNames ?? []), "span", "div", "br"],
+  };
+  const file = await rehype().data("settings", { fragment: true }).use(rehypeSanitize, schema).process(html);
+  return String(file);
 }
 
 export async function downloadGenerated(name: string, type: string, content: string) {
@@ -46,7 +58,7 @@ export async function downloadGenerated(name: string, type: string, content: str
   const { default: remarkHtml } = await import("remark-html");
 
   const result = await remark().use(remarkHtml).process(content);
-  const htmlContent = stripDangerousHtml(String(result));
+  const htmlContent = await sanitizeResumeHtml(String(result));
 
   const cssRes = await fetch("/jakes-resume.css");
   const cssText = cssRes.ok ? await cssRes.text() : "";
