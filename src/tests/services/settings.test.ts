@@ -2,9 +2,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockFindUnique = vi.fn();
 const mockUpsert = vi.fn();
+const mockTransaction = vi.fn();
+
+const tx = {
+  userSettings: {
+    findUnique: mockFindUnique,
+    upsert: mockUpsert,
+  },
+};
 
 vi.mock("@/services/prisma", () => ({
   prisma: {
+    $transaction: mockTransaction,
     userSettings: {
       findUnique: mockFindUnique,
       upsert: mockUpsert,
@@ -18,6 +27,7 @@ const { DEFAULT_PREFERENCES } = await import("@/types/settings");
 describe("settings service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockTransaction.mockImplementation(async (cb: (t: typeof tx) => Promise<unknown>) => cb(tx));
   });
 
   describe("getSettings", () => {

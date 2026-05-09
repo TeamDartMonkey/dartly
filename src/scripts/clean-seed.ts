@@ -3,6 +3,14 @@ import { prisma } from "@/services/prisma";
 const USER_A = "a818c364-412a-4545-8c88-f7b4cba05307";
 const USER_B = "77475f79-adb0-4de2-a61c-5ff34eb96ce7";
 
+// Refuse to run against production. The seed/clean scripts target two
+// hardcoded demo user IDs, so the blast radius is limited, but accidental
+// invocation against a prod DATABASE_URL is still destructive.
+if (process.env.NODE_ENV === "production") {
+  console.error("Refusing to run clean-seed in production.");
+  process.exit(1);
+}
+
 async function main() {
   console.log("=== Dartly Demo Clean Script ===");
 
