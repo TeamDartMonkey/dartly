@@ -89,12 +89,15 @@ export async function POST(request: NextRequest) {
         throw new ApiError(500, "File upload failed");
       }
 
-      // Wrap the three Prisma writes in a single transaction so a failure
-      // cannot leave a half-created Document; on transaction failure we
-      // delete the storage object to keep the bucket clean.
-      let createdDocId: string | null = null;
+      // Wrap the Prisma writes in a single transaction so a failure cannot
+      // leave a half-created Document; on transaction failure we delete the
+      // storage object to keep the bucket clean. Only the transaction await
+      // is inside the rollback-guarding try; later serialization runs after
+      // the commit so a JSON serialization error does not delete a real
+      // storage object.
+      let result: { doc: Awaited<ReturnType<typeof prisma.document.create>>; version: Awaited<ReturnType<typeof prisma.documentVersion.create>> };
       try {
-        const result = await prisma.$transaction(async (tx) => {
+        result = await prisma.$transaction(async (tx) => {
           const doc = await tx.document.create({
             data: { userId: user.id, type, name: name.trim(), status: "UPLOADED" },
           });
@@ -106,30 +109,8 @@ export async function POST(request: NextRequest) {
               fileUrl: storagePath,
             },
           });
-          createdDocId = doc.id;
           return { doc, version };
         });
-
-        logger.info("Document uploaded", {
-          userId: user.id,
-          documentId: result.doc.id,
-          type,
-          storagePath,
-        });
-
-        return NextResponse.json(
-          {
-            id: result.doc.id,
-            type: result.doc.type,
-            name: result.doc.name,
-            status: result.doc.status,
-            versionNumber: result.version.versionNumber,
-            fileUrl: storagePath,
-            createdAt: result.doc.createdAt.toISOString(),
-            updatedAt: result.doc.updatedAt.toISOString(),
-          },
-          { status: 201 }
-        );
       } catch (dbError) {
         // Best-effort rollback of the storage upload so the bucket stays clean.
         await supabase.storage
@@ -141,11 +122,31 @@ export async function POST(request: NextRequest) {
         logger.error("Document upload DB write failed; storage object removed", {
           userId: user.id,
           storagePath,
-          createdDocId,
           message: dbError instanceof Error ? dbError.message : String(dbError),
         });
         throw new ApiError(500, "Document upload failed");
       }
+
+      logger.info("Document uploaded", {
+        userId: user.id,
+        documentId: result.doc.id,
+        type,
+        storagePath,
+      });
+
+      return NextResponse.json(
+        {
+          id: result.doc.id,
+          type: result.doc.type,
+          name: result.doc.name,
+          status: result.doc.status,
+          versionNumber: result.version.versionNumber,
+          fileUrl: storagePath,
+          createdAt: result.doc.createdAt.toISOString(),
+          updatedAt: result.doc.updatedAt.toISOString(),
+        },
+        { status: 201 }
+      );
     } catch (err) {
       return handleApiError(err);
     }

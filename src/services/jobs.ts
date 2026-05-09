@@ -74,10 +74,17 @@ export async function getJobsByUserId(userId: string) {
   });
 }
 
+function toPrismaStage(uiStage: JobStage | undefined): PrismaJobStage | undefined {
+  if (uiStage === undefined) return undefined;
+  const mapped = STAGE_UI_TO_PRISMA[uiStage];
+  if (!mapped) {
+    throw new Error(`Unknown job stage: ${uiStage}`);
+  }
+  return mapped as PrismaJobStage;
+}
+
 export async function createJob(data: CreateJobInput) {
-  const prismaStage = data.stage
-    ? (STAGE_UI_TO_PRISMA[data.stage] as PrismaJobStage)
-    : "INTERESTED";
+  const prismaStage: PrismaJobStage = toPrismaStage(data.stage) ?? "INTERESTED";
 
   return prisma.$transaction(async (tx) => {
     const job = await tx.job.create({
@@ -116,8 +123,8 @@ export async function updateJob(id: string, userId: string, data: UpdateJobInput
   const existing = await prisma.job.findFirst({ where: { id, userId } });
   if (!existing) return null;
 
-  const prismaStage = data.stage ? (STAGE_UI_TO_PRISMA[data.stage] as PrismaJobStage) : undefined;
-  const stageChanged = prismaStage && prismaStage !== existing.stage;
+  const prismaStage = toPrismaStage(data.stage);
+  const stageChanged = prismaStage !== undefined && prismaStage !== existing.stage;
   const leavingInterested = stageChanged && existing.stage === "INTERESTED";
 
   return prisma.$transaction(async (tx) => {

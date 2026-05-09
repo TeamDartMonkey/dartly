@@ -24,17 +24,22 @@ export function MetricsPanel({ refreshKey }: { refreshKey: number }) {
   const router = useRouter();
   const [metrics, setMetrics] = useState<MetricsResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [expanded, setExpanded] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    setExpanded(stored === null ? true : stored === "true");
-  }, []);
+  // Lazy-init from localStorage so the panel renders in the correct expanded
+  // state on first paint instead of flickering after hydration.
+  const [expanded, setExpanded] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    return stored === null ? true : stored === "true";
+  });
 
   const toggleExpanded = useCallback(() => {
     setExpanded((prev) => {
       const next = !prev;
-      localStorage.setItem(STORAGE_KEY, String(next));
+      try {
+        localStorage.setItem(STORAGE_KEY, String(next));
+      } catch {
+        /* private mode / quota — ignore */
+      }
       return next;
     });
   }, []);
@@ -42,7 +47,8 @@ export function MetricsPanel({ refreshKey }: { refreshKey: number }) {
   // biome-ignore lint/correctness/useExhaustiveDependencies: refreshKey intentionally triggers re-fetch
   useEffect(() => {
     setLoading(true);
-    fetch("/api/metrics")
+    const ctrl = new AbortController();
+    fetch("/api/metrics", { signal: ctrl.signal })
       .then((res) => {
         if (res.status === 401) {
           router.push("/login");
@@ -52,9 +58,17 @@ export function MetricsPanel({ refreshKey }: { refreshKey: number }) {
         return res.json();
       })
       .then((data) => {
+        if (ctrl.signal.aborted) return;
         if (data) setMetrics(data);
       })
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (ctrl.signal.aborted || err?.name === "AbortError") return;
+        // Don't toast on metrics — failure should be silent (panel just hides).
+      })
+      .finally(() => {
+        if (!ctrl.signal.aborted) setLoading(false);
+      });
+    return () => ctrl.abort();
   }, [router, refreshKey]);
 
   if (loading) {
@@ -74,8 +88,6 @@ export function MetricsPanel({ refreshKey }: { refreshKey: number }) {
   }
 
   if (!metrics || metrics.totalJobs === 0) return null;
-
-  if (expanded === null) return null;
 
   const cards = [
     {

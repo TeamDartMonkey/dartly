@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type ToastType = "success" | "error" | "info";
 
@@ -99,19 +99,32 @@ const DURATION = 3500;
 
 export function ToastContainer() {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const timersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
 
-  const addToast = useCallback((message: string, type: ToastType = "success") => {
-    const id = nextId++;
-    setToasts((prev) => [...prev, { id, message, type, exiting: false }]);
-
-    setTimeout(() => {
-      setToasts((prev) => prev.map((t) => (t.id === id ? { ...t, exiting: true } : t)));
-    }, DURATION);
-
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, DURATION + 300);
+  const trackTimer = useCallback((cb: () => void, ms: number) => {
+    const t = setTimeout(() => {
+      timersRef.current.delete(t);
+      cb();
+    }, ms);
+    timersRef.current.add(t);
+    return t;
   }, []);
+
+  const addToast = useCallback(
+    (message: string, type: ToastType = "success") => {
+      const id = nextId++;
+      setToasts((prev) => [...prev, { id, message, type, exiting: false }]);
+
+      trackTimer(() => {
+        setToasts((prev) => prev.map((t) => (t.id === id ? { ...t, exiting: true } : t)));
+      }, DURATION);
+
+      trackTimer(() => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+      }, DURATION + 300);
+    },
+    [trackTimer]
+  );
 
   useEffect(() => {
     listeners.add(addToast);
@@ -120,9 +133,18 @@ export function ToastContainer() {
     };
   }, [addToast]);
 
+  // Clear pending timers on unmount so setState does not run on a dead tree.
+  useEffect(() => {
+    const timers = timersRef.current;
+    return () => {
+      for (const t of timers) clearTimeout(t);
+      timers.clear();
+    };
+  }, []);
+
   function dismiss(id: number) {
     setToasts((prev) => prev.map((t) => (t.id === id ? { ...t, exiting: true } : t)));
-    setTimeout(() => {
+    trackTimer(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 300);
   }
@@ -176,8 +198,10 @@ export function ToastContainer() {
           </button>
 
           <div
-            className={`absolute bottom-0 left-0 h-[2px] ${PROGRESS[toast.type]} animate-[progressShrink_${DURATION}ms_linear_forwards]`}
-            style={{ width: "100%" }}
+            className={`absolute bottom-0 left-0 h-[2px] ${PROGRESS[toast.type]}`}
+            // Inline animation so the duration constant is honored regardless
+            // of Tailwind v4's static-extraction limits on dynamic class names.
+            style={{ width: "100%", animation: `progressShrink ${DURATION}ms linear forwards` }}
           />
         </div>
       ))}

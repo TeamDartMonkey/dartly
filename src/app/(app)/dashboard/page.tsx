@@ -30,7 +30,8 @@ export default function DashboardPage() {
   const [metricsKey, setMetricsKey] = useState(0);
 
   useEffect(() => {
-    fetch("/api/jobs")
+    const ctrl = new AbortController();
+    fetch("/api/jobs", { signal: ctrl.signal })
       .then((res) => {
         if (res.status === 401) {
           router.push("/login");
@@ -42,12 +43,17 @@ export default function DashboardPage() {
         return res.json();
       })
       .then((data) => {
+        if (ctrl.signal.aborted) return;
         if (data && Array.isArray(data)) setJobs(data);
       })
-      .catch(() => {
+      .catch((err) => {
+        if (ctrl.signal.aborted || err?.name === "AbortError") return;
         showToast("Failed to load jobs", "error");
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!ctrl.signal.aborted) setLoading(false);
+      });
+    return () => ctrl.abort();
   }, [router]);
 
   function handleAddClick() {

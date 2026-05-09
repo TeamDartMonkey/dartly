@@ -45,7 +45,12 @@ const FUNNEL_RANK: Record<string, number> = {
 };
 
 export async function getDashboardMetrics(userId: string): Promise<DashboardMetrics> {
-  const jobs = await prisma.job.findMany({ where: { userId } });
+  // Select only the columns we use; description, recruiterNotes, etc. can be
+  // many KB each and are not needed for stage aggregation.
+  const jobs = await prisma.job.findMany({
+    where: { userId },
+    select: { id: true, stage: true, applicationDate: true },
+  });
 
   const stageCounts: Record<string, number> = {};
   for (const job of jobs) {
@@ -93,17 +98,26 @@ export async function getDashboardMetrics(userId: string): Promise<DashboardMetr
 }
 
 export async function getAnalyticsBreakdown(userId: string): Promise<AnalyticsBreakdown> {
-  const jobs = await prisma.job.findMany({ where: { userId } });
+  const jobs = await prisma.job.findMany({
+    where: { userId },
+    select: { id: true, stage: true, applicationDate: true },
+  });
   const jobIds = jobs.map((j) => j.id);
   const history =
     jobIds.length > 0
-      ? await prisma.jobStageHistory.findMany({ where: { jobId: { in: jobIds } } })
+      ? await prisma.jobStageHistory.findMany({
+          where: { jobId: { in: jobIds } },
+          select: { jobId: true, toStage: true, changedAt: true },
+        })
       : [];
 
   return {
     velocity: computeVelocity(jobs),
     funnel: computeFunnel(jobs, history),
-    timeInStage: computeTimeInStage(history),
+    // Pass current jobs so computeTimeInStage can include time-in-current-stage
+    // (the most recent transition until now), not just time between past
+    // transitions.
+    timeInStage: computeTimeInStage(history, jobs),
   };
 }
 
@@ -180,21 +194,35 @@ function computeFunnel(
 }
 
 function computeTimeInStage(
-  history: { jobId: string; toStage: string; changedAt: Date }[]
+  history: { jobId: string; toStage: string; changedAt: Date }[],
+  jobs: { id: string; stage: string }[] = []
 ): Partial<Record<string, number>> {
-  const byJob = new Map<string, { toStage: string; changedAt: Date }[]>();
+  type StageEvent = { toStage: string; changedAt: Date };
+  const byJob = new Map<string, StageEvent[]>();
   for (const h of history) {
     const arr = byJob.get(h.jobId) ?? [];
-    arr.push(h);
+    arr.push({ toStage: h.toStage, changedAt: h.changedAt });
     byJob.set(h.jobId, arr);
+  }
+
+  // Append a synthetic "now" transition for each job so the time spent in the
+  // current stage is included in the average. Without this, the metric
+  // systematically under-reports active stages (a job that has been in
+  // INTERVIEW for 60 days with no further transitions contributes 0).
+  const now = new Date();
+  for (const job of jobs) {
+    const events = byJob.get(job.id);
+    if (!events || events.length === 0) continue;
+    events.push({ toStage: job.stage, changedAt: now });
   }
 
   const sums: Record<string, { totalDays: number; count: number }> = {};
   for (const events of byJob.values()) {
-    events.sort((a, b) => a.changedAt.getTime() - b.changedAt.getTime());
-    for (let i = 0; i < events.length - 1; i++) {
-      const stage = events[i].toStage;
-      const days = (events[i + 1].changedAt.getTime() - events[i].changedAt.getTime()) / DAY_MS;
+    // Don't mutate the caller's array.
+    const sorted = [...events].sort((a, b) => a.changedAt.getTime() - b.changedAt.getTime());
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const stage = sorted[i].toStage;
+      const days = (sorted[i + 1].changedAt.getTime() - sorted[i].changedAt.getTime()) / DAY_MS;
       const bucket = sums[stage] ?? { totalDays: 0, count: 0 };
       bucket.totalDays += days;
       bucket.count += 1;

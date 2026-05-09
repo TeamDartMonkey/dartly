@@ -8,16 +8,19 @@ import rehypeRaw from "rehype-raw";
 import rehypeSanitize from "rehype-sanitize";
 import { RewritePanel } from "@/components/documents/rewrite-panel";
 
-// Resume content (especially Jake's-Resume format) embeds inline span/div/br
-// with `class` attributes for layout. We extend the default sanitize schema
-// to allow exactly those elements/attributes — never script, iframe, on*, etc.
+// Resume content (Jake's-Resume format) embeds inline span/div/br with `class`
+// attributes for layout. We extend the default sanitize schema narrowly:
+// `class` is permitted only on span and div (not globally), and only on the
+// added tags. Script/iframe/on*/etc. remain blocked by defaultSchema.
 const RESUME_SANITIZE_SCHEMA = {
   ...defaultSchema,
   attributes: {
     ...defaultSchema.attributes,
-    "*": [...(defaultSchema.attributes?.["*"] ?? []), "className", "class"],
+    span: [...(defaultSchema.attributes?.span ?? []), "className", "class"],
+    div: [...(defaultSchema.attributes?.div ?? []), "className", "class"],
   },
-  tagNames: [...(defaultSchema.tagNames ?? []), "span", "div", "br"],
+  // br is already in defaultSchema.tagNames; we add span/div which are not.
+  tagNames: Array.from(new Set([...(defaultSchema.tagNames ?? []), "span", "div"])),
 };
 import { ConfirmArchiveModal } from "@/components/ui/confirm-archive-modal";
 import { ConfirmDeleteModal } from "@/components/ui/confirm-delete-modal";
@@ -81,18 +84,27 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   const renameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    params.then((p) => setId(p.id));
+    let cancelled = false;
+    params.then((p) => {
+      if (!cancelled) setId(p.id);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [params]);
 
   useEffect(() => {
     if (!id) return;
+    const ctrl = new AbortController();
 
     async function loadData() {
       try {
         const [docRes, verRes] = await Promise.all([
-          fetch(`/api/documents/${id}`),
-          fetch(`/api/documents/${id}/versions`),
+          fetch(`/api/documents/${id}`, { signal: ctrl.signal }),
+          fetch(`/api/documents/${id}/versions`, { signal: ctrl.signal }),
         ]);
+
+        if (ctrl.signal.aborted) return;
 
         if (docRes.status === 401) {
           router.push("/login");
@@ -108,13 +120,14 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
         if (!docRes.ok) throw new Error(`HTTP ${docRes.status}`);
 
         const docData = await docRes.json();
+        if (ctrl.signal.aborted) return;
         setDoc(docData);
         setEditContent(docData.content ?? "");
         setRenameValue(docData.name);
 
         if (verRes.ok) {
           const verData = await verRes.json();
-          if (Array.isArray(verData)) {
+          if (!ctrl.signal.aborted && Array.isArray(verData)) {
             setVersions(verData);
             if (verData.length > 0) {
               setSelectedVersionId(verData[0].id);
@@ -126,25 +139,30 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
         if (docData.status === "UPLOADED" || docData.status === "ARCHIVED") {
           setLoadingSignedUrl(true);
           try {
-            const urlRes = await fetch(`/api/documents/${id}/signed-url`);
+            const urlRes = await fetch(`/api/documents/${id}/signed-url`, {
+              signal: ctrl.signal,
+            });
+            if (ctrl.signal.aborted) return;
             if (urlRes.ok) {
               const { url } = await urlRes.json();
-              setSignedUrl(url);
+              if (!ctrl.signal.aborted) setSignedUrl(url);
             } else {
               showToast("Failed to load file preview", "error");
             }
           } finally {
-            setLoadingSignedUrl(false);
+            if (!ctrl.signal.aborted) setLoadingSignedUrl(false);
           }
         }
-      } catch {
+      } catch (err) {
+        if (ctrl.signal.aborted || (err as Error)?.name === "AbortError") return;
         showToast("Failed to load document", "error");
       } finally {
-        setLoading(false);
+        if (!ctrl.signal.aborted) setLoading(false);
       }
     }
 
     loadData();
+    return () => ctrl.abort();
   }, [id, router]);
 
   async function handleSave() {

@@ -41,43 +41,61 @@ export default function JobDetailPage({ params }: { params: Promise<{ jobId: str
   const [activeTab, setActiveTab] = useState<Tab>("overview");
 
   useEffect(() => {
-    params.then(({ jobId }) => setJobId(jobId));
+    let cancelled = false;
+    params.then(({ jobId }) => {
+      if (!cancelled) setJobId(jobId);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [params]);
 
-  const fetchJob = useCallback(async () => {
-    if (!jobId) return;
-    try {
-      const res = await fetch(`/api/jobs/${jobId}`);
-      if (res.status === 401) {
-        router.push("/login");
-        return;
+  const fetchJob = useCallback(
+    async (signal?: AbortSignal) => {
+      if (!jobId) return;
+      try {
+        const res = await fetch(`/api/jobs/${jobId}`, { signal });
+        if (res.status === 401) {
+          router.push("/login");
+          return;
+        }
+        if (res.status === 404) {
+          router.push("/dashboard");
+          return;
+        }
+        if (!res.ok) throw new Error();
+        if (!signal?.aborted) setJob(await res.json());
+      } catch (err) {
+        if (signal?.aborted || (err as Error)?.name === "AbortError") return;
+        showToast("Failed to load job", "error");
       }
-      if (res.status === 404) {
-        router.push("/dashboard");
-        return;
-      }
-      if (!res.ok) throw new Error();
-      setJob(await res.json());
-    } catch {
-      showToast("Failed to load job", "error");
-    }
-  }, [jobId, router]);
+    },
+    [jobId, router]
+  );
 
-  const fetchActivities = useCallback(async () => {
-    if (!jobId) return;
-    try {
-      const res = await fetch(`/api/jobs/${jobId}/activities`);
-      if (!res.ok) throw new Error();
-      setActivities(await res.json());
-    } catch {
-      showToast("Failed to load activities", "error");
-    }
-  }, [jobId]);
+  const fetchActivities = useCallback(
+    async (signal?: AbortSignal) => {
+      if (!jobId) return;
+      try {
+        const res = await fetch(`/api/jobs/${jobId}/activities`, { signal });
+        if (!res.ok) throw new Error();
+        if (!signal?.aborted) setActivities(await res.json());
+      } catch (err) {
+        if (signal?.aborted || (err as Error)?.name === "AbortError") return;
+        showToast("Failed to load activities", "error");
+      }
+    },
+    [jobId]
+  );
 
   useEffect(() => {
     if (!jobId) return;
     setLoading(true);
-    Promise.all([fetchJob(), fetchActivities()]).finally(() => setLoading(false));
+    const ctrl = new AbortController();
+    Promise.all([fetchJob(ctrl.signal), fetchActivities(ctrl.signal)]).finally(() => {
+      if (!ctrl.signal.aborted) setLoading(false);
+    });
+    return () => ctrl.abort();
   }, [jobId, fetchJob, fetchActivities]);
 
   if (loading) {
