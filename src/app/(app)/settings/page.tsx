@@ -68,7 +68,7 @@ export default function SettingsPage() {
         <p className="mt-1 text-sm text-zinc-400">Manage your account and preferences.</p>
       </div>
 
-      <div className="space-y-8">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:items-start">
         <AccountSection />
         {/* TODO: Future feature — email notification pipeline
             <NotificationSection preferences={notifications} onToggle={handleToggleNotification} />
