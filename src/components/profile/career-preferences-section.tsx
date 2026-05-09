@@ -46,8 +46,10 @@ export function CareerPreferencesSection({ profile, onUpdate }: CareerPreference
       workModePreference: workMode || undefined,
       salaryPreference: (() => {
         if (!salary) return undefined;
-        const n = Number.parseInt(salary, 10);
-        return Number.isFinite(n) && n >= 0 ? n : undefined;
+        // Use Number + isInteger to reject "1e9", "45.5", "45k" etc rather
+        // than silently coercing to an unexpected integer.
+        const n = Number(salary);
+        return Number.isInteger(n) && n >= 0 ? n : undefined;
       })(),
     });
     setModalOpen(false);

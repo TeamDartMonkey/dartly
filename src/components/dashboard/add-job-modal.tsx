@@ -1,13 +1,13 @@
 "use client";
 
-import JobForm from "@/components/dashboard/job-form";
+import JobForm, { type JobFormPayload } from "@/components/dashboard/job-form";
 import { Modal } from "@/components/ui/modal";
 import type { Job } from "@/types/job";
 
 type AddJobModalProps = {
   isOpen: boolean;
   initialValues?: Job | null;
-  onSubmit: (job: Omit<Job, "id" | "createdAt"> & { id?: string }) => void | Promise<void>;
+  onSubmit: (job: JobFormPayload) => void | Promise<void>;
   onClose: () => void;
 };
 

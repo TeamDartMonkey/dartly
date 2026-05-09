@@ -187,7 +187,12 @@ export function SkillsSection({ skills, onUpdate }: SkillsSectionProps) {
         <SkillForm
           key={editingIndex ?? "new"}
           skill={editingIndex !== null ? skills[editingIndex] : undefined}
-          existingNames={skills.map((s) => s.name)}
+          // Exclude the currently-edited skill so a user renaming a skill in
+          // place doesn't get a spurious "already exists" error if the parent
+          // re-renders with the just-updated name.
+          existingNames={skills
+            .filter((_, i) => i !== editingIndex)
+            .map((s) => s.name)}
           onSave={handleSave}
           onCancel={handleCloseModal}
         />

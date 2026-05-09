@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { showToast } from "@/components/ui/toast";
 import { STAGES } from "@/constants/job-stages";
 import type { Job, JobStage } from "@/types/job";
+import { localTodayString } from "@/utils/datetime";
 
 function formatRelativeDate(dateStr: string) {
   const date = new Date(dateStr);
@@ -215,7 +216,7 @@ export function OverviewSection({ job, onJobUpdated }: Props) {
                 value={form.deadline}
                 onChange={(v) => setForm((prev) => ({ ...prev, deadline: v }))}
                 placeholder="Select deadline"
-                minDate={new Date().toISOString().slice(0, 10)}
+                minDate={localTodayString()}
               />
             ) : (
               <p className="text-sm text-zinc-300 py-2 min-h-[36px]">

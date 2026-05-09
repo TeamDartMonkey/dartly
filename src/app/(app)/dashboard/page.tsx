@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import AddJobModal from "@/components/dashboard/add-job-modal";
+import type { JobFormPayload } from "@/components/dashboard/job-form";
 import FilterBar from "@/components/dashboard/filter-bar";
 import JobList from "@/components/dashboard/job-list";
 import { MetricsPanel } from "@/components/dashboard/metrics-panel";
@@ -165,7 +166,7 @@ export default function DashboardPage() {
     }
   }
 
-  async function handleSave(job: Omit<Job, "id" | "createdAt"> & { id?: string }) {
+  async function handleSave(job: JobFormPayload) {
     const existing = job.id ? jobs.find((j) => j.id === job.id) : undefined;
     const isEdit = !!existing;
 

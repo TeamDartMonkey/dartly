@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { showToast } from "@/components/ui/toast";
 import type { JobActivity } from "@/types/activity";
+import { toLocalDateTimeInput } from "@/utils/datetime";
 
 const ROUND_TYPES = [
   "Phone Screen",
@@ -44,7 +45,11 @@ export function InterviewsSection({ activities, jobId, onActivitiesChanged }: Pr
     setForm({
       roundType: activity.roundType ?? "",
       title: activity.title,
-      scheduledAt: activity.scheduledAt ? activity.scheduledAt.slice(0, 16) : "",
+      // Convert the stored UTC ISO timestamp to a local datetime-input string
+      // so what the user sees in the edit form matches what they originally
+      // selected. Otherwise the date picker treats the UTC string as local
+      // and double-skews the value on save.
+      scheduledAt: activity.scheduledAt ? toLocalDateTimeInput(activity.scheduledAt) : "",
       description: activity.description ?? "",
     });
     setShowForm(true);
@@ -64,12 +69,20 @@ export function InterviewsSection({ activities, jobId, onActivitiesChanged }: Pr
     }
     setSaving(true);
     try {
+      // On the edit path we use null for cleared fields so the server can
+      // actually clear them; JSON.stringify drops undefined keys, which the
+      // partial-update service treats as "do not change".
+      const isEdit = !!editingId;
       const payload = {
         type: "INTERVIEW",
         title: form.title.trim(),
-        roundType: form.roundType || null,
-        scheduledAt: form.scheduledAt ? new Date(form.scheduledAt).toISOString() : undefined,
-        description: form.description.trim() || undefined,
+        roundType: form.roundType || (isEdit ? null : undefined),
+        scheduledAt: form.scheduledAt
+          ? new Date(form.scheduledAt).toISOString()
+          : isEdit
+            ? null
+            : undefined,
+        description: form.description.trim() || (isEdit ? null : undefined),
       };
       const url = editingId
         ? `/api/jobs/${jobId}/activities/${editingId}`

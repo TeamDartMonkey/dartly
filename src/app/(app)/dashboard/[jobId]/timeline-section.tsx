@@ -51,10 +51,11 @@ export function TimelineSection({ activities, jobId, onActivitiesChanged }: Prop
     }
     setSaving(true);
     try {
+      const isEdit = !!editingId;
       const payload = {
         type: "NOTE",
         title: form.title.trim(),
-        description: form.description.trim() || undefined,
+        description: form.description.trim() || (isEdit ? null : undefined),
         // Parse the user-entered YYYY-MM-DD as UTC midnight so the calendar
         // date round-trips identically regardless of the user's timezone.
         scheduledAt: new Date(`${form.date}T00:00:00.000Z`).toISOString(),

@@ -45,7 +45,11 @@ function Chevron({ orientation, ...props }: ChevronProps) {
 }
 
 function time24ToParts(time24: string): { hour: string; minute: string; period: "AM" | "PM" } {
-  const [h, m] = time24.split(":").map(Number);
+  const [hRaw, mRaw] = time24.split(":").map(Number);
+  // Guard against partial input like "9" with no minutes — `mRaw` becomes NaN
+  // and pad("NaN") would render literal "NaN" in the minute input.
+  const h = Number.isFinite(hRaw) ? hRaw : 0;
+  const m = Number.isFinite(mRaw) ? mRaw : 0;
   const period = h >= 12 ? "PM" : "AM";
   const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
   return { hour: String(hour12), minute: String(m).padStart(2, "0"), period };

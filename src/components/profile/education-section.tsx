@@ -83,7 +83,10 @@ export function EducationSection({ educations, onUpdate }: EducationSectionProps
               className="group rounded-lg border border-zinc-700 bg-zinc-950/40 p-4 hover:border-zinc-600 transition-colors cursor-pointer"
               onClick={() => handleEdit(index)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") handleEdit(index);
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleEdit(index);
+                }
               }}
             >
               <div className="flex items-start justify-between">

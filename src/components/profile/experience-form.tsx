@@ -49,8 +49,10 @@ function validate(values: {
     errors.startDate = "Start date is required";
   }
 
-  if (!values.isCurrent && values.endDate) {
-    if (values.startDate && new Date(values.endDate) < new Date(values.startDate)) {
+  if (!values.isCurrent) {
+    if (!values.endDate) {
+      errors.endDate = "End date is required (or check 'I currently work here')";
+    } else if (values.startDate && new Date(values.endDate) < new Date(values.startDate)) {
       errors.endDate = "End date must be after start date";
     }
   }
