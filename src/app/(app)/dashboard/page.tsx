@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import AddJobModal from "@/components/dashboard/add-job-modal";
 import type { JobFormPayload } from "@/components/dashboard/job-form";
 import FilterBar from "@/components/dashboard/filter-bar";
@@ -13,6 +13,8 @@ import { DashboardSkeleton } from "@/components/ui/skeletons/dashboard-skeleton"
 import { showToast } from "@/components/ui/toast";
 import { useViewMode } from "@/hooks/use-view-mode";
 import type { Job, JobStage } from "@/types/job";
+import { STAGE_PRISMA_TO_UI } from "@/constants/job-stages";
+import { DEFAULT_PREFERENCES, type UserPreferences } from "@/types/settings";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -20,6 +22,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
+  const [defaultStage, setDefaultStage] = useState<JobStage>("Interested");
+  const prefsLoaded = useRef(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [pendingDeleteJob, setPendingDeleteJob] = useState<Job | null>(null);
   const [pendingArchiveJob, setPendingArchiveJob] = useState<Job | null>(null);
@@ -29,6 +33,25 @@ export default function DashboardPage() {
   const onFilteredChange = useCallback((f: Job[]) => setFiltered(f), []);
   const [viewMode, setViewMode] = useViewMode();
   const [metricsKey, setMetricsKey] = useState(0);
+
+  // Load user preferences once on mount and apply showArchived + defaultJobStage.
+  useEffect(() => {
+    const ctrl = new AbortController();
+    fetch("/api/settings", { signal: ctrl.signal })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((prefs: UserPreferences | null) => {
+        if (ctrl.signal.aborted || prefsLoaded.current) return;
+        prefsLoaded.current = true;
+        const p = prefs ?? DEFAULT_PREFERENCES;
+        setShowArchived(p.showArchived);
+        const uiStage = STAGE_PRISMA_TO_UI[p.defaultJobStage] ?? "Interested";
+        setDefaultStage(uiStage as JobStage);
+      })
+      .catch(() => {
+        // Silently fall back to defaults — preferences are non-critical.
+      });
+    return () => ctrl.abort();
+  }, []);
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -295,6 +318,7 @@ export default function DashboardPage() {
       <AddJobModal
         isOpen={showForm}
         initialValues={editingJob}
+        defaultStage={defaultStage}
         onSubmit={handleSave}
         onClose={handleCancel}
       />

@@ -27,6 +27,8 @@ export type JobFormPayload = {
 
 type JobFormProps = {
   initialValues?: Job | null;
+  /** Default stage to pre-select when creating a new job (from user preferences). */
+  defaultStage?: JobStage;
   onSubmit: (job: JobFormPayload) => void | Promise<void>;
   onCancel: () => void;
 };
@@ -38,11 +40,11 @@ const inputStyles =
 
 const labelStyles = "mb-1 block text-sm font-medium text-zinc-300";
 
-export default function JobForm({ initialValues, onSubmit, onCancel }: JobFormProps) {
+export default function JobForm({ initialValues, defaultStage, onSubmit, onCancel }: JobFormProps) {
   const [title, setTitle] = useState(initialValues?.title ?? "");
   const [company, setCompany] = useState(initialValues?.company ?? "");
   const [location, setLocation] = useState(initialValues?.location ?? "");
-  const [stage, setStage] = useState<JobStage>(initialValues?.stage ?? "Interested");
+  const [stage, setStage] = useState<JobStage>(initialValues?.stage ?? defaultStage ?? "Interested");
   const [priority, setPriority] = useState(initialValues?.priority ?? false);
   const [deadline, setDeadline] = useState(initialValues?.deadline ?? "");
   const [customNotes, setCustomNotes] = useState(initialValues?.customNotes ?? "");
