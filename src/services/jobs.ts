@@ -17,7 +17,7 @@ type CreateJobInput = {
   userId: string;
   title: string;
   company: string;
-  location?: string;
+  location?: string | null;
   description?: string | null;
   compensationNotes?: string | null;
   applicationDate?: string | null;
@@ -33,7 +33,7 @@ type CreateJobInput = {
 type UpdateJobInput = {
   title?: string;
   company?: string;
-  location?: string;
+  location?: string | null;
   description?: string | null;
   compensationNotes?: string | null;
   applicationDate?: string | null;
