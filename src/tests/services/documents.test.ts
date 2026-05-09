@@ -3,8 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mockTransaction = vi.fn();
 const mockDocCreate = vi.fn();
 const mockDocFindFirst = vi.fn();
+const mockDocFindFirstOrThrow = vi.fn();
 const mockDocFindMany = vi.fn();
 const mockDocUpdate = vi.fn();
+const mockDocUpdateMany = vi.fn();
 const mockVersionCreate = vi.fn();
 const mockVersionFindFirst = vi.fn();
 const mockVersionFindMany = vi.fn();
@@ -14,8 +16,17 @@ const mockLinkUpsert = vi.fn();
 const mockLinkFindFirst = vi.fn();
 const mockLinkFindMany = vi.fn();
 
+// The transaction mock forwards a `tx` object that mirrors the top-level
+// prisma mock — both use the same underlying jest fns so test assertions
+// don't need to know whether a call ran inside or outside a transaction.
 const tx = {
-  document: { create: mockDocCreate, update: mockDocUpdate },
+  document: {
+    create: mockDocCreate,
+    update: mockDocUpdate,
+    updateMany: mockDocUpdateMany,
+    findFirst: mockDocFindFirst,
+    findFirstOrThrow: mockDocFindFirstOrThrow,
+  },
   documentVersion: { create: mockVersionCreate },
   jobDocumentLink: { create: mockLinkCreate },
   job: { findFirst: mockJobFindFirst },
@@ -26,8 +37,10 @@ vi.mock("@/services/prisma", () => ({
     $transaction: mockTransaction,
     document: {
       findFirst: mockDocFindFirst,
+      findFirstOrThrow: mockDocFindFirstOrThrow,
       findMany: mockDocFindMany,
       update: mockDocUpdate,
+      updateMany: mockDocUpdateMany,
     },
     documentVersion: {
       create: mockVersionCreate,
@@ -182,20 +195,19 @@ describe("getDocumentById", () => {
 });
 
 describe("softDeleteDocument", () => {
-  it("returns true after soft-deleting", async () => {
-    mockDocFindFirst.mockResolvedValue(baseDoc);
-    mockDocUpdate.mockResolvedValue({ ...baseDoc, isDeleted: true });
+  it("returns true after soft-deleting (scoped by userId in updateMany)", async () => {
+    mockDocUpdateMany.mockResolvedValue({ count: 1 });
 
     const result = await softDeleteDocument("doc-1", USER_ID);
     expect(result).toBe(true);
-    expect(mockDocUpdate).toHaveBeenCalledWith({
-      where: { id: "doc-1" },
+    expect(mockDocUpdateMany).toHaveBeenCalledWith({
+      where: { id: "doc-1", userId: USER_ID, isDeleted: false },
       data: { isDeleted: true, deletedAt: expect.any(Date) },
     });
   });
 
   it("returns false when document not found", async () => {
-    mockDocFindFirst.mockResolvedValue(null);
+    mockDocUpdateMany.mockResolvedValue({ count: 0 });
     const result = await softDeleteDocument("doc-999", USER_ID);
     expect(result).toBe(false);
   });
@@ -271,7 +283,6 @@ describe("cross-user access guards", () => {
     const result = await updateDocumentContent("doc-1", OTHER_USER, "tampered");
 
     expect(result).toBeNull();
-    expect(mockTransaction).not.toHaveBeenCalled();
     expect(mockVersionCreate).not.toHaveBeenCalled();
     expect(mockDocFindFirst).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -281,17 +292,15 @@ describe("cross-user access guards", () => {
   });
 
   it("softDeleteDocument scopes lookup by userId (wrong user → false, no update)", async () => {
-    mockDocFindFirst.mockResolvedValue(null);
+    mockDocUpdateMany.mockResolvedValue({ count: 0 });
 
     const result = await softDeleteDocument("doc-1", OTHER_USER);
 
     expect(result).toBe(false);
-    expect(mockDocUpdate).not.toHaveBeenCalled();
-    expect(mockDocFindFirst).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({ id: "doc-1", userId: OTHER_USER }),
-      })
-    );
+    expect(mockDocUpdateMany).toHaveBeenCalledWith({
+      where: { id: "doc-1", userId: OTHER_USER, isDeleted: false },
+      data: expect.any(Object),
+    });
   });
 
   it("findDocumentByJob scopes the nested document relation by userId", async () => {
@@ -465,7 +474,7 @@ describe("getDocumentsForJob", () => {
     expect(mockLinkFindMany).not.toHaveBeenCalled();
   });
 
-  it("filters out soft-deleted documents from links", async () => {
+  it("filters soft-deleted documents at the SQL layer", async () => {
     mockJobFindFirst.mockResolvedValue(job);
     mockLinkFindMany.mockResolvedValue([
       {
@@ -476,19 +485,6 @@ describe("getDocumentsForJob", () => {
         linkedAt: now,
         document: { ...baseDoc, isDeleted: false, versions: [baseVersion] },
       },
-      {
-        id: "link-2",
-        jobId: "job-1",
-        documentId: "doc-2",
-        documentVersionId: "ver-2",
-        linkedAt: now,
-        document: {
-          ...baseDoc,
-          id: "doc-2",
-          isDeleted: true,
-          versions: [{ ...baseVersion, id: "ver-2", documentId: "doc-2" }],
-        },
-      },
     ]);
 
     const result = await getDocumentsForJob("job-1", USER_ID);
@@ -496,6 +492,14 @@ describe("getDocumentsForJob", () => {
     expect(result).toHaveLength(1);
     expect(result?.[0].id).toBe("doc-1");
     expect(result?.[0].linkedAt).toBe(now.toISOString());
+    // Verify the WHERE clause filters at the database
+    expect(mockLinkFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          document: expect.objectContaining({ isDeleted: false }),
+        }),
+      })
+    );
   });
 
   it("filters out documents with no versions", async () => {

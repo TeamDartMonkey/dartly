@@ -80,6 +80,7 @@ export async function createDocument(userId: string, input: CreateDocumentInput)
       },
     });
 
+    let linked = false;
     if (input.jobId) {
       const job = await tx.job.findFirst({ where: { id: input.jobId, userId } });
       if (job) {
@@ -90,10 +91,11 @@ export async function createDocument(userId: string, input: CreateDocumentInput)
             documentVersionId: version.id,
           },
         });
+        linked = true;
       }
     }
 
-    return { doc, version };
+    return { doc, version, linked };
   });
 }
 
@@ -131,22 +133,21 @@ export async function duplicateDocument(id: string, userId: string) {
   });
 }
 
+// Renames using updateMany so the userId scoping is enforced in the WHERE
+// clause itself — no read-then-write window where ownership could change.
 export async function renameDocument(id: string, userId: string, name: string) {
-  const doc = await prisma.document.findFirst({
+  const { count } = await prisma.document.updateMany({
     where: { id, userId, isDeleted: false },
-    include: {
-      versions: { orderBy: { versionNumber: "desc" }, take: 1 },
-    },
-  });
-
-  if (!doc || doc.versions.length === 0) return null;
-
-  const updated = await prisma.document.update({
-    where: { id },
     data: { name, updatedAt: new Date() },
   });
+  if (count === 0) return null;
 
-  return withDocumentVersionId(updated, doc.versions[0]);
+  const doc = await prisma.document.findFirst({
+    where: { id, userId, isDeleted: false },
+    include: { versions: { orderBy: { versionNumber: "desc" }, take: 1 } },
+  });
+  if (!doc || doc.versions.length === 0) return null;
+  return withDocumentVersionId(doc, doc.versions[0]);
 }
 
 export async function getDocumentsByUserId(userId: string) {
@@ -175,25 +176,20 @@ export async function getDocumentById(id: string, userId: string) {
   return withDocumentVersionId(doc, doc.versions[0]);
 }
 
+// Computes the next version number INSIDE the transaction so two concurrent
+// saves cannot both compute the same value and produce duplicate versions.
 export async function updateDocumentContent(id: string, userId: string, content: string) {
-  const doc = await prisma.document.findFirst({
-    where: { id, userId, isDeleted: false },
-    include: {
-      versions: { orderBy: { versionNumber: "desc" }, take: 1 },
-    },
-  });
-
-  if (!doc) return null;
-
-  const nextVersion = doc.versions.length > 0 ? doc.versions[0].versionNumber + 1 : 1;
-
   return prisma.$transaction(async (tx) => {
+    const doc = await tx.document.findFirst({
+      where: { id, userId, isDeleted: false },
+      include: { versions: { orderBy: { versionNumber: "desc" }, take: 1 } },
+    });
+    if (!doc) return null;
+
+    const nextVersion = doc.versions.length > 0 ? doc.versions[0].versionNumber + 1 : 1;
+
     const version = await tx.documentVersion.create({
-      data: {
-        documentId: id,
-        versionNumber: nextVersion,
-        content,
-      },
+      data: { documentId: id, versionNumber: nextVersion, content },
     });
 
     const updated = await tx.document.update({
@@ -206,16 +202,11 @@ export async function updateDocumentContent(id: string, userId: string, content:
 }
 
 export async function softDeleteDocument(id: string, userId: string): Promise<boolean> {
-  const doc = await prisma.document.findFirst({
+  const { count } = await prisma.document.updateMany({
     where: { id, userId, isDeleted: false },
-  });
-  if (!doc) return false;
-
-  await prisma.document.update({
-    where: { id },
     data: { isDeleted: true, deletedAt: new Date() },
   });
-  return true;
+  return count > 0;
 }
 
 export async function getDocumentVersions(documentId: string, userId: string) {
@@ -231,27 +222,23 @@ export async function getDocumentVersions(documentId: string, userId: string) {
   return versions.map(toVersionResponse);
 }
 
+// Same race-fix as updateDocumentContent: compute nextVersion inside the txn.
 export async function createDocumentVersion(documentId: string, userId: string, content: string) {
-  const doc = await prisma.document.findFirst({
-    where: { id: documentId, userId, isDeleted: false },
-    include: {
-      versions: { orderBy: { versionNumber: "desc" }, take: 1 },
-    },
+  return prisma.$transaction(async (tx) => {
+    const doc = await tx.document.findFirst({
+      where: { id: documentId, userId, isDeleted: false },
+      include: { versions: { orderBy: { versionNumber: "desc" }, take: 1 } },
+    });
+    if (!doc) return null;
+
+    const nextVersion = doc.versions.length > 0 ? doc.versions[0].versionNumber + 1 : 1;
+
+    const version = await tx.documentVersion.create({
+      data: { documentId, versionNumber: nextVersion, content },
+    });
+
+    return toVersionResponse(version);
   });
-
-  if (!doc) return null;
-
-  const nextVersion = doc.versions.length > 0 ? doc.versions[0].versionNumber + 1 : 1;
-
-  const version = await prisma.documentVersion.create({
-    data: {
-      documentId,
-      versionNumber: nextVersion,
-      content,
-    },
-  });
-
-  return toVersionResponse(version);
 }
 
 export async function linkDocumentToJob(
@@ -279,20 +266,19 @@ export async function getDocumentsForJob(jobId: string, userId: string) {
   const job = await prisma.job.findFirst({ where: { id: jobId, userId } });
   if (!job) return null;
 
+  // Filter at the SQL layer to avoid pulling soft-deleted or empty documents.
   const links = await prisma.jobDocumentLink.findMany({
-    where: { jobId },
+    where: { jobId, document: { isDeleted: false, versions: { some: {} } } },
     include: {
       document: {
-        include: {
-          versions: { orderBy: { versionNumber: "desc" }, take: 1 },
-        },
+        include: { versions: { orderBy: { versionNumber: "desc" }, take: 1 } },
       },
     },
     orderBy: { linkedAt: "desc" },
   });
 
   return links
-    .filter((l) => !l.document.isDeleted && l.document.versions.length > 0)
+    .filter((l) => l.document.versions.length > 0)
     .map((l) => ({
       ...toDocumentResponse(l.document, l.document.versions[0]),
       documentVersionId: l.documentVersionId,
@@ -301,31 +287,41 @@ export async function getDocumentsForJob(jobId: string, userId: string) {
 }
 
 export async function archiveDocument(id: string, userId: string) {
-  const doc = await prisma.document.findFirst({
-    where: { id, userId, isDeleted: false },
-    include: { versions: { orderBy: { versionNumber: "desc" }, take: 1 } },
-  });
-  if (!doc || doc.versions.length === 0) return null;
+  return prisma.$transaction(async (tx) => {
+    const doc = await tx.document.findFirst({
+      where: { id, userId, isDeleted: false },
+      include: { versions: { orderBy: { versionNumber: "desc" }, take: 1 } },
+    });
+    if (!doc || doc.versions.length === 0) return null;
 
-  const updated = await prisma.document.update({
-    where: { id },
-    data: { previousStatus: doc.status, status: "ARCHIVED", updatedAt: new Date() },
+    const { count } = await tx.document.updateMany({
+      where: { id, userId, isDeleted: false },
+      data: { previousStatus: doc.status, status: "ARCHIVED", updatedAt: new Date() },
+    });
+    if (count === 0) return null;
+
+    const updated = await tx.document.findFirstOrThrow({ where: { id } });
+    return withDocumentVersionId(updated, doc.versions[0]);
   });
-  return withDocumentVersionId(updated, doc.versions[0]);
 }
 
 export async function restoreDocument(id: string, userId: string) {
-  const doc = await prisma.document.findFirst({
-    where: { id, userId, isDeleted: false },
-    include: { versions: { orderBy: { versionNumber: "desc" }, take: 1 } },
-  });
-  if (!doc || doc.versions.length === 0) return null;
+  return prisma.$transaction(async (tx) => {
+    const doc = await tx.document.findFirst({
+      where: { id, userId, isDeleted: false },
+      include: { versions: { orderBy: { versionNumber: "desc" }, take: 1 } },
+    });
+    if (!doc || doc.versions.length === 0) return null;
 
-  const restoredStatus = doc.previousStatus ?? (doc.versions[0].fileUrl ? "UPLOADED" : "DRAFT");
+    const restoredStatus = doc.previousStatus ?? (doc.versions[0].fileUrl ? "UPLOADED" : "DRAFT");
 
-  const updated = await prisma.document.update({
-    where: { id },
-    data: { status: restoredStatus, previousStatus: null, updatedAt: new Date() },
+    const { count } = await tx.document.updateMany({
+      where: { id, userId, isDeleted: false },
+      data: { status: restoredStatus, previousStatus: null, updatedAt: new Date() },
+    });
+    if (count === 0) return null;
+
+    const updated = await tx.document.findFirstOrThrow({ where: { id } });
+    return withDocumentVersionId(updated, doc.versions[0]);
   });
-  return withDocumentVersionId(updated, doc.versions[0]);
 }
