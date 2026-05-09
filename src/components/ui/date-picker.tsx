@@ -95,6 +95,7 @@ export function DatePicker({
 }: DatePickerProps) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [viewMonth, setViewMonth] = useState<Date | undefined>(undefined);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   const dateValue = includeTime ? (value ? value.slice(0, 10) : "") : value;
@@ -255,7 +256,8 @@ export function DatePicker({
               disabled={disabledMatchers.length > 0 ? disabledMatchers : undefined}
               startMonth={new Date(1970, 0)}
               endMonth={new Date(2035, 11)}
-              defaultMonth={selected ?? minDateParsed ?? new Date()}
+              month={viewMonth ?? selected ?? minDateParsed ?? new Date()}
+              onMonthChange={setViewMonth}
             />
             {includeTime && (
               <div className="mt-3 pt-3 border-t border-zinc-700 flex items-center gap-2">
