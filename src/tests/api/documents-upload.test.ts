@@ -3,18 +3,20 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
   mockRequireAuth,
-  mockCreateDocument,
   mockCreateClient,
   mockStorageUpload,
-  mockVersionUpdate,
-  mockDocUpdate,
+  mockStorageRemove,
+  mockTransaction,
+  mockDocCreate,
+  mockVersionCreate,
 } = vi.hoisted(() => ({
   mockRequireAuth: vi.fn(),
-  mockCreateDocument: vi.fn(),
   mockCreateClient: vi.fn(),
   mockStorageUpload: vi.fn(),
-  mockVersionUpdate: vi.fn(),
-  mockDocUpdate: vi.fn(),
+  mockStorageRemove: vi.fn(),
+  mockTransaction: vi.fn(),
+  mockDocCreate: vi.fn(),
+  mockVersionCreate: vi.fn(),
 }));
 
 vi.mock("@/lib/api-wrapper", () => ({
@@ -26,7 +28,7 @@ vi.mock("@/lib/requireAuth", () => ({
 }));
 
 vi.mock("@/lib/logger", () => ({
-  default: { info: vi.fn(), error: vi.fn() },
+  default: { info: vi.fn(), error: vi.fn(), warn: vi.fn() },
   logError: vi.fn(),
 }));
 
@@ -34,18 +36,17 @@ vi.mock("@/lib/env", () => ({
   env: { SUPABASE_DOCUMENTS_BUCKET: "documents" },
 }));
 
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: vi.fn().mockResolvedValue(null),
+}));
+
 vi.mock("@/lib/supabase-server", () => ({
   createClient: mockCreateClient,
 }));
 
-vi.mock("@/services/documents", () => ({
-  createDocument: mockCreateDocument,
-}));
-
 vi.mock("@/services/prisma", () => ({
   prisma: {
-    documentVersion: { update: mockVersionUpdate },
-    document: { update: mockDocUpdate },
+    $transaction: mockTransaction,
   },
 }));
 
@@ -58,7 +59,7 @@ const baseDoc = {
   userId: USER_ID,
   type: "RESUME" as const,
   name: "Resume.pdf",
-  status: "DRAFT" as const,
+  status: "UPLOADED" as const,
   isDeleted: false,
   deletedAt: null,
   createdAt: now,
@@ -70,7 +71,7 @@ const baseVersion = {
   documentId: "doc-1",
   versionNumber: 1,
   content: null,
-  fileUrl: null,
+  fileUrl: "user-123/123.pdf",
   createdAt: now,
 };
 
@@ -81,8 +82,6 @@ function makeRequest(formData: StubForm): NextRequest {
   } as unknown as NextRequest;
 }
 
-// Stub File-like object: route only needs name, type, size, arrayBuffer().
-// Using a real File works under Node but not under Bun's vitest; this is portable.
 type StubFile = {
   name: string;
   type: string;
@@ -90,29 +89,66 @@ type StubFile = {
   arrayBuffer: () => Promise<ArrayBuffer>;
 };
 
-function pdfFile(opts: { size?: number; type?: string; name?: string } = {}): StubFile {
+// Real-PDF-like buffer must start with the magic bytes "%PDF-".
+function pdfFile(opts: { size?: number; type?: string; name?: string; magic?: boolean } = {}): StubFile {
   const size = opts.size ?? 1024;
+  const useMagic = opts.magic !== false;
   return {
     name: opts.name ?? "resume.pdf",
     type: opts.type ?? "application/pdf",
     size,
-    arrayBuffer: async () => new ArrayBuffer(size),
+    arrayBuffer: async () => {
+      const buf = new Uint8Array(size);
+      if (useMagic) {
+        const magic = new TextEncoder().encode("%PDF-");
+        buf.set(magic, 0);
+      }
+      return buf.buffer;
+    },
   };
 }
 
-// Stub FormData with a get() that returns the values we set, mimicking the real API.
+// File-like inputs that satisfy `instanceof File` for the route's guard
+// AND provide a working `arrayBuffer()` method (jsdom's File polyfill in
+// the test runtime does not).
+function asFile(stub: StubFile): File {
+  const bytes = new Uint8Array(stub.size);
+  if (stub.size >= 5) {
+    bytes.set(new TextEncoder().encode("%PDF-"), 0);
+  }
+  const f = new File([bytes], stub.name, { type: stub.type });
+  // Polyfill arrayBuffer if the host File lacks it.
+  if (typeof f.arrayBuffer !== "function") {
+    Object.defineProperty(f, "arrayBuffer", {
+      value: async () => bytes.buffer,
+      writable: true,
+    });
+  }
+  return f;
+}
+
 type StubForm = { get: (key: string) => unknown };
 
 function buildForm(
-  overrides: { file?: StubFile | null; type?: string | null; name?: string | null } = {}
+  overrides: { file?: StubFile | File | null; type?: string | null; name?: string | null } = {}
 ): StubForm {
-  const file = overrides.file === undefined ? pdfFile() : overrides.file;
+  let file: File | null;
+  if (overrides.file === null) {
+    file = null;
+  } else if (overrides.file === undefined) {
+    file = asFile(pdfFile());
+  } else if (overrides.file instanceof File) {
+    file = overrides.file;
+  } else {
+    file = asFile(overrides.file);
+  }
+
   const type = overrides.type === null ? null : (overrides.type ?? "RESUME");
   const name = overrides.name === null ? null : (overrides.name ?? "Resume.pdf");
 
   return {
     get: (key: string) => {
-      if (key === "file") return file ?? null;
+      if (key === "file") return file;
       if (key === "type") return type;
       if (key === "name") return name;
       return null;
@@ -125,14 +161,22 @@ describe("POST /api/documents/upload", () => {
     vi.clearAllMocks();
     mockRequireAuth.mockResolvedValue({ id: USER_ID });
     mockStorageUpload.mockResolvedValue({ error: null });
+    mockStorageRemove.mockResolvedValue({ error: null });
     mockCreateClient.mockResolvedValue({
       storage: {
-        from: vi.fn().mockReturnValue({ upload: mockStorageUpload }),
+        from: vi.fn().mockReturnValue({
+          upload: mockStorageUpload,
+          remove: mockStorageRemove,
+        }),
       },
     });
-    mockCreateDocument.mockResolvedValue({ doc: baseDoc, version: baseVersion });
-    mockVersionUpdate.mockResolvedValue({ ...baseVersion, fileUrl: "path" });
-    mockDocUpdate.mockResolvedValue({ ...baseDoc, status: "UPLOADED" });
+    const tx = {
+      document: { create: mockDocCreate },
+      documentVersion: { create: mockVersionCreate },
+    };
+    mockTransaction.mockImplementation(async (cb: (t: typeof tx) => Promise<unknown>) => cb(tx));
+    mockDocCreate.mockResolvedValue(baseDoc);
+    mockVersionCreate.mockResolvedValue(baseVersion);
   });
 
   it("returns 201 with UPLOADED document on valid PDF", async () => {
@@ -143,25 +187,15 @@ describe("POST /api/documents/upload", () => {
     expect(body.id).toBe("doc-1");
     expect(body.status).toBe("UPLOADED");
     expect(body.versionNumber).toBe(1);
-    expect(mockCreateDocument).toHaveBeenCalledWith(USER_ID, {
-      type: "RESUME",
-      name: "Resume.pdf",
-    });
-    expect(mockVersionUpdate).toHaveBeenCalledWith({
-      where: { id: "ver-1" },
-      data: { fileUrl: expect.stringContaining(`${USER_ID}/`) },
-    });
-    expect(mockDocUpdate).toHaveBeenCalledWith({
-      where: { id: "doc-1" },
-      data: { status: "UPLOADED" },
-    });
+    expect(mockDocCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ status: "UPLOADED" }) })
+    );
   });
 
   it("scopes the storage path under the authenticated user's id", async () => {
     await POST(makeRequest(buildForm()));
-
-    const updateCall = mockVersionUpdate.mock.calls[0][0];
-    expect(updateCall.data.fileUrl).toMatch(new RegExp(`^${USER_ID}/\\d+\\.pdf$`));
+    const uploadCall = mockStorageUpload.mock.calls[0];
+    expect(uploadCall[0]).toMatch(new RegExp(`^${USER_ID}/\\d+\\.pdf$`));
   });
 
   it("returns 400 when file is missing", async () => {
@@ -170,7 +204,7 @@ describe("POST /api/documents/upload", () => {
 
     expect(res.status).toBe(400);
     expect(body.error).toBe("File is required");
-    expect(mockCreateDocument).not.toHaveBeenCalled();
+    expect(mockStorageUpload).not.toHaveBeenCalled();
   });
 
   it("returns 400 when type is missing", async () => {
@@ -198,17 +232,49 @@ describe("POST /api/documents/upload", () => {
   });
 
   it("returns 400 when MIME type is not allowed", async () => {
-    const res = await POST(makeRequest(buildForm({ file: pdfFile({ type: "text/plain" }) })));
+    const res = await POST(
+      makeRequest(buildForm({ file: asFile(pdfFile({ type: "text/plain" })) }))
+    );
     const body = await res.json();
 
     expect(res.status).toBe(400);
     expect(body.error).toMatch(/PDF/);
-    expect(mockCreateDocument).not.toHaveBeenCalled();
+    expect(mockStorageUpload).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when magic bytes don't match PDF", async () => {
+    const bytes = new Uint8Array([0, 1, 2, 3, 4, 5]);
+    const fakePdf = new File([bytes], "fake.pdf", { type: "application/pdf" });
+    if (typeof fakePdf.arrayBuffer !== "function") {
+      Object.defineProperty(fakePdf, "arrayBuffer", {
+        value: async () => bytes.buffer,
+        writable: true,
+      });
+    }
+    const res = await POST(makeRequest(buildForm({ file: fakePdf })));
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toMatch(/valid PDF/);
+    expect(mockStorageUpload).not.toHaveBeenCalled();
   });
 
   it("returns 400 when file exceeds 10MB", async () => {
-    const oversized = pdfFile({ size: 11 * 1024 * 1024 });
-    const res = await POST(makeRequest(buildForm({ file: oversized })));
+    // Construct a file that reports >10MB size without actually allocating it.
+    const big = {
+      name: "huge.pdf",
+      type: "application/pdf",
+      size: 11 * 1024 * 1024,
+      arrayBuffer: async () => new ArrayBuffer(0),
+      lastModified: Date.now(),
+      webkitRelativePath: "",
+      slice: () => new Blob(),
+      stream: () => new ReadableStream(),
+      text: async () => "",
+      bytes: async () => new Uint8Array(),
+    } as unknown as File;
+    Object.setPrototypeOf(big, File.prototype);
+    const res = await POST(makeRequest(buildForm({ file: big })));
     const body = await res.json();
 
     expect(res.status).toBe(400);
@@ -222,10 +288,21 @@ describe("POST /api/documents/upload", () => {
 
     const res = await POST(makeRequest(buildForm()));
     expect(res.status).toBe(401);
-    expect(mockCreateDocument).not.toHaveBeenCalled();
+    expect(mockStorageUpload).not.toHaveBeenCalled();
   });
 
-  it("returns 500 and does not create doc when storage upload fails", async () => {
+  it("returns 500 and removes the storage object when DB write fails", async () => {
+    mockTransaction.mockRejectedValue(new Error("DB blew up"));
+
+    const res = await POST(makeRequest(buildForm()));
+    const body = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(body.error).toBe("Document upload failed");
+    expect(mockStorageRemove).toHaveBeenCalled();
+  });
+
+  it("returns 500 when storage upload fails", async () => {
     mockStorageUpload.mockResolvedValue({ error: { message: "boom" } });
 
     const res = await POST(makeRequest(buildForm()));
@@ -233,6 +310,6 @@ describe("POST /api/documents/upload", () => {
 
     expect(res.status).toBe(500);
     expect(body.error).toBe("File upload failed");
-    expect(mockCreateDocument).not.toHaveBeenCalled();
+    expect(mockTransaction).not.toHaveBeenCalled();
   });
 });

@@ -10,7 +10,7 @@ import {
   updateDocumentContent,
   renameDocument,
 } from "@/services/documents";
-import { UpdateDocumentContentSchema } from "@/types/schemas";
+import { RenameDocumentSchema, UpdateDocumentContentSchema } from "@/types/schemas";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -76,13 +76,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     try {
       const user = await requireAuth();
       const { id } = await context.params;
-      const body = await request.json();
+      const { name } = await validateBody(request, RenameDocumentSchema);
 
-      if (!body.name || typeof body.name !== "string" || !body.name.trim()) {
-        return NextResponse.json({ error: "Name is required" }, { status: 400 });
-      }
-
-      const doc = await renameDocument(id, user.id, body.name.trim());
+      const doc = await renameDocument(id, user.id, name);
       if (!doc) {
         return NextResponse.json({ error: "Document not found" }, { status: 404 });
       }

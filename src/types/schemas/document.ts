@@ -30,3 +30,7 @@ export const RewriteContentSchema = z.object({
   documentId: z.string().min(1, "Document ID is required"),
   instruction: z.string().trim().min(1, "Instruction is required").max(500),
 });
+
+export const RenameDocumentSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(200),
+});

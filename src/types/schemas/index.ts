@@ -4,6 +4,7 @@ export {
   DocumentTypeSchema,
   GenerateDocumentSchema,
   LinkDocumentToJobSchema,
+  RenameDocumentSchema,
   RewriteContentSchema,
   UpdateDocumentContentSchema,
 } from "./document";

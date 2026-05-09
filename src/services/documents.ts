@@ -61,8 +61,27 @@ export async function createDocumentForJob(userId: string, input: CreateDocument
   return { ...result, isNew: true };
 }
 
+// Sentinel thrown when a jobId is supplied but does not belong to the user.
+// The transaction will roll back so the document is not created at all.
+export class JobOwnershipError extends Error {
+  constructor() {
+    super("Job not owned by user");
+    this.name = "JobOwnershipError";
+  }
+}
+
 export async function createDocument(userId: string, input: CreateDocumentInput) {
   return prisma.$transaction(async (tx) => {
+    // Verify ownership BEFORE creating the doc so the transaction rolls
+    // back cleanly if the job does not belong to the user.
+    if (input.jobId) {
+      const job = await tx.job.findFirst({
+        where: { id: input.jobId, userId },
+        select: { id: true },
+      });
+      if (!job) throw new JobOwnershipError();
+    }
+
     const doc = await tx.document.create({
       data: {
         userId,
@@ -80,22 +99,17 @@ export async function createDocument(userId: string, input: CreateDocumentInput)
       },
     });
 
-    let linked = false;
     if (input.jobId) {
-      const job = await tx.job.findFirst({ where: { id: input.jobId, userId } });
-      if (job) {
-        await tx.jobDocumentLink.create({
-          data: {
-            jobId: input.jobId,
-            documentId: doc.id,
-            documentVersionId: version.id,
-          },
-        });
-        linked = true;
-      }
+      await tx.jobDocumentLink.create({
+        data: {
+          jobId: input.jobId,
+          documentId: doc.id,
+          documentVersionId: version.id,
+        },
+      });
     }
 
-    return { doc, version, linked };
+    return { doc, version, linked: !!input.jobId };
   });
 }
 
