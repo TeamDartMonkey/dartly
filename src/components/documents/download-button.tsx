@@ -7,6 +7,12 @@ import type { DocumentResponse } from "@/types/document";
 interface DownloadButtonProps {
   doc: DocumentResponse;
   signedUrl?: string | null;
+  // Optional override so the caller can pass content from a non-latest
+  // version. When omitted, the latest version's content (doc.content) is
+  // used. UPLOADED docs ignore this — they always fetch from storage since
+  // historical files share the same fileUrl.
+  versionContent?: string;
+  versionNumber?: number;
 }
 
 async function downloadUploaded(name: string, signedUrl?: string | null) {
@@ -143,25 +149,53 @@ export async function downloadGenerated(name: string, type: string, content: str
   }
 }
 
-export async function downloadDoc(doc: DocumentResponse, signedUrl?: string | null) {
-  if (doc.status === "UPLOADED") {
-    if (signedUrl) {
-      await downloadUploaded(doc.name, signedUrl);
-    } else {
-      await downloadUploadedById(doc.name, doc.id);
-    }
-  } else {
-    await downloadGenerated(doc.name, doc.type, doc.content ?? "");
-  }
+// Strip a trailing .pdf so we can append `-vN` consistently before re-adding
+// the extension. Avoids names like "Resume.pdf-v2.pdf".
+function appendVersionSuffix(name: string, versionNumber?: number): string {
+  if (versionNumber === undefined) return name;
+  const stem = name.replace(/\.pdf$/i, "");
+  return `${stem}-v${versionNumber}`;
 }
 
-export function DownloadButton({ doc, signedUrl }: DownloadButtonProps) {
+export async function downloadDoc(
+  doc: DocumentResponse,
+  signedUrl?: string | null,
+  versionContent?: string,
+  versionNumber?: number
+) {
+  if (doc.status === "UPLOADED") {
+    // UPLOADED docs only ever have one version (storage object is shared);
+    // historical content for them is not stored, so the version override
+    // is meaningless here. We still apply the suffix in case the caller
+    // passed one — keeps filenames self-describing.
+    const baseName = appendVersionSuffix(doc.name, versionNumber);
+    if (signedUrl) {
+      await downloadUploaded(baseName, signedUrl);
+    } else {
+      await downloadUploadedById(baseName, doc.id);
+    }
+    return;
+  }
+
+  // Generated/markdown docs: prefer the explicit selected-version content
+  // when supplied; fall back to doc.content (the latest version) otherwise.
+  const content = versionContent ?? doc.content ?? "";
+  const fileName = appendVersionSuffix(doc.name, versionNumber);
+  await downloadGenerated(fileName, doc.type, content);
+}
+
+export function DownloadButton({
+  doc,
+  signedUrl,
+  versionContent,
+  versionNumber,
+}: DownloadButtonProps) {
   const [downloading, setDownloading] = useState(false);
 
   async function handleDownload() {
     setDownloading(true);
     try {
-      await downloadDoc(doc, signedUrl);
+      await downloadDoc(doc, signedUrl, versionContent, versionNumber);
     } catch {
       showToast("Download failed", "error");
     } finally {

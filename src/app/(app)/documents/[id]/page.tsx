@@ -413,11 +413,11 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   }
 
   const isViewingOldVersion = doc && versions.length > 0 && selectedVersionId !== versions[0]?.id;
-  const displayContent = (() => {
-    const v = versions.find((ver) => ver.id === selectedVersionId);
-    if (v) return v.content ?? "";
-    return doc?.content ?? "";
-  })();
+  const selectedVersion = versions.find((v) => v.id === selectedVersionId) ?? null;
+  const displayContent = selectedVersion?.content ?? doc?.content ?? "";
+  // Used to pin the Download button to the version the user is currently
+  // viewing — both for content and for the filename suffix (-vN.pdf).
+  const downloadVersionNumber = selectedVersion?.versionNumber ?? doc?.versionNumber;
 
   // File-backed status is derived from the document itself (the version has a
   // fileUrl), not from a runtime state that depends on whether the signed-URL
@@ -540,7 +540,12 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                 </button>
               </>
             )}
-            <DownloadButton doc={doc} signedUrl={signedUrl} />
+            <DownloadButton
+              doc={doc}
+              signedUrl={signedUrl}
+              versionContent={displayContent}
+              versionNumber={downloadVersionNumber}
+            />
           </div>
         </div>
 
