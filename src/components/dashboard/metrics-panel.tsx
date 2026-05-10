@@ -257,8 +257,24 @@ export function MetricsPanel({ refreshKey }: { refreshKey: number }) {
 
 function AnalyticsSection({ analytics }: { analytics: AnalyticsBreakdown }) {
   const { velocity, funnel, timeInStage } = analytics;
-  const maxWeekly = Math.max(1, ...velocity.weeklyCounts);
+  const maxDaily = Math.max(1, ...velocity.dailyCounts);
   const maxFunnel = Math.max(1, funnel.reachedInterested);
+
+  // Format the day-axis labels: 30 days ago at the left, today at the right.
+  // We label only every 7th bar so the axis stays readable.
+  const dayCount = velocity.dailyCounts.length;
+  const earliestLabel = velocity.dayStartIsos[0]
+    ? new Date(velocity.dayStartIsos[0]).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      })
+    : `${dayCount}d ago`;
+  const latestLabel = velocity.dayStartIsos[dayCount - 1]
+    ? new Date(velocity.dayStartIsos[dayCount - 1]).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      })
+    : "today";
 
   const changeArrow = velocity.changePercent > 0 ? "▲" : velocity.changePercent < 0 ? "▼" : "•";
   const changeColor =
@@ -297,23 +313,46 @@ function AnalyticsSection({ analytics }: { analytics: AnalyticsBreakdown }) {
           {velocity.last30Days}
           <span className="ml-1.5 text-xs font-normal text-zinc-500">applications</span>
         </p>
-        <div className="mt-3 flex h-10 items-end gap-1">
-          {velocity.weeklyCounts.map((count, i) => {
-            const height = (count / maxWeekly) * 100;
-            const weekStart = velocity.weekStartIsos[i];
+        <div
+          className="mt-3 flex h-12 items-end gap-[2px]"
+          role="img"
+          aria-label="Daily application counts for the last 30 days"
+        >
+          {velocity.dailyCounts.map((count, i) => {
+            const height = (count / maxDaily) * 100;
+            const dayStart = velocity.dayStartIsos[i];
+            const dayLabel = dayStart
+              ? new Date(dayStart).toLocaleDateString("en-US", {
+                  weekday: "short",
+                  month: "short",
+                  day: "numeric",
+                })
+              : "";
             return (
               <div
-                key={weekStart || i}
-                className="flex-1 rounded-sm bg-blue-500/30 transition-all hover:bg-blue-500/60"
-                style={{ height: `${Math.max(height, 4)}%` }}
-                title={`${count} application${count === 1 ? "" : "s"} this week`}
+                // dayStartIsos values are unique per render (millisecond
+                // resolution within the same request).
+                key={dayStart || i}
+                className={[
+                  "flex-1 rounded-sm transition-all",
+                  count > 0
+                    ? "bg-blue-500/40 hover:bg-blue-500/70"
+                    : "bg-zinc-700/40 hover:bg-zinc-700/60",
+                ].join(" ")}
+                style={{ height: count > 0 ? `${Math.max(height, 8)}%` : "4%" }}
+                title={
+                  dayLabel
+                    ? `${dayLabel}: ${count} application${count === 1 ? "" : "s"}`
+                    : `${count} applications`
+                }
               />
             );
           })}
         </div>
         <div className="mt-1 flex justify-between text-[10px] text-zinc-500">
-          <span>4w ago</span>
-          <span>this week</span>
+          <span>{earliestLabel}</span>
+          <span aria-hidden="true">·</span>
+          <span>{latestLabel}</span>
         </div>
       </div>
 

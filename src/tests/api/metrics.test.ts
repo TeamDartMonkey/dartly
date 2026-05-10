@@ -49,8 +49,8 @@ const mockAnalytics = {
     last30Days: 4,
     prior30Days: 2,
     changePercent: 100,
-    weeklyCounts: [0, 1, 1, 2],
-    weekStartIsos: ["", "", "", ""],
+    dailyCounts: new Array(30).fill(0),
+    dayStartIsos: new Array(30).fill(""),
   },
   funnel: {
     reachedInterested: 6,

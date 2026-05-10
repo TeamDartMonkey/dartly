@@ -159,8 +159,8 @@ describe("getAnalyticsBreakdown — velocity", () => {
     expect(a.velocity.last30Days).toBe(0);
     expect(a.velocity.prior30Days).toBe(0);
     expect(a.velocity.changePercent).toBe(0);
-    expect(a.velocity.weeklyCounts).toEqual([0, 0, 0, 0]);
-    expect(a.velocity.weekStartIsos).toHaveLength(4);
+    expect(a.velocity.dailyCounts).toEqual(new Array(30).fill(0));
+    expect(a.velocity.dayStartIsos).toHaveLength(30);
   });
 
   it("counts applications inside the last 30 days only", async () => {
@@ -207,23 +207,26 @@ describe("getAnalyticsBreakdown — velocity", () => {
     expect(a.velocity.changePercent).toBe(0);
   });
 
-  it("buckets applications into 4 weekly windows (oldest first)", async () => {
+  it("buckets applications into 30 daily bins (oldest at index 0, today at index 29)", async () => {
     mockJobFindMany.mockResolvedValue([
-      // last 7d (week 4): 2
-      { id: "a", stage: "APPLIED", applicationDate: new Date("2026-04-26") }, // 1d
-      { id: "b", stage: "APPLIED", applicationDate: new Date("2026-04-22") }, // 5d
-      // 7-14d (week 3): 1
-      { id: "c", stage: "APPLIED", applicationDate: new Date("2026-04-15") }, // 12d
-      // 14-21d (week 2): 1
-      { id: "d", stage: "APPLIED", applicationDate: new Date("2026-04-08") }, // 19d
-      // 21-28d (week 1): 0
-      // outside 28d: ignored from buckets
+      // 1d ago
+      { id: "a", stage: "APPLIED", applicationDate: new Date("2026-04-26") },
+      // 1d ago (same day → same bucket)
+      { id: "b", stage: "APPLIED", applicationDate: new Date("2026-04-26T18:00:00Z") },
+      // 12d ago
+      { id: "c", stage: "APPLIED", applicationDate: new Date("2026-04-15") },
+      // outside the 30-day window — must be excluded
       { id: "e", stage: "APPLIED", applicationDate: new Date("2026-03-20") },
     ]);
 
     const a = await getAnalyticsBreakdown(USER_ID);
 
-    expect(a.velocity.weeklyCounts).toEqual([0, 1, 1, 2]);
+    expect(a.velocity.dailyCounts).toHaveLength(30);
+    // Sum of bucket counts should equal jobs that fall inside the window.
+    const total = a.velocity.dailyCounts.reduce((s, n) => s + n, 0);
+    expect(total).toBe(3);
+    // Two jobs on the same recent day should land in one bucket together.
+    expect(Math.max(...a.velocity.dailyCounts)).toBeGreaterThanOrEqual(2);
   });
 });
 
