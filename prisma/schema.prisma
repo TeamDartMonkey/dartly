@@ -140,7 +140,7 @@ model Document {
   userId         String
   type           DocumentType
   name           String
-  category       String?
+  tags           String[]          @default([])
   status         DocumentStatus    @default(DRAFT)
   previousStatus DocumentStatus?
   isDeleted      Boolean           @default(false)

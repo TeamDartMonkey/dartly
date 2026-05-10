@@ -29,6 +29,7 @@ import { showToast } from "@/components/ui/toast";
 import "@/styles/jakes-resume.css";
 import type { DocumentResponse, DocumentVersionResponse } from "@/types/document";
 import { DownloadButton } from "@/components/documents/download-button";
+import { TagInput } from "@/components/documents/tag-input";
 import dynamic from "next/dynamic";
 
 const PdfViewer = dynamic(
@@ -342,6 +343,35 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     if (e.key === "Escape") setRenaming(false);
   }
 
+  // Persist the full tag list on every change. Optimistically update local
+  // state so the chip input stays responsive; revert on server rejection.
+  async function handleTagsChange(nextTags: string[]) {
+    if (!doc) return;
+    const previous = doc.tags;
+    setDoc({ ...doc, tags: nextTags });
+    try {
+      const res = await fetch(`/api/documents/${doc.id}/tags`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tags: nextTags }),
+      });
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}) as { error?: string });
+        throw new Error(body.error ?? `HTTP ${res.status}`);
+      }
+      const updated: DocumentResponse = await res.json();
+      // Server may sort/dedupe — sync back to canonical form.
+      setDoc(updated);
+    } catch (e) {
+      setDoc({ ...doc, tags: previous });
+      showToast(e instanceof Error ? e.message : "Failed to update tags", "error");
+    }
+  }
+
   async function refreshDoc() {
     if (!id) return;
     try {
@@ -513,6 +543,14 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
             <DownloadButton doc={doc} signedUrl={signedUrl} />
           </div>
         </div>
+
+        {/* Tags editor — chip input. Tags persist on every change via PUT. */}
+        {!isArchived && (
+          <div>
+            <span className="block text-xs font-medium text-zinc-400 mb-1.5">Tags</span>
+            <TagInput value={doc.tags} onChange={handleTagsChange} ariaLabel="Document tags" />
+          </div>
+        )}
 
         {!isUploaded && versions.length > 0 && (
           <div className="flex items-center gap-3">

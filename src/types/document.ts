@@ -6,6 +6,7 @@ export type DocumentResponse = {
   type: DocumentType;
   name: string;
   status: DocumentStatus;
+  tags: string[];
   content?: string;
   fileUrl?: string;
   documentVersionId?: string;

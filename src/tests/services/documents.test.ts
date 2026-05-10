@@ -73,6 +73,7 @@ const {
   getDocumentsForJob,
   linkDocumentToJob,
   softDeleteDocument,
+  updateDocumentTags,
   updateDocumentContent,
   toDocumentResponse,
   toVersionResponse,
@@ -86,7 +87,7 @@ const baseDoc = {
   userId: USER_ID,
   type: "RESUME" as const,
   name: "My Resume",
-  category: null,
+  tags: [],
   status: "DRAFT" as const,
   previousStatus: null,
   isDeleted: false,
@@ -122,6 +123,7 @@ describe("toDocumentResponse", () => {
       type: "RESUME",
       name: "My Resume",
       status: "DRAFT",
+      tags: [],
       content: "Resume content",
       versionNumber: 1,
       createdAt: now.toISOString(),
@@ -596,6 +598,55 @@ describe("linkDocumentToJob (cross-user ownership)", () => {
     expect(mockVersionFindFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: "ver-from-other-doc", documentId: "doc-1" },
+      })
+    );
+  });
+});
+
+describe("updateDocumentTags", () => {
+  it("normalizes tags before persisting (dedupe, trim, sort)", async () => {
+    mockDocUpdateMany.mockResolvedValue({ count: 1 });
+    mockDocFindFirst.mockResolvedValue({
+      ...baseDoc,
+      tags: ["Backend", "Frontend"],
+      versions: [baseVersion],
+    });
+
+    await updateDocumentTags("doc-1", USER_ID, [
+      "  Frontend  ",
+      "frontend",
+      "Backend",
+      "",
+    ]);
+
+    expect(mockDocUpdateMany).toHaveBeenCalledWith({
+      where: { id: "doc-1", userId: USER_ID, isDeleted: false },
+      data: { tags: ["Backend", "Frontend"], updatedAt: expect.any(Date) },
+    });
+  });
+
+  it("returns null and skips read when the document is not owned", async () => {
+    mockDocUpdateMany.mockResolvedValue({ count: 0 });
+
+    const result = await updateDocumentTags("doc-1", "wrong-user", ["Frontend"]);
+
+    expect(result).toBeNull();
+    expect(mockDocFindFirst).not.toHaveBeenCalled();
+  });
+
+  it("drops invalid characters silently as a defense-in-depth net", async () => {
+    mockDocUpdateMany.mockResolvedValue({ count: 1 });
+    mockDocFindFirst.mockResolvedValue({
+      ...baseDoc,
+      tags: ["good"],
+      versions: [baseVersion],
+    });
+
+    await updateDocumentTags("doc-1", USER_ID, ["good", "bad/tag"]);
+
+    expect(mockDocUpdateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ tags: ["good"] }),
       })
     );
   });

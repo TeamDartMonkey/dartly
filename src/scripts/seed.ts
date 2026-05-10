@@ -1941,7 +1941,9 @@ async function seedDocuments(userId: string, documents: SeedDocument[], userLabe
           userId,
           type: docData.type,
           name: docData.name,
-          category: docData.type === "RESUME" ? "Resume" : "Cover Letter",
+          // Demo data with realistic tags so the library demos the filter UX.
+          tags:
+            docData.type === "RESUME" ? ["Resume", "Active"] : ["Cover Letter", "Active"],
           status: "DRAFT",
         },
       })

@@ -174,6 +174,7 @@ export async function POST(request: NextRequest) {
           type: result.doc.type,
           name: result.doc.name,
           status: result.doc.status,
+          tags: result.doc.tags,
           versionNumber: result.version.versionNumber,
           fileUrl: storagePath,
           createdAt: result.doc.createdAt.toISOString(),

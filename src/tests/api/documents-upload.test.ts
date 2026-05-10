@@ -64,7 +64,7 @@ const baseDoc = {
   deletedAt: null,
   createdAt: now,
   updatedAt: now,
-  category: null,
+  tags: [],
 };
 const baseVersion = {
   id: "ver-1",

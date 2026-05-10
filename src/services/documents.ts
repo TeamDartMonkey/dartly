@@ -1,6 +1,7 @@
 import { Prisma, type Document, type DocumentType, type DocumentVersion } from "@prisma/client";
 import { prisma } from "@/services/prisma";
 import type { DocumentResponse, DocumentVersionResponse } from "@/types/document";
+import { normalizeTags } from "@/utils/tags";
 
 // Two concurrent saves on the same document can both compute the same
 // nextVersion under READ COMMITTED isolation, then collide on the
@@ -27,6 +28,7 @@ export function toDocumentResponse(
     type: doc.type,
     name: doc.name,
     status: doc.status,
+    tags: doc.tags ?? [],
     content: latestVersion.content ?? undefined,
     ...(latestVersion.fileUrl ? { fileUrl: latestVersion.fileUrl } : {}),
     versionNumber: latestVersion.versionNumber,
@@ -163,6 +165,27 @@ export async function renameDocument(id: string, userId: string, name: string) {
   const { count } = await prisma.document.updateMany({
     where: { id, userId, isDeleted: false },
     data: { name, updatedAt: new Date() },
+  });
+  if (count === 0) return null;
+
+  const doc = await prisma.document.findFirst({
+    where: { id, userId, isDeleted: false },
+    include: { versions: { orderBy: { versionNumber: "desc" }, take: 1 } },
+  });
+  if (!doc || doc.versions.length === 0) return null;
+  return withDocumentVersionId(doc, doc.versions[0]);
+}
+
+// Replaces the document's tag set wholesale. The caller is expected to have
+// validated the input via Zod (TagsSchema) for clear 400 errors, but we
+// re-normalize here so a buggy or compromised client cannot persist
+// pathological input — defense-in-depth.
+export async function updateDocumentTags(id: string, userId: string, tags: readonly string[]) {
+  const normalized = normalizeTags(tags);
+
+  const { count } = await prisma.document.updateMany({
+    where: { id, userId, isDeleted: false },
+    data: { tags: normalized, updatedAt: new Date() },
   });
   if (count === 0) return null;
 

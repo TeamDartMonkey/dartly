@@ -92,6 +92,20 @@ export default function DocumentCard({
           </span>
         </div>
 
+        {/* Tag chips — read-only on the card; edit on the detail page. */}
+        {document.tags.length > 0 && (
+          <ul className="flex flex-wrap gap-1 mb-3 list-none p-0" aria-label="Tags">
+            {document.tags.map((tag) => (
+              <li
+                key={tag}
+                className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 text-[10px] font-medium"
+              >
+                {tag}
+              </li>
+            ))}
+          </ul>
+        )}
+
         {/* Name + meta — clicking navigates. Render a non-interactive form
             during rename so we don't nest an <input> inside a <button> (invalid
             HTML, undefined keyboard/focus behavior across browsers). */}

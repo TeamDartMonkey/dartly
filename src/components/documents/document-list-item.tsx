@@ -159,7 +159,7 @@ export default function DocumentListItem({
               onClick={() => onClick(document.id)}
               aria-label={`View ${document.name}`}
             >
-              <div className="flex items-center gap-2 min-w-0">
+              <div className="flex items-center gap-2 min-w-0 flex-wrap">
                 <TypeIcon type={document.type} />
                 <span className="text-sm font-medium text-zinc-50 truncate">{document.name}</span>
                 <span
@@ -169,6 +169,14 @@ export default function DocumentListItem({
                 </span>
                 <span className="text-xs text-zinc-500">v{document.versionNumber}</span>
                 <span className="text-xs text-zinc-500 whitespace-nowrap">{formattedDate}</span>
+                {document.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 text-[10px] font-medium"
+                  >
+                    {tag}
+                  </span>
+                ))}
               </div>
             </button>
           )}
