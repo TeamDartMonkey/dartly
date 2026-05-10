@@ -260,8 +260,9 @@ function AnalyticsSection({ analytics }: { analytics: AnalyticsBreakdown }) {
   const maxDaily = Math.max(1, ...velocity.dailyCounts);
   const maxFunnel = Math.max(1, funnel.reachedInterested);
 
-  // Format the day-axis labels: 30 days ago at the left, today at the right.
-  // We label only every 7th bar so the axis stays readable.
+  // Format the day-axis labels: only the earliest and latest bucket are
+  // labeled so the 30-bar axis stays readable. Per-bar dates are exposed via
+  // the title tooltip on each bar.
   const dayCount = velocity.dailyCounts.length;
   const earliestLabel = velocity.dayStartIsos[0]
     ? new Date(velocity.dayStartIsos[0]).toLocaleDateString("en-US", {
