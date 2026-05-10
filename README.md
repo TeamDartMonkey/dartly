@@ -46,7 +46,13 @@
 - Resume bullet rewriting.
 - Job-specific resume and cover letter generation.
 - Suggest improvements for user-written content.
+- AI-generated company research (overview, culture, news, role fit, suggested interview questions) — auto-saved per job.
 - AI outputs are editable and versioned.
+
+### 5. Interview Prep Notes
+
+- Structured freeform notes per job: STAR stories, questions to ask interviewers, and talking points.
+- Saved alongside job data, separate from AI-generated research.
 
 ---
 

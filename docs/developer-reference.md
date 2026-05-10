@@ -69,6 +69,17 @@ The pipeline uses Bun on Ubuntu with a 10-minute timeout. Concurrent runs on the
 
 Profile, Experience, Education, Skill, Job, JobStageHistory, JobActivity, Document, DocumentVersion, JobDocumentLink, UserSettings
 
+### Notable Job Fields
+
+In addition to core fields (title, company, stage, etc.), the `Job` model carries four AI/prep fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `companyResearch` | `String?` | AI-generated company research (persisted on generation; manually editable) |
+| `prepNotesStar` | `String?` | Interview prep — STAR stories |
+| `prepNotesQuestions` | `String?` | Interview prep — questions to ask interviewers |
+| `prepNotesTalkingPoints` | `String?` | Interview prep — talking points to weave in |
+
 ### Enums
 
 - **JobStage:** `INTERESTED`, `APPLIED`, `INTERVIEW`, `OFFER`, `REJECTED`, `ARCHIVED`
@@ -90,3 +101,16 @@ Profile, Experience, Education, Skill, Job, JobStageHistory, JobActivity, Docume
 - User 1:1 UserSettings (via `userId`)
 
 For the full schema, see `prisma/schema.prisma`.
+
+---
+
+## AI Service (`src/services/ai.ts`)
+
+All AI calls go through Google Gemini (`gemini-2.5-flash`). Four exported functions:
+
+| Function | Endpoint | Description |
+|----------|----------|-------------|
+| `generateResumeDraft(profile, job)` | `POST /api/ai/resume` | Generates a tailored resume draft from the user's profile and a job entry |
+| `generateCoverLetterDraft(profile, job)` | `POST /api/ai/cover-letter` | Generates a job-specific cover letter |
+| `rewriteContent(input)` | `POST /api/ai/rewrite` | Rewrites a content block per a user instruction |
+| `generateCompanyResearch(input)` | `POST /api/ai/research` | Produces structured company research (6 sections: overview, products, culture, news, role fit, suggested questions). Auto-persists to `job.companyResearch`. |
