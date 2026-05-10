@@ -9,7 +9,7 @@ export function DashboardSkeleton() {
       aria-label="Loading jobs"
     >
       {[0, 1, 2, 3, 4, 5].map((n) => (
-        <div key={n} className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
+        <div key={n} className="bg-zinc-900 border border-zinc-700 rounded-lg shadow-sm p-6">
           {/* Title + stage badge row */}
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
