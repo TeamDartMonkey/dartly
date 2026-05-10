@@ -24,6 +24,10 @@ export function MetricsPanel({ refreshKey }: { refreshKey: number }) {
   const router = useRouter();
   const [metrics, setMetrics] = useState<MetricsResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  // Bumped manually to force a re-fetch on Retry without disturbing the
+  // upstream refreshKey contract (which is owned by the dashboard).
+  const [retryNonce, setRetryNonce] = useState(0);
   // Lazy-init from localStorage so the panel renders in the correct expanded
   // state on first paint instead of flickering after hydration.
   const [expanded, setExpanded] = useState<boolean>(() => {
@@ -44,17 +48,22 @@ export function MetricsPanel({ refreshKey }: { refreshKey: number }) {
     });
   }, []);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: refreshKey intentionally triggers re-fetch
+  // biome-ignore lint/correctness/useExhaustiveDependencies: refreshKey/retryNonce intentionally trigger re-fetch
   useEffect(() => {
     setLoading(true);
+    setError(null);
     const ctrl = new AbortController();
     fetch("/api/metrics", { signal: ctrl.signal })
-      .then((res) => {
+      .then(async (res) => {
         if (res.status === 401) {
           router.push("/login");
           return null;
         }
-        if (!res.ok) return null;
+        if (!res.ok) {
+          // Surface a real error rather than silently hiding the panel,
+          // which had been indistinguishable from the empty state.
+          throw new Error(`Metrics request failed (${res.status})`);
+        }
         return res.json();
       })
       .then((data) => {
@@ -63,13 +72,13 @@ export function MetricsPanel({ refreshKey }: { refreshKey: number }) {
       })
       .catch((err) => {
         if (ctrl.signal.aborted || err?.name === "AbortError") return;
-        // Don't toast on metrics — failure should be silent (panel just hides).
+        setError(err instanceof Error ? err.message : "Failed to load metrics");
       })
       .finally(() => {
         if (!ctrl.signal.aborted) setLoading(false);
       });
     return () => ctrl.abort();
-  }, [router, refreshKey]);
+  }, [router, refreshKey, retryNonce]);
 
   if (loading) {
     return (
@@ -83,6 +92,27 @@ export function MetricsPanel({ refreshKey }: { refreshKey: number }) {
             />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div
+        role="alert"
+        className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-500/30 bg-red-500/5 p-4"
+      >
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-red-300">Couldn&rsquo;t load metrics</p>
+          <p className="text-xs text-red-400/80">{error}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setRetryNonce((n) => n + 1)}
+          className="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-200 hover:bg-red-500/20 transition-colors"
+        >
+          Retry
+        </button>
       </div>
     );
   }
