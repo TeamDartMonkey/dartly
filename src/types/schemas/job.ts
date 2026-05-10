@@ -23,7 +23,9 @@ export const CreateJobSchema = z.object({
   stage: JobStageSchema.optional(),
   priority: z.boolean().optional(),
   companyResearch: z.string().trim().max(20_000).or(z.null()).optional(),
-  prepNotes: z.string().trim().max(20_000).or(z.null()).optional(),
+  prepNotesStar: z.string().trim().max(20_000).or(z.null()).optional(),
+  prepNotesQuestions: z.string().trim().max(20_000).or(z.null()).optional(),
+  prepNotesTalkingPoints: z.string().trim().max(20_000).or(z.null()).optional(),
 });
 
 export const UpdateJobSchema = CreateJobSchema.partial();

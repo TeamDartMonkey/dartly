@@ -14,7 +14,9 @@ type CreateJobInput = {
   deadline?: string | null;
   recruiterNotes?: string | null;
   companyResearch?: string | null;
-  prepNotes?: string | null;
+  prepNotesStar?: string | null;
+  prepNotesQuestions?: string | null;
+  prepNotesTalkingPoints?: string | null;
   customNotes?: string | null;
   stage?: JobStage;
   priority?: boolean;
@@ -30,7 +32,9 @@ type UpdateJobInput = {
   deadline?: string | null;
   recruiterNotes?: string | null;
   companyResearch?: string | null;
-  prepNotes?: string | null;
+  prepNotesStar?: string | null;
+  prepNotesQuestions?: string | null;
+  prepNotesTalkingPoints?: string | null;
   customNotes?: string | null;
   stage?: JobStage;
   priority?: boolean;
@@ -51,7 +55,9 @@ export function toJobResponse(job: PrismaJob): Job {
     deadline: job.deadline?.toISOString().slice(0, 10) ?? undefined,
     recruiterNotes: job.recruiterNotes ?? undefined,
     companyResearch: job.companyResearch ?? undefined,
-    prepNotes: job.prepNotes ?? undefined,
+    prepNotesStar: job.prepNotesStar ?? undefined,
+    prepNotesQuestions: job.prepNotesQuestions ?? undefined,
+    prepNotesTalkingPoints: job.prepNotesTalkingPoints ?? undefined,
     customNotes: job.customNotes ?? undefined,
     priority: job.priority,
   };
@@ -89,7 +95,9 @@ export async function createJob(data: CreateJobInput) {
         deadline: data.deadline ? new Date(data.deadline) : null,
         recruiterNotes: data.recruiterNotes,
         companyResearch: data.companyResearch,
-        prepNotes: data.prepNotes,
+        prepNotesStar: data.prepNotesStar,
+        prepNotesQuestions: data.prepNotesQuestions,
+        prepNotesTalkingPoints: data.prepNotesTalkingPoints,
         customNotes: data.customNotes,
         stage: prismaStage,
         priority: data.priority ?? false,
@@ -137,7 +145,13 @@ export async function updateJob(id: string, userId: string, data: UpdateJobInput
         }),
         ...(data.recruiterNotes !== undefined && { recruiterNotes: data.recruiterNotes }),
         ...(data.companyResearch !== undefined && { companyResearch: data.companyResearch }),
-        ...(data.prepNotes !== undefined && { prepNotes: data.prepNotes }),
+        ...(data.prepNotesStar !== undefined && { prepNotesStar: data.prepNotesStar }),
+        ...(data.prepNotesQuestions !== undefined && {
+          prepNotesQuestions: data.prepNotesQuestions,
+        }),
+        ...(data.prepNotesTalkingPoints !== undefined && {
+          prepNotesTalkingPoints: data.prepNotesTalkingPoints,
+        }),
         ...(data.customNotes !== undefined && { customNotes: data.customNotes }),
         ...(prismaStage !== undefined && { stage: prismaStage }),
         // Auto-clear deadline when leaving INTERESTED, but only if the

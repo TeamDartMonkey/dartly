@@ -23,7 +23,9 @@ export type Job = {
   customNotes?: string;
   priority?: boolean;
   companyResearch?: string;
-  prepNotes?: string;
+  prepNotesStar?: string;
+  prepNotesQuestions?: string;
+  prepNotesTalkingPoints?: string;
 };
 
 export type ViewMode = "card" | "list";
