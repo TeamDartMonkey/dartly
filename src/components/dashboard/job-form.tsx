@@ -44,7 +44,9 @@ export default function JobForm({ initialValues, defaultStage, onSubmit, onCance
   const [title, setTitle] = useState(initialValues?.title ?? "");
   const [company, setCompany] = useState(initialValues?.company ?? "");
   const [location, setLocation] = useState(initialValues?.location ?? "");
-  const [stage, setStage] = useState<JobStage>(initialValues?.stage ?? defaultStage ?? "Interested");
+  const [stage, setStage] = useState<JobStage>(
+    initialValues?.stage ?? defaultStage ?? "Interested"
+  );
   const [priority, setPriority] = useState(initialValues?.priority ?? false);
   const [deadline, setDeadline] = useState(initialValues?.deadline ?? "");
   const [customNotes, setCustomNotes] = useState(initialValues?.customNotes ?? "");

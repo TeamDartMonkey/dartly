@@ -23,8 +23,7 @@ export function SummarySection({ profile, onUpdate }: SummarySectionProps) {
   }
 
   const isUnchanged =
-    headline.trim() === (profile.headline ?? "") &&
-    summary.trim() === (profile.summary ?? "");
+    headline.trim() === (profile.headline ?? "") && summary.trim() === (profile.summary ?? "");
 
   function handleSave() {
     onUpdate({

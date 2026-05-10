@@ -3,7 +3,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 /** Placeholder that mirrors the job card grid shown after data loads. */
 export function DashboardSkeleton() {
   return (
-    <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3" role="status" aria-label="Loading jobs">
+    <div
+      className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
+      role="status"
+      aria-label="Loading jobs"
+    >
       {[0, 1, 2, 3, 4, 5].map((n) => (
         <div key={n} className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
           {/* Title + stage badge row */}
