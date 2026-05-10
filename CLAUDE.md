@@ -44,7 +44,7 @@ These choices are final. Do not suggest alternatives or migrations.
 - `src/styles/` — CSS stylesheets (jakes-resume.css for resume rendering)
 - `src/proxy.ts` — middleware logic for route protection and session refresh
 - `src/scripts/` — database seed and clean scripts
-- `src/app/api/` — API route handlers (auth, health, jobs, documents, profile, settings, metrics, ai/cover-letter, ai/resume, ai/rewrite)
+- `src/app/api/` — API route handlers (auth, health, jobs, documents, profile, settings, metrics, ai/cover-letter, ai/resume, ai/rewrite, ai/research)
 - `src/tests/` — test files organized by module (api, components, hooks, lib, services, utils, \_\_mocks\_\_)
 
 ### Route structure
@@ -52,7 +52,7 @@ These choices are final. Do not suggest alternatives or migrations.
 The app uses Next.js route groups:
 
 - `src/app/(auth)/` — public pages: `login/`, `register/`, `forgot-password/`, `reset-password/`
-- `src/app/(app)/` — protected pages: `dashboard/`, `dashboard/[jobId]/` (job detail with overview, timeline, followups, interviews, documents sections), `documents/`, `documents/[id]/` (document detail), `profile/`, `settings/`, with shared `layout.tsx` that checks auth and renders sidebar
+- `src/app/(app)/` — protected pages: `dashboard/`, `dashboard/[jobId]/` (job detail with overview, timeline, followups, interviews, documents, research, prep-notes sections), `documents/`, `documents/[id]/` (document detail), `profile/`, `settings/`, with shared `layout.tsx` that checks auth and renders sidebar
 
 ### Code style
 
