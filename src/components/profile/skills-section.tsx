@@ -160,7 +160,20 @@ export function SkillsSection({ skills, onUpdate }: SkillsSectionProps) {
                     className="text-zinc-600 hover:text-red-400"
                     aria-label="Remove"
                   >
-                    ✕
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
                   </button>
                 </div>
               </li>
@@ -187,7 +200,10 @@ export function SkillsSection({ skills, onUpdate }: SkillsSectionProps) {
         <SkillForm
           key={editingIndex ?? "new"}
           skill={editingIndex !== null ? skills[editingIndex] : undefined}
-          existingNames={skills.map((s) => s.name)}
+          // Exclude the currently-edited skill so a user renaming a skill in
+          // place doesn't get a spurious "already exists" error if the parent
+          // re-renders with the just-updated name.
+          existingNames={skills.filter((_, i) => i !== editingIndex).map((s) => s.name)}
           onSave={handleSave}
           onCancel={handleCloseModal}
         />

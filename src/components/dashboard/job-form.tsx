@@ -4,10 +4,32 @@ import { useState } from "react";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Select } from "@/components/ui/select";
 import type { Job, JobStage } from "@/types/job";
+import { localTodayString } from "@/utils/datetime";
+
+// Empty optional fields are sent as `null` (not `undefined`) so JSON.stringify
+// preserves them and the server can clear previously-set values. Sending
+// `undefined` strips the keys, and the partial-update service layer treats
+// missing keys as "do not update".
+//
+// Note: lastActivityDate is server-managed (lastActivityAt is set to new Date()
+// on every create/update in services/jobs.ts), so it is not part of the
+// payload — the form does not need to collect it.
+export type JobFormPayload = {
+  id?: string;
+  title: string;
+  company: string;
+  location: string | null;
+  stage: JobStage;
+  priority: boolean;
+  deadline: string | null;
+  customNotes: string | null;
+};
 
 type JobFormProps = {
   initialValues?: Job | null;
-  onSubmit: (job: Omit<Job, "id" | "createdAt"> & { id?: string }) => void | Promise<void>;
+  /** Default stage to pre-select when creating a new job (from user preferences). */
+  defaultStage?: JobStage;
+  onSubmit: (job: JobFormPayload) => void | Promise<void>;
   onCancel: () => void;
 };
 
@@ -18,13 +40,12 @@ const inputStyles =
 
 const labelStyles = "mb-1 block text-sm font-medium text-zinc-300";
 
-export default function JobForm({ initialValues, onSubmit, onCancel }: JobFormProps) {
+export default function JobForm({ initialValues, defaultStage, onSubmit, onCancel }: JobFormProps) {
   const [title, setTitle] = useState(initialValues?.title ?? "");
   const [company, setCompany] = useState(initialValues?.company ?? "");
   const [location, setLocation] = useState(initialValues?.location ?? "");
-  const [stage, setStage] = useState<JobStage>(initialValues?.stage ?? "Interested");
-  const [lastActivityDate, setLastActivityDate] = useState(
-    initialValues?.lastActivityDate ?? new Date().toISOString().slice(0, 10)
+  const [stage, setStage] = useState<JobStage>(
+    initialValues?.stage ?? defaultStage ?? "Interested"
   );
   const [priority, setPriority] = useState(initialValues?.priority ?? false);
   const [deadline, setDeadline] = useState(initialValues?.deadline ?? "");
@@ -45,12 +66,11 @@ export default function JobForm({ initialValues, onSubmit, onCancel }: JobFormPr
         id: initialValues?.id,
         title: title.trim(),
         company: company.trim(),
-        location: location.trim(),
+        location: location.trim() || null,
         stage,
-        lastActivityDate,
         priority,
-        deadline: deadline || undefined,
-        customNotes: customNotes.trim() || undefined,
+        deadline: deadline || null,
+        customNotes: customNotes.trim() || null,
       });
     } finally {
       setIsSubmitting(false);
@@ -121,16 +141,7 @@ export default function JobForm({ initialValues, onSubmit, onCancel }: JobFormPr
         value={deadline}
         onChange={setDeadline}
         placeholder="Select deadline"
-        minDate={!initialValues ? new Date().toISOString().slice(0, 10) : undefined}
-      />
-
-      <DatePicker
-        id="lastActivityDate"
-        label="Last Activity Date"
-        value={lastActivityDate}
-        onChange={setLastActivityDate}
-        placeholder="Select date"
-        required
+        minDate={!initialValues ? localTodayString() : undefined}
       />
 
       <div>

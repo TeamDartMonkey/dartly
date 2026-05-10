@@ -15,9 +15,9 @@ export function LogoutButton() {
         method: "POST",
       });
 
-      const data = await res.json();
-
       if (!res.ok) {
+        // Parse the error body defensively — a 5xx may return non-JSON.
+        const data = await res.json().catch(() => ({}) as { error?: string });
         setError(data.error ?? "Something went wrong.");
         return;
       }

@@ -1,15 +1,14 @@
 import "server-only";
 import type { NextRequest, NextResponse } from "next/server";
+import { ApiError } from "@/lib/api-error";
 import { logHttp } from "@/lib/logger";
 
 /**
  * Wraps an API route handler with HTTP request/response logging.
  * The handler is expected to catch its own errors and return a NextResponse
- * (e.g. via handleApiError). Uncaught throws are logged as 500 and re-thrown.
+ * (e.g. via handleApiError). Uncaught throws are logged at the appropriate
+ * status (using ApiError.statusCode when available, 500 otherwise) and re-thrown.
  */
-// Wraps route handlers to automatically log all HTTP requests.
-// Measures duration from request start to response completion.
-// Logs successful responses with actual status, errors as 500.
 export async function withHttpLogging(
   request: NextRequest,
   handler: () => Promise<NextResponse>
@@ -20,7 +19,8 @@ export async function withHttpLogging(
     logHttp(request.method, request.url, result.status, Date.now() - start);
     return result;
   } catch (error) {
-    logHttp(request.method, request.url, 500, Date.now() - start);
+    const status = error instanceof ApiError ? error.statusCode : 500;
+    logHttp(request.method, request.url, status, Date.now() - start);
     throw error;
   }
 }

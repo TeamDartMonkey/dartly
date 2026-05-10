@@ -67,6 +67,13 @@ export function IdentitySection({ profile, onUpdate }: IdentitySectionProps) {
     setModalOpen(false);
   }
 
+  const isUnchanged =
+    firstName.trim() === (profile.firstName ?? "") &&
+    lastName.trim() === (profile.lastName ?? "") &&
+    email.trim() === (profile.email ?? "") &&
+    phone.trim() === (profile.phone ?? "") &&
+    location.trim() === (profile.location ?? "");
+
   const fields = [
     {
       label: "Name",
@@ -165,7 +172,8 @@ export function IdentitySection({ profile, onUpdate }: IdentitySectionProps) {
             <button
               type="button"
               onClick={handleSave}
-              className="bg-indigo-500 hover:bg-indigo-600 text-zinc-50 px-4 py-2 rounded-md text-sm font-medium"
+              disabled={isUnchanged || !!emailError || !!phoneError}
+              className="bg-indigo-500 hover:bg-indigo-600 text-zinc-50 px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Save
             </button>

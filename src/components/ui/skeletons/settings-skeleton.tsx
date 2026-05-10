@@ -7,7 +7,7 @@ export function SettingsSkeleton() {
         <Skeleton className="h-7 w-32 mb-1" />
         <Skeleton className="h-4 w-72" />
       </div>
-      <div className="space-y-8">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:items-start">
         <div className="bg-zinc-900 border border-zinc-700 rounded-lg shadow-sm p-6">
           <Skeleton className="h-6 w-24 mb-6" />
           <div className="mb-6 pb-6 border-b border-zinc-800">

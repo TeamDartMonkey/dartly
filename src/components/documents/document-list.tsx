@@ -1,3 +1,5 @@
+"use client";
+
 import DocumentCard from "@/components/documents/document-card";
 import DocumentListItem from "@/components/documents/document-list-item";
 import type { DocumentResponse } from "@/types/document";

@@ -15,11 +15,12 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       const user = await requireAuth();
       const { id: jobId, activityId } = await context.params;
 
+      const data = await validateBody(request, UpdateActivitySchema);
+
       const owned = await verifyJobOwnership(jobId, user.id);
       if (!owned) return NextResponse.json({ error: "Job not found" }, { status: 404 });
 
-      const data = await validateBody(request, UpdateActivitySchema);
-      const activity = await updateActivity(activityId, jobId, data);
+      const activity = await updateActivity(activityId, jobId, user.id, data);
 
       if (!activity) return NextResponse.json({ error: "Activity not found" }, { status: 404 });
 
@@ -40,7 +41,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
       const owned = await verifyJobOwnership(jobId, user.id);
       if (!owned) return NextResponse.json({ error: "Job not found" }, { status: 404 });
 
-      const deleted = await deleteActivity(activityId, jobId);
+      const deleted = await deleteActivity(activityId, jobId, user.id);
       if (!deleted) return NextResponse.json({ error: "Activity not found" }, { status: 404 });
 
       logger.info("Activity deleted", { userId: user.id, jobId, activityId });

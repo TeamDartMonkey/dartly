@@ -39,20 +39,23 @@ export async function POST(request: NextRequest) {
         userContext,
       });
 
-      const updated = await prisma.job.update({
-        where: { id: jobId },
+      // Defense-in-depth: scope the write itself by userId so the update
+      // cannot succeed if the job no longer belongs to the user between
+      // the ownership check above and this statement.
+      const { count } = await prisma.job.updateMany({
+        where: { id: jobId, userId: user.id },
         data: { companyResearch: result.content },
       });
+      if (count === 0) {
+        throw new ApiError(404, "Job not found");
+      }
 
       logger.info("AI company research generated", {
         userId: user.id,
         jobId,
       });
 
-      return NextResponse.json(
-        { companyResearch: updated.companyResearch },
-        { status: 200 }
-      );
+      return NextResponse.json({ companyResearch: result.content }, { status: 200 });
     } catch (err) {
       return handleApiError(err);
     }

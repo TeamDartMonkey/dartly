@@ -33,7 +33,8 @@ export default function DocumentsPage() {
   }, [documents, showArchived]);
 
   useEffect(() => {
-    fetch("/api/documents")
+    const ctrl = new AbortController();
+    fetch("/api/documents", { signal: ctrl.signal })
       .then((res) => {
         if (res.status === 401) {
           router.push("/login");
@@ -43,12 +44,17 @@ export default function DocumentsPage() {
         return res.json();
       })
       .then((data) => {
+        if (ctrl.signal.aborted) return;
         if (data && Array.isArray(data)) setDocuments(data);
       })
-      .catch(() => {
+      .catch((err) => {
+        if (ctrl.signal.aborted || err?.name === "AbortError") return;
         showToast("Failed to load documents", "error");
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!ctrl.signal.aborted) setLoading(false);
+      });
+    return () => ctrl.abort();
   }, [router]);
 
   async function confirmDelete() {

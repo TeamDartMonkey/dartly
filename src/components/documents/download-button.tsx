@@ -7,6 +7,12 @@ import type { DocumentResponse } from "@/types/document";
 interface DownloadButtonProps {
   doc: DocumentResponse;
   signedUrl?: string | null;
+  // Optional override so the caller can pass content from a non-latest
+  // version. When omitted, the latest version's content (doc.content) is
+  // used. UPLOADED docs ignore this — they always fetch from storage since
+  // historical files share the same fileUrl.
+  versionContent?: string;
+  versionNumber?: number;
 }
 
 async function downloadUploaded(name: string, signedUrl?: string | null) {
@@ -32,11 +38,27 @@ async function downloadUploadedById(name: string, docId: string) {
   await downloadUploaded(name, url);
 }
 
-function stripDangerousHtml(html: string): string {
-  return html
-    .replace(/<script[\s\S]*?<\/script>/gi, "")
-    .replace(/<iframe[\s\S]*?<\/iframe>/gi, "")
-    .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "");
+// Sanitizes HTML using hast-util-sanitize (same approach as the in-app
+// markdown renderer). The previous regex-based blacklist could not stop
+// attribute-encoded handlers, namespaced events, javascript: URLs, etc.
+async function sanitizeResumeHtml(html: string): Promise<string> {
+  const { rehype } = await import("rehype");
+  const rehypeSanitize = (await import("rehype-sanitize")).default;
+  const { defaultSchema } = await import("hast-util-sanitize");
+  const schema = {
+    ...defaultSchema,
+    attributes: {
+      ...defaultSchema.attributes,
+      span: [...(defaultSchema.attributes?.span ?? []), "className", "class"],
+      div: [...(defaultSchema.attributes?.div ?? []), "className", "class"],
+    },
+    tagNames: Array.from(new Set([...(defaultSchema.tagNames ?? []), "span", "div"])),
+  };
+  const file = await rehype()
+    .data("settings", { fragment: true })
+    .use(rehypeSanitize, schema)
+    .process(html);
+  return String(file);
 }
 
 export async function downloadGenerated(name: string, type: string, content: string) {
@@ -46,7 +68,7 @@ export async function downloadGenerated(name: string, type: string, content: str
   const { default: remarkHtml } = await import("remark-html");
 
   const result = await remark().use(remarkHtml).process(content);
-  const htmlContent = stripDangerousHtml(String(result));
+  const htmlContent = await sanitizeResumeHtml(String(result));
 
   const cssRes = await fetch("/jakes-resume.css");
   const cssText = cssRes.ok ? await cssRes.text() : "";
@@ -127,25 +149,53 @@ export async function downloadGenerated(name: string, type: string, content: str
   }
 }
 
-export async function downloadDoc(doc: DocumentResponse, signedUrl?: string | null) {
-  if (doc.status === "UPLOADED") {
-    if (signedUrl) {
-      await downloadUploaded(doc.name, signedUrl);
-    } else {
-      await downloadUploadedById(doc.name, doc.id);
-    }
-  } else {
-    await downloadGenerated(doc.name, doc.type, doc.content ?? "");
-  }
+// Strip a trailing .pdf so we can append `-vN` consistently before re-adding
+// the extension. Avoids names like "Resume.pdf-v2.pdf".
+function appendVersionSuffix(name: string, versionNumber?: number): string {
+  if (versionNumber === undefined) return name;
+  const stem = name.replace(/\.pdf$/i, "");
+  return `${stem}-v${versionNumber}`;
 }
 
-export function DownloadButton({ doc, signedUrl }: DownloadButtonProps) {
+export async function downloadDoc(
+  doc: DocumentResponse,
+  signedUrl?: string | null,
+  versionContent?: string,
+  versionNumber?: number
+) {
+  if (doc.status === "UPLOADED") {
+    // UPLOADED docs only ever have one version (storage object is shared);
+    // historical content for them is not stored, so the version override
+    // is meaningless here. We still apply the suffix in case the caller
+    // passed one — keeps filenames self-describing.
+    const baseName = appendVersionSuffix(doc.name, versionNumber);
+    if (signedUrl) {
+      await downloadUploaded(baseName, signedUrl);
+    } else {
+      await downloadUploadedById(baseName, doc.id);
+    }
+    return;
+  }
+
+  // Generated/markdown docs: prefer the explicit selected-version content
+  // when supplied; fall back to doc.content (the latest version) otherwise.
+  const content = versionContent ?? doc.content ?? "";
+  const fileName = appendVersionSuffix(doc.name, versionNumber);
+  await downloadGenerated(fileName, doc.type, content);
+}
+
+export function DownloadButton({
+  doc,
+  signedUrl,
+  versionContent,
+  versionNumber,
+}: DownloadButtonProps) {
   const [downloading, setDownloading] = useState(false);
 
   async function handleDownload() {
     setDownloading(true);
     try {
-      await downloadDoc(doc, signedUrl);
+      await downloadDoc(doc, signedUrl, versionContent, versionNumber);
     } catch {
       showToast("Download failed", "error");
     } finally {

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { showToast } from "@/components/ui/toast";
 import type { JobActivity } from "@/types/activity";
+import { toLocalDateTimeInput } from "@/utils/datetime";
 
 interface Props {
   activities: JobActivity[]; // pre-filtered to FOLLOWUP type by parent
@@ -31,7 +32,9 @@ export function FollowUpsSection({ activities, jobId, onActivitiesChanged }: Pro
     setEditingId(activity.id);
     setForm({
       title: activity.title,
-      scheduledAt: activity.scheduledAt ? activity.scheduledAt.slice(0, 16) : "",
+      // Convert UTC ISO → local datetime-local input format. See
+      // utils/datetime.ts for why.
+      scheduledAt: activity.scheduledAt ? toLocalDateTimeInput(activity.scheduledAt) : "",
       description: activity.description ?? "",
     });
     setShowForm(true);
@@ -44,17 +47,23 @@ export function FollowUpsSection({ activities, jobId, onActivitiesChanged }: Pro
   }
 
   async function handleSave() {
+    if (saving) return;
     if (!form.title.trim()) {
       showToast("Follow-up title is required", "error");
       return;
     }
     setSaving(true);
     try {
+      const isEdit = !!editingId;
       const payload = {
         type: "FOLLOWUP",
         title: form.title.trim(),
-        scheduledAt: form.scheduledAt ? new Date(form.scheduledAt).toISOString() : undefined,
-        description: form.description.trim() || undefined,
+        scheduledAt: form.scheduledAt
+          ? new Date(form.scheduledAt).toISOString()
+          : isEdit
+            ? null
+            : undefined,
+        description: form.description.trim() || (isEdit ? null : undefined),
       };
       const url = editingId
         ? `/api/jobs/${jobId}/activities/${editingId}`

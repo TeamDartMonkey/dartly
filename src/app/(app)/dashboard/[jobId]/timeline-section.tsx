@@ -6,6 +6,75 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { showToast } from "@/components/ui/toast";
 import type { JobActivity } from "@/types/activity";
+import { localTodayString } from "@/utils/datetime";
+
+/**
+ * Today / yesterday in the UTC calendar frame. Activities are stored as UTC
+ * midnight on the user-picked day (see handleSave), so we compare day strings
+ * in the same UTC reference instead of letting date-fns/local-tz introduce a
+ * day-of-month skew for users west of UTC.
+ */
+function todayUtc(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function yesterdayUtc(): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
+function daysAgoUtc(dateStr: string): number {
+  const a = new Date(`${dateStr}T00:00:00.000Z`).getTime();
+  const b = new Date(`${todayUtc()}T00:00:00.000Z`).getTime();
+  return Math.round((b - a) / 86_400_000);
+}
+
+function formatDayHeader(dateStr: string): string {
+  // dateStr is the YYYY-MM-DD portion of the stored UTC timestamp.
+  if (dateStr === todayUtc()) return "Today";
+  if (dateStr === yesterdayUtc()) return "Yesterday";
+  const d = new Date(`${dateStr}T00:00:00.000Z`);
+  const diff = daysAgoUtc(dateStr);
+  // Within the last week (excluding today/yesterday): show the weekday name.
+  if (diff > 1 && diff < 7) {
+    return new Intl.DateTimeFormat("en-US", { weekday: "long", timeZone: "UTC" }).format(d);
+  }
+  // Otherwise: absolute calendar date. Include year for items >1 year old or
+  // future-dated, omit for the current year.
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: diff >= 365 || diff < 0 ? "numeric" : undefined,
+    timeZone: "UTC",
+  }).format(d);
+}
+
+/**
+ * Groups a pre-sorted (descending) activity list by calendar day.
+ * Returns an array of [dayLabel, activities[]] pairs in the same order.
+ */
+function groupByDay(sorted: JobActivity[]): [string, JobActivity[]][] {
+  const groups: [string, JobActivity[]][] = [];
+  let currentDay = "";
+  let currentGroup: JobActivity[] = [];
+
+  for (const activity of sorted) {
+    const raw = activity.scheduledAt ?? activity.createdAt;
+    // Extract just the YYYY-MM-DD portion (UTC) for grouping.
+    const dayKey = raw.slice(0, 10);
+    if (dayKey !== currentDay) {
+      if (currentGroup.length > 0) groups.push([formatDayHeader(currentDay), currentGroup]);
+      currentDay = dayKey;
+      currentGroup = [activity];
+    } else {
+      currentGroup.push(activity);
+    }
+  }
+  if (currentGroup.length > 0) groups.push([formatDayHeader(currentDay), currentGroup]);
+
+  return groups;
+}
 
 interface Props {
   activities: JobActivity[];
@@ -19,7 +88,8 @@ export function TimelineSection({ activities, jobId, onActivitiesChanged }: Prop
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
 
-  const today = () => new Date().toISOString().split("T")[0];
+  // Local-day, not UTC — see utils/datetime.ts.
+  const today = () => localTodayString();
   const emptyForm = { title: "", date: today(), description: "" };
   const [form, setForm] = useState(emptyForm);
 
@@ -44,17 +114,21 @@ export function TimelineSection({ activities, jobId, onActivitiesChanged }: Prop
   }
 
   async function handleSave() {
+    if (saving) return;
     if (!form.title.trim()) {
       showToast("Note title is required", "error");
       return;
     }
     setSaving(true);
     try {
+      const isEdit = !!editingId;
       const payload = {
         type: "NOTE",
         title: form.title.trim(),
-        description: form.description.trim() || undefined,
-        scheduledAt: new Date(`${form.date}T00:00:00`).toISOString(),
+        description: form.description.trim() || (isEdit ? null : undefined),
+        // Parse the user-entered YYYY-MM-DD as UTC midnight so the calendar
+        // date round-trips identically regardless of the user's timezone.
+        scheduledAt: new Date(`${form.date}T00:00:00.000Z`).toISOString(),
       };
       const url = editingId
         ? `/api/jobs/${jobId}/activities/${editingId}`
@@ -165,59 +239,58 @@ export function TimelineSection({ activities, jobId, onActivitiesChanged }: Prop
           No activity yet. Events will appear here as you update this job.
         </p>
       ) : (
-        <ol className="relative border-l border-zinc-700 space-y-6 ml-3">
-          {sorted.map((activity) => (
-            <li key={activity.id} className="ml-6">
-              <span className="absolute -left-[9px] flex items-center justify-center w-4 h-4 rounded-full bg-zinc-800 border border-zinc-600 mt-1">
-                <span
-                  className={`w-1.5 h-1.5 rounded-full ${DOT_COLORS[activity.type] ?? "bg-zinc-500"}`}
-                />
-              </span>
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="text-sm font-medium text-zinc-200">{activity.title}</p>
-                  {activity.description && (
-                    <p className="text-xs text-zinc-400 mt-0.5">{activity.description}</p>
-                  )}
-                  <div className="flex items-center gap-2 mt-1">
-                    <span
-                      className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${TYPE_BADGE[activity.type] ?? "bg-zinc-800 text-zinc-400"}`}
-                    >
-                      {activity.type.charAt(0) + activity.type.slice(1).toLowerCase()}
+        <div className="space-y-6">
+          {groupByDay(sorted).map(([dayLabel, dayActivities]) => (
+            <div key={dayLabel}>
+              {/* Day header */}
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500 mb-3">
+                {dayLabel}
+              </p>
+
+              <ol className="relative border-l border-zinc-700 space-y-5 ml-3">
+                {dayActivities.map((activity) => (
+                  <li key={activity.id} className="ml-6">
+                    <span className="absolute -left-[9px] flex items-center justify-center w-4 h-4 rounded-full bg-zinc-800 border border-zinc-600 mt-1">
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${DOT_COLORS[activity.type] ?? "bg-zinc-500"}`}
+                      />
                     </span>
-                    <span className="text-xs text-zinc-500">
-                      {new Date(activity.scheduledAt ?? activity.createdAt).toLocaleDateString(
-                        "en-US",
-                        {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        }
-                      )}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => startEdit(activity)}
-                    className="text-xs text-zinc-400 hover:text-zinc-50 px-2 py-1 rounded hover:bg-zinc-700 transition-colors"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(activity.id)}
-                    disabled={deleting === activity.id}
-                    className="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded hover:bg-zinc-700 transition-colors disabled:opacity-50"
-                  >
-                    {deleting === activity.id ? "..." : "Delete"}
-                  </button>
-                </div>
-              </div>
-            </li>
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-medium text-zinc-200">{activity.title}</p>
+                        {activity.description && (
+                          <p className="text-xs text-zinc-400 mt-0.5">{activity.description}</p>
+                        )}
+                        <span
+                          className={`inline-flex items-center mt-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${TYPE_BADGE[activity.type] ?? "bg-zinc-800 text-zinc-400"}`}
+                        >
+                          {activity.type.charAt(0) + activity.type.slice(1).toLowerCase()}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => startEdit(activity)}
+                          className="text-xs text-zinc-400 hover:text-zinc-50 px-2 py-1 rounded hover:bg-zinc-700 transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(activity.id)}
+                          disabled={deleting === activity.id}
+                          className="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded hover:bg-zinc-700 transition-colors disabled:opacity-50"
+                        >
+                          {deleting === activity.id ? "..." : "Delete"}
+                        </button>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
           ))}
-        </ol>
+        </div>
       )}
     </div>
   );

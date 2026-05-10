@@ -131,130 +131,99 @@ export default function FilterBar({
 
   return (
     <div className="mb-6">
-      {/* Row 1: Search */}
-      <div className="mb-3">
-        <div className="relative">
-          <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Search jobs..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            aria-label="Search jobs"
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-md pl-9 pr-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-          />
+      {/* Sticky controls: search + filter selectors. Chips and count stay
+          non-sticky below so the pinned area remains compact even with many
+          active filters. */}
+      <div className="sticky top-0 z-10 bg-zinc-950 pt-1 pb-2 -mx-4 sm:-mx-8 px-4 sm:px-8">
+        {/* Row 1: Search */}
+        <div className="mb-3">
+          <div className="relative">
+            <svg
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search jobs..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              aria-label="Search jobs"
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-md pl-9 pr-3 py-2 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+          </div>
         </div>
-      </div>
 
-      {/* Row 2: Filters + Sort + View toggle */}
-      <div className="flex flex-wrap items-center gap-2">
-        <Select
-          value={stageFilter}
-          onChange={(val) => setStageFilter(val as JobStage | "")}
-          options={[
-            { value: "", label: "All stages" },
-            ...STAGES.filter((s) => s !== "Archived").map((s) => ({
-              value: s,
-              label: s,
-            })),
-          ]}
-          className="sm:w-36"
-          disabled={showArchived}
-        />
+        {/* Row 2: Filters + Sort + View toggle */}
+        <div className="flex flex-wrap items-center gap-2">
+          <Select
+            value={stageFilter}
+            onChange={(val) => setStageFilter(val as JobStage | "")}
+            options={[
+              { value: "", label: "All stages" },
+              ...STAGES.filter((s) => s !== "Archived").map((s) => ({
+                value: s,
+                label: s,
+              })),
+            ]}
+            className="sm:w-36"
+            disabled={showArchived}
+          />
 
-        <Select
-          value={locationFilter}
-          onChange={setLocationFilter}
-          options={locationOptions}
-          className="sm:w-40"
-        />
+          <Select
+            value={locationFilter}
+            onChange={setLocationFilter}
+            options={locationOptions}
+            className="sm:w-40"
+          />
 
-        <Select
-          value={deadlineFilter}
-          onChange={setDeadlineFilter}
-          options={[...DEADLINE_STATE_OPTIONS]}
-          className="sm:w-40"
-        />
+          <Select
+            value={deadlineFilter}
+            onChange={setDeadlineFilter}
+            options={[...DEADLINE_STATE_OPTIONS]}
+            className="sm:w-40"
+          />
 
-        <Select
-          value={sortBy}
-          onChange={(val) => setSortBy(val as SortKey)}
-          options={[
-            { value: "recent", label: "Most recent" },
-            { value: "stage", label: "Stage" },
-            { value: "deadline", label: "Deadline" },
-            { value: "created", label: "Date created" },
-            { value: "company", label: "Company A-Z" },
-            { value: "priority", label: "Priority first" },
-          ]}
-          className="sm:w-36"
-        />
+          <Select
+            value={sortBy}
+            onChange={(val) => setSortBy(val as SortKey)}
+            options={[
+              { value: "recent", label: "Most recent" },
+              { value: "stage", label: "Stage" },
+              { value: "deadline", label: "Deadline" },
+              { value: "created", label: "Date created" },
+              { value: "company", label: "Company A-Z" },
+              { value: "priority", label: "Priority first" },
+            ]}
+            className="sm:w-36"
+          />
 
-        <button
-          type="button"
-          onClick={() => {
-            onShowArchivedChange(!showArchived);
-            setStageFilter("");
-          }}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-xs font-medium transition-colors ${
-            showArchived
-              ? "bg-orange-500/10 border-orange-500/30 text-orange-400 hover:bg-orange-500/20"
-              : "bg-zinc-800 border-zinc-700 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300"
-          }`}
-          aria-pressed={showArchived}
-        >
-          <svg
-            width="13"
-            height="13"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <polyline points="21 8 21 21 3 21 3 8" />
-            <rect x="1" y="3" width="22" height="5" />
-            <line x1="10" y1="12" x2="14" y2="12" />
-          </svg>
-          {showArchived ? "Viewing archived" : "Archived"}
-        </button>
-
-        {/* Spacer pushes toggle right */}
-        <div className="flex-1" />
-
-        {/* View toggle */}
-        {/* biome-ignore lint/a11y/useSemanticElements: visual toggle in flex toolbar, fieldset breaks layout */}
-        <div
-          className="flex rounded-md border border-zinc-700 overflow-hidden"
-          role="group"
-          aria-label="View mode"
-        >
           <button
             type="button"
-            aria-pressed={viewMode === "card"}
-            aria-label="Card view"
-            onClick={() => onViewModeChange("card")}
-            className={`p-1.5 ${viewMode === "card" ? "bg-zinc-700 text-zinc-50" : "bg-zinc-800 text-zinc-500 hover:text-zinc-300"}`}
+            onClick={() => {
+              onShowArchivedChange(!showArchived);
+              setStageFilter("");
+            }}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-xs font-medium transition-colors ${
+              showArchived
+                ? "bg-orange-500/10 border-orange-500/30 text-orange-400 hover:bg-orange-500/20"
+                : "bg-zinc-800 border-zinc-700 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300"
+            }`}
+            aria-pressed={showArchived}
           >
             <svg
-              width="16"
-              height="16"
+              width="13"
+              height="13"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -263,40 +232,76 @@ export default function FilterBar({
               strokeLinejoin="round"
               aria-hidden="true"
             >
-              <title>Card view</title>
-              <rect x="3" y="3" width="7" height="7" />
-              <rect x="14" y="3" width="7" height="7" />
-              <rect x="3" y="14" width="7" height="7" />
-              <rect x="14" y="14" width="7" height="7" />
+              <polyline points="21 8 21 21 3 21 3 8" />
+              <rect x="1" y="3" width="22" height="5" />
+              <line x1="10" y1="12" x2="14" y2="12" />
             </svg>
+            {showArchived ? "Viewing archived" : "Archived"}
           </button>
-          <button
-            type="button"
-            aria-pressed={viewMode === "list"}
-            aria-label="List view"
-            onClick={() => onViewModeChange("list")}
-            className={`p-1.5 ${viewMode === "list" ? "bg-zinc-700 text-zinc-50" : "bg-zinc-800 text-zinc-500 hover:text-zinc-300"}`}
+
+          {/* Spacer pushes toggle right */}
+          <div className="flex-1" />
+
+          {/* View toggle */}
+          {/* biome-ignore lint/a11y/useSemanticElements: visual toggle in flex toolbar, fieldset breaks layout */}
+          <div
+            className="flex rounded-md border border-zinc-700 overflow-hidden"
+            role="group"
+            aria-label="View mode"
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
+            <button
+              type="button"
+              aria-pressed={viewMode === "card"}
+              aria-label="Card view"
+              onClick={() => onViewModeChange("card")}
+              className={`p-1.5 ${viewMode === "card" ? "bg-zinc-700 text-zinc-50" : "bg-zinc-800 text-zinc-500 hover:text-zinc-300"}`}
             >
-              <title>List view</title>
-              <line x1="8" y1="6" x2="21" y2="6" />
-              <line x1="8" y1="12" x2="21" y2="12" />
-              <line x1="8" y1="18" x2="21" y2="18" />
-              <line x1="3" y1="6" x2="3.01" y2="6" />
-              <line x1="3" y1="12" x2="3.01" y2="12" />
-              <line x1="3" y1="18" x2="3.01" y2="18" />
-            </svg>
-          </button>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <title>Card view</title>
+                <rect x="3" y="3" width="7" height="7" />
+                <rect x="14" y="3" width="7" height="7" />
+                <rect x="3" y="14" width="7" height="7" />
+                <rect x="14" y="14" width="7" height="7" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              aria-pressed={viewMode === "list"}
+              aria-label="List view"
+              onClick={() => onViewModeChange("list")}
+              className={`p-1.5 ${viewMode === "list" ? "bg-zinc-700 text-zinc-50" : "bg-zinc-800 text-zinc-500 hover:text-zinc-300"}`}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <title>List view</title>
+                <line x1="8" y1="6" x2="21" y2="6" />
+                <line x1="8" y1="12" x2="21" y2="12" />
+                <line x1="8" y1="18" x2="21" y2="18" />
+                <line x1="3" y1="6" x2="3.01" y2="6" />
+                <line x1="3" y1="12" x2="3.01" y2="12" />
+                <line x1="3" y1="18" x2="3.01" y2="18" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
 

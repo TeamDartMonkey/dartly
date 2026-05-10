@@ -30,6 +30,10 @@ vi.mock("@/lib/supabase-server", () => ({
   createClient: mockCreateClient,
 }));
 
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: vi.fn().mockResolvedValue(null),
+}));
+
 vi.mock("@/services/prisma", () => ({
   prisma: {
     document: { findFirst: mockDocFindFirst },
@@ -77,7 +81,7 @@ describe("GET /api/documents/[id]/signed-url", () => {
 
     expect(res.status).toBe(200);
     expect(body.url).toBe("https://example.com/signed");
-    expect(mockCreateSignedUrl).toHaveBeenCalledWith(`${USER_ID}/123.pdf`, 60 * 60);
+    expect(mockCreateSignedUrl).toHaveBeenCalledWith(`${USER_ID}/123.pdf`, 5 * 60);
   });
 
   it("scopes the lookup by userId so other users cannot retrieve the URL", async () => {

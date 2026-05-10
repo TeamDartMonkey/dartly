@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { showToast } from "@/components/ui/toast";
 import type { DocumentResponse, DocumentType } from "@/types/document";
@@ -15,6 +16,7 @@ const TYPE_OPTIONS: { value: DocumentType; label: string }[] = [
 ];
 
 export function UploadDocumentDropdown({ onUploaded }: UploadDocumentDropdownProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -56,6 +58,11 @@ export function UploadDocumentDropdown({ onUploaded }: UploadDocumentDropdownPro
         method: "POST",
         body: formData,
       });
+
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
 
       if (res.ok) {
         const uploaded: DocumentResponse = await res.json();

@@ -1,3 +1,5 @@
+import { localTodayString } from "@/utils/datetime";
+
 export type DeadlineState = "overdue" | "upcoming" | "none";
 
 export const DEADLINE_STATE_OPTIONS = [
@@ -9,7 +11,7 @@ export const DEADLINE_STATE_OPTIONS = [
 
 export function getDeadlineState(deadline?: string): "overdue" | "upcoming" | "none" | "none-set" {
   if (!deadline) return "none-set";
-  const today = new Date().toISOString().slice(0, 10);
-  if (deadline < today) return "overdue";
+  // Local date — see utils/deadline.ts for why UTC slice would be wrong.
+  if (deadline < localTodayString()) return "overdue";
   return "upcoming";
 }

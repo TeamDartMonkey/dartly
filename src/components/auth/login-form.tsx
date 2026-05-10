@@ -56,6 +56,7 @@ export function LoginForm() {
         label="Email"
         name="email"
         type="email"
+        autoComplete="email"
         required
         placeholder="you@example.com"
       />
@@ -64,6 +65,7 @@ export function LoginForm() {
         label="Password"
         name="password"
         type="password"
+        autoComplete="current-password"
         required
         placeholder="••••••••"
       />

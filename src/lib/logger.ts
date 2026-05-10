@@ -31,28 +31,56 @@ winston.addColors({
 
 // ─── Formats ─────────────────────────────────────────────────────────────────
 
-const SENSITIVE_KEYS = new Set(["password", "token", "authorization", "secret", "apikey"]);
+const SENSITIVE_KEYS = new Set([
+  "password",
+  "token",
+  "authorization",
+  "secret",
+  "apikey",
+  "api_key",
+  "cookie",
+  "set-cookie",
+  "x-api-key",
+  "bearer",
+  "refresh_token",
+  "access_token",
+  "client_secret",
+  "private_key",
+  "signature",
+]);
+
+// Recurses only into plain objects to avoid corrupting Date/Buffer/Map/Set/etc.
+const isPlainObject = (value: unknown): value is Record<string, unknown> => {
+  if (value === null || typeof value !== "object") return false;
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
+};
 
 // Mutates in-place to preserve Winston's internal Symbol properties (e.g. Symbol(level)).
-// Handles nested objects and arrays of objects.
-const redactInPlace = (obj: Record<string, unknown>): void => {
+// Handles nested objects, arrays, and prevents infinite recursion on cyclic structures.
+const redactInPlace = (obj: Record<string, unknown>, seen: WeakSet<object>): void => {
+  if (seen.has(obj)) return;
+  seen.add(obj);
   for (const key of Object.keys(obj)) {
+    const value = obj[key];
     if (SENSITIVE_KEYS.has(key.toLowerCase())) {
       obj[key] = "[REDACTED]";
-    } else if (Array.isArray(obj[key])) {
-      for (const item of obj[key] as unknown[]) {
-        if (item && typeof item === "object") {
-          redactInPlace(item as Record<string, unknown>);
+      continue;
+    }
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        if (isPlainObject(item)) {
+          redactInPlace(item, seen);
         }
       }
-    } else if (obj[key] && typeof obj[key] === "object") {
-      redactInPlace(obj[key] as Record<string, unknown>);
+    } else if (isPlainObject(value)) {
+      redactInPlace(value, seen);
     }
   }
 };
 
 const redact = winston.format((info) => {
-  redactInPlace(info as unknown as Record<string, unknown>);
+  redactInPlace(info as unknown as Record<string, unknown>, new WeakSet());
   return info;
 });
 
@@ -159,8 +187,15 @@ export const logError = (message: string, error?: unknown, meta?: Record<string,
   logger.error(message, { stack: err.stack, ...meta });
 };
 
+// Strips query strings from logged URLs to avoid persisting tokens, reset codes,
+// or other sensitive query parameters that some providers append.
+const stripQuery = (url: string): string => {
+  const idx = url.indexOf("?");
+  return idx === -1 ? url : url.slice(0, idx);
+};
+
 export const logHttp = (method: string, url: string, status?: number, duration?: number) => {
-  logger.http(`${method} ${url}`, { status, duration });
+  logger.http(`${method} ${stripQuery(url)}`, { status, duration });
 };
 
 export default logger;

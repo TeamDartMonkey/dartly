@@ -24,6 +24,11 @@ vi.mock("@/services/supabase", () => ({
   }),
 }));
 
+// Helper: wait for the password fields to appear (form gates on session check).
+async function waitForReadyForm() {
+  return screen.findByLabelText("New Password");
+}
+
 describe("ResetPasswordForm", () => {
   it("shows error when reset link is invalid", async () => {
     mockGetSession.mockResolvedValue({ data: { session: null } });
@@ -37,7 +42,7 @@ describe("ResetPasswordForm", () => {
     });
 
     render(<ResetPasswordForm />);
-    await screen.findByLabelText("New Password");
+    await waitForReadyForm();
     expect(screen.getByLabelText("New Password")).toBeInTheDocument();
     expect(screen.getByLabelText("Confirm New Password")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /reset password/i })).toBeInTheDocument();
@@ -51,6 +56,7 @@ describe("ResetPasswordForm", () => {
     });
 
     render(<ResetPasswordForm />);
+    await waitForReadyForm();
     await userEvent.type(screen.getByLabelText("New Password"), "Ab1!");
     await userEvent.type(screen.getByLabelText("Confirm New Password"), "Ab1!");
     await userEvent.click(screen.getByRole("button", { name: /reset password/i }));
@@ -63,6 +69,7 @@ describe("ResetPasswordForm", () => {
     });
 
     render(<ResetPasswordForm />);
+    await waitForReadyForm();
     await userEvent.type(screen.getByLabelText("New Password"), "password1!");
     await userEvent.type(screen.getByLabelText("Confirm New Password"), "password1!");
     await userEvent.click(screen.getByRole("button", { name: /reset password/i }));
@@ -77,6 +84,7 @@ describe("ResetPasswordForm", () => {
     });
 
     render(<ResetPasswordForm />);
+    await waitForReadyForm();
     await userEvent.type(screen.getByLabelText("New Password"), "PASSWORD1!");
     await userEvent.type(screen.getByLabelText("Confirm New Password"), "PASSWORD1!");
     await userEvent.click(screen.getByRole("button", { name: /reset password/i }));
@@ -91,6 +99,7 @@ describe("ResetPasswordForm", () => {
     });
 
     render(<ResetPasswordForm />);
+    await waitForReadyForm();
     await userEvent.type(screen.getByLabelText("New Password"), "Password!");
     await userEvent.type(screen.getByLabelText("Confirm New Password"), "Password!");
     await userEvent.click(screen.getByRole("button", { name: /reset password/i }));
@@ -103,6 +112,7 @@ describe("ResetPasswordForm", () => {
     });
 
     render(<ResetPasswordForm />);
+    await waitForReadyForm();
     await userEvent.type(screen.getByLabelText("New Password"), "Password1");
     await userEvent.type(screen.getByLabelText("Confirm New Password"), "Password1");
     await userEvent.click(screen.getByRole("button", { name: /reset password/i }));
@@ -117,6 +127,7 @@ describe("ResetPasswordForm", () => {
     });
 
     render(<ResetPasswordForm />);
+    await waitForReadyForm();
     await userEvent.type(screen.getByLabelText("New Password"), "Password1!");
     await userEvent.type(screen.getByLabelText("Confirm New Password"), "Different1!");
     await userEvent.click(screen.getByRole("button", { name: /reset password/i }));
@@ -134,10 +145,11 @@ describe("ResetPasswordForm", () => {
     });
 
     render(<ResetPasswordForm />);
+    await waitForReadyForm();
     await userEvent.type(screen.getByLabelText("New Password"), "Password1!");
     await userEvent.type(screen.getByLabelText("Confirm New Password"), "Password1!");
     await userEvent.click(screen.getByRole("button", { name: /reset password/i }));
-    expect(screen.getByText("Something went wrong.")).toBeInTheDocument();
+    expect(await screen.findByText("Something went wrong.")).toBeInTheDocument();
   });
 
   //happy path
@@ -155,6 +167,7 @@ describe("ResetPasswordForm", () => {
     mockSignOut.mockResolvedValue({});
 
     render(<ResetPasswordForm />);
+    await waitForReadyForm();
     await userEvent.type(screen.getByLabelText("New Password"), "Password1!");
     await userEvent.type(screen.getByLabelText("Confirm New Password"), "Password1!");
     await userEvent.click(screen.getByRole("button", { name: /reset password/i }));

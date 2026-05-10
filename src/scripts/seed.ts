@@ -1,5 +1,13 @@
 import type { JobStage } from "@prisma/client";
+import { STAGE_LABELS } from "@/constants/job-stages";
 import { prisma } from "@/services/prisma";
+
+// Refuse to run against production. Seeding overwrites data for the two
+// hardcoded demo users.
+if (process.env.NODE_ENV === "production") {
+  console.error("Refusing to run seed in production.");
+  process.exit(1);
+}
 
 const USER_A = "a818c364-412a-4545-8c88-f7b4cba05307";
 const USER_B = "77475f79-adb0-4de2-a61c-5ff34eb96ce7";
@@ -1716,15 +1724,7 @@ const STAGE_TRANSITIONS: Record<string, { from: string | null; to: string }[]> =
   INTERESTED: [{ from: null, to: "INTERESTED" }],
 };
 
-const STAGE_LABELS: Record<string, string> = {
-  INTERESTED: "Interested",
-  APPLIED: "Applied",
-  INTERVIEW: "Interview",
-  OFFER: "Offer",
-  REJECTED: "Rejected",
-  GHOSTED: "Ghosted",
-  ARCHIVED: "Archived",
-};
+
 
 function getActivityDateForStage(_stage: string, transitionIndex: number, baseDate: Date): Date {
   const daysOffset = transitionIndex * 5;
@@ -1941,7 +1941,9 @@ async function seedDocuments(userId: string, documents: SeedDocument[], userLabe
           userId,
           type: docData.type,
           name: docData.name,
-          category: docData.type === "RESUME" ? "Resume" : "Cover Letter",
+          // Demo data with realistic tags so the library demos the filter UX.
+          tags:
+            docData.type === "RESUME" ? ["Resume", "Active"] : ["Cover Letter", "Active"],
           status: "DRAFT",
         },
       })

@@ -34,7 +34,8 @@ export function JobPickerModal({ open, mode, onClose, onGenerated }: JobPickerMo
     setSearch("");
     setSelectedId(null);
 
-    fetch("/api/jobs")
+    const ctrl = new AbortController();
+    fetch("/api/jobs", { signal: ctrl.signal })
       .then((res) => {
         if (res.status === 401) {
           router.push("/login");
@@ -44,6 +45,7 @@ export function JobPickerModal({ open, mode, onClose, onGenerated }: JobPickerMo
         return res.json();
       })
       .then((data) => {
+        if (ctrl.signal.aborted) return;
         if (data && Array.isArray(data)) {
           setJobs(
             data.map((j: { id: string; title: string; company: string }) => ({
@@ -54,11 +56,15 @@ export function JobPickerModal({ open, mode, onClose, onGenerated }: JobPickerMo
           );
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        if (ctrl.signal.aborted || err?.name === "AbortError") return;
         setError("Failed to load jobs");
         showToast("Failed to load jobs", "error");
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!ctrl.signal.aborted) setLoading(false);
+      });
+    return () => ctrl.abort();
   }, [open, router]);
 
   const filtered = search

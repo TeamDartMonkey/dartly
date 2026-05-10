@@ -3,8 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mockTransaction = vi.fn();
 const mockDocCreate = vi.fn();
 const mockDocFindFirst = vi.fn();
+const mockDocFindFirstOrThrow = vi.fn();
 const mockDocFindMany = vi.fn();
 const mockDocUpdate = vi.fn();
+const mockDocUpdateMany = vi.fn();
 const mockVersionCreate = vi.fn();
 const mockVersionFindFirst = vi.fn();
 const mockVersionFindMany = vi.fn();
@@ -14,10 +16,25 @@ const mockLinkUpsert = vi.fn();
 const mockLinkFindFirst = vi.fn();
 const mockLinkFindMany = vi.fn();
 
+// The transaction mock forwards a `tx` object that mirrors the top-level
+// prisma mock — both use the same underlying jest fns so test assertions
+// don't need to know whether a call ran inside or outside a transaction.
 const tx = {
-  document: { create: mockDocCreate, update: mockDocUpdate },
-  documentVersion: { create: mockVersionCreate },
-  jobDocumentLink: { create: mockLinkCreate },
+  document: {
+    create: mockDocCreate,
+    update: mockDocUpdate,
+    updateMany: mockDocUpdateMany,
+    findFirst: mockDocFindFirst,
+    findFirstOrThrow: mockDocFindFirstOrThrow,
+  },
+  documentVersion: {
+    create: mockVersionCreate,
+    findFirst: mockVersionFindFirst,
+  },
+  jobDocumentLink: {
+    create: mockLinkCreate,
+    upsert: mockLinkUpsert,
+  },
   job: { findFirst: mockJobFindFirst },
 };
 
@@ -26,8 +43,10 @@ vi.mock("@/services/prisma", () => ({
     $transaction: mockTransaction,
     document: {
       findFirst: mockDocFindFirst,
+      findFirstOrThrow: mockDocFindFirstOrThrow,
       findMany: mockDocFindMany,
       update: mockDocUpdate,
+      updateMany: mockDocUpdateMany,
     },
     documentVersion: {
       create: mockVersionCreate,
@@ -54,6 +73,7 @@ const {
   getDocumentsForJob,
   linkDocumentToJob,
   softDeleteDocument,
+  updateDocumentTags,
   updateDocumentContent,
   toDocumentResponse,
   toVersionResponse,
@@ -67,7 +87,7 @@ const baseDoc = {
   userId: USER_ID,
   type: "RESUME" as const,
   name: "My Resume",
-  category: null,
+  tags: [],
   status: "DRAFT" as const,
   previousStatus: null,
   isDeleted: false,
@@ -103,6 +123,7 @@ describe("toDocumentResponse", () => {
       type: "RESUME",
       name: "My Resume",
       status: "DRAFT",
+      tags: [],
       content: "Resume content",
       versionNumber: 1,
       createdAt: now.toISOString(),
@@ -182,20 +203,19 @@ describe("getDocumentById", () => {
 });
 
 describe("softDeleteDocument", () => {
-  it("returns true after soft-deleting", async () => {
-    mockDocFindFirst.mockResolvedValue(baseDoc);
-    mockDocUpdate.mockResolvedValue({ ...baseDoc, isDeleted: true });
+  it("returns true after soft-deleting (scoped by userId in updateMany)", async () => {
+    mockDocUpdateMany.mockResolvedValue({ count: 1 });
 
     const result = await softDeleteDocument("doc-1", USER_ID);
     expect(result).toBe(true);
-    expect(mockDocUpdate).toHaveBeenCalledWith({
-      where: { id: "doc-1" },
+    expect(mockDocUpdateMany).toHaveBeenCalledWith({
+      where: { id: "doc-1", userId: USER_ID, isDeleted: false },
       data: { isDeleted: true, deletedAt: expect.any(Date) },
     });
   });
 
   it("returns false when document not found", async () => {
-    mockDocFindFirst.mockResolvedValue(null);
+    mockDocUpdateMany.mockResolvedValue({ count: 0 });
     const result = await softDeleteDocument("doc-999", USER_ID);
     expect(result).toBe(false);
   });
@@ -271,7 +291,6 @@ describe("cross-user access guards", () => {
     const result = await updateDocumentContent("doc-1", OTHER_USER, "tampered");
 
     expect(result).toBeNull();
-    expect(mockTransaction).not.toHaveBeenCalled();
     expect(mockVersionCreate).not.toHaveBeenCalled();
     expect(mockDocFindFirst).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -281,17 +300,15 @@ describe("cross-user access guards", () => {
   });
 
   it("softDeleteDocument scopes lookup by userId (wrong user → false, no update)", async () => {
-    mockDocFindFirst.mockResolvedValue(null);
+    mockDocUpdateMany.mockResolvedValue({ count: 0 });
 
     const result = await softDeleteDocument("doc-1", OTHER_USER);
 
     expect(result).toBe(false);
-    expect(mockDocUpdate).not.toHaveBeenCalled();
-    expect(mockDocFindFirst).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({ id: "doc-1", userId: OTHER_USER }),
-      })
-    );
+    expect(mockDocUpdateMany).toHaveBeenCalledWith({
+      where: { id: "doc-1", userId: OTHER_USER, isDeleted: false },
+      data: expect.any(Object),
+    });
   });
 
   it("findDocumentByJob scopes the nested document relation by userId", async () => {
@@ -465,7 +482,7 @@ describe("getDocumentsForJob", () => {
     expect(mockLinkFindMany).not.toHaveBeenCalled();
   });
 
-  it("filters out soft-deleted documents from links", async () => {
+  it("filters soft-deleted documents at the SQL layer", async () => {
     mockJobFindFirst.mockResolvedValue(job);
     mockLinkFindMany.mockResolvedValue([
       {
@@ -474,20 +491,8 @@ describe("getDocumentsForJob", () => {
         documentId: "doc-1",
         documentVersionId: "ver-1",
         linkedAt: now,
+        documentVersion: baseVersion,
         document: { ...baseDoc, isDeleted: false, versions: [baseVersion] },
-      },
-      {
-        id: "link-2",
-        jobId: "job-1",
-        documentId: "doc-2",
-        documentVersionId: "ver-2",
-        linkedAt: now,
-        document: {
-          ...baseDoc,
-          id: "doc-2",
-          isDeleted: true,
-          versions: [{ ...baseVersion, id: "ver-2", documentId: "doc-2" }],
-        },
       },
     ]);
 
@@ -496,6 +501,14 @@ describe("getDocumentsForJob", () => {
     expect(result).toHaveLength(1);
     expect(result?.[0].id).toBe("doc-1");
     expect(result?.[0].linkedAt).toBe(now.toISOString());
+    // Verify the WHERE clause filters at the database
+    expect(mockLinkFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          document: expect.objectContaining({ isDeleted: false }),
+        }),
+      })
+    );
   });
 
   it("filters out documents with no versions", async () => {
@@ -507,6 +520,7 @@ describe("getDocumentsForJob", () => {
         documentId: "doc-1",
         documentVersionId: "ver-1",
         linkedAt: now,
+        documentVersion: baseVersion,
         document: { ...baseDoc, versions: [] },
       },
     ]);
@@ -514,6 +528,51 @@ describe("getDocumentsForJob", () => {
     const result = await getDocumentsForJob("job-1", USER_ID);
 
     expect(result).toEqual([]);
+  });
+
+  it("returns the linked version (not latest) and flags hasNewerVersion when the doc has a newer version", async () => {
+    mockJobFindFirst.mockResolvedValue(job);
+    const linkedVersion = { ...baseVersion, id: "ver-1", versionNumber: 1, content: "v1" };
+    const latestVersion = { ...baseVersion, id: "ver-2", versionNumber: 2, content: "v2" };
+    mockLinkFindMany.mockResolvedValue([
+      {
+        id: "link-1",
+        jobId: "job-1",
+        documentId: "doc-1",
+        documentVersionId: "ver-1",
+        linkedAt: now,
+        documentVersion: linkedVersion,
+        document: { ...baseDoc, versions: [latestVersion] },
+      },
+    ]);
+
+    const result = await getDocumentsForJob("job-1", USER_ID);
+
+    expect(result).toHaveLength(1);
+    expect(result?.[0].versionNumber).toBe(1);
+    expect(result?.[0].content).toBe("v1");
+    expect(result?.[0].hasNewerVersion).toBe(true);
+    expect(result?.[0].latestVersionNumber).toBe(2);
+  });
+
+  it("does not flag hasNewerVersion when the linked version is the latest", async () => {
+    mockJobFindFirst.mockResolvedValue(job);
+    mockLinkFindMany.mockResolvedValue([
+      {
+        id: "link-1",
+        jobId: "job-1",
+        documentId: "doc-1",
+        documentVersionId: "ver-1",
+        linkedAt: now,
+        documentVersion: baseVersion,
+        document: { ...baseDoc, versions: [baseVersion] },
+      },
+    ]);
+
+    const result = await getDocumentsForJob("job-1", USER_ID);
+
+    expect(result?.[0].hasNewerVersion).toBe(false);
+    expect(result?.[0].latestVersionNumber).toBe(baseVersion.versionNumber);
   });
 });
 
@@ -583,8 +642,59 @@ describe("linkDocumentToJob (cross-user ownership)", () => {
 
     await linkDocumentToJob("job-1", "doc-1", "ver-from-other-doc", USER_ID);
 
-    expect(mockVersionFindFirst).toHaveBeenCalledWith({
-      where: { id: "ver-from-other-doc", documentId: "doc-1" },
+    expect(mockVersionFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "ver-from-other-doc", documentId: "doc-1" },
+      })
+    );
+  });
+});
+
+describe("updateDocumentTags", () => {
+  it("normalizes tags before persisting (dedupe, trim, sort)", async () => {
+    mockDocUpdateMany.mockResolvedValue({ count: 1 });
+    mockDocFindFirst.mockResolvedValue({
+      ...baseDoc,
+      tags: ["Backend", "Frontend"],
+      versions: [baseVersion],
     });
+
+    await updateDocumentTags("doc-1", USER_ID, [
+      "  Frontend  ",
+      "frontend",
+      "Backend",
+      "",
+    ]);
+
+    expect(mockDocUpdateMany).toHaveBeenCalledWith({
+      where: { id: "doc-1", userId: USER_ID, isDeleted: false },
+      data: { tags: ["Backend", "Frontend"], updatedAt: expect.any(Date) },
+    });
+  });
+
+  it("returns null and skips read when the document is not owned", async () => {
+    mockDocUpdateMany.mockResolvedValue({ count: 0 });
+
+    const result = await updateDocumentTags("doc-1", "wrong-user", ["Frontend"]);
+
+    expect(result).toBeNull();
+    expect(mockDocFindFirst).not.toHaveBeenCalled();
+  });
+
+  it("drops invalid characters silently as a defense-in-depth net", async () => {
+    mockDocUpdateMany.mockResolvedValue({ count: 1 });
+    mockDocFindFirst.mockResolvedValue({
+      ...baseDoc,
+      tags: ["good"],
+      versions: [baseVersion],
+    });
+
+    await updateDocumentTags("doc-1", USER_ID, ["good", "bad/tag"]);
+
+    expect(mockDocUpdateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ tags: ["good"] }),
+      })
+    );
   });
 });

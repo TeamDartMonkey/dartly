@@ -92,30 +92,51 @@ export default function DocumentCard({
           </span>
         </div>
 
-        {/* Name + meta — clicking navigates */}
-        <button
-          type="button"
-          className="flex-1 min-w-0 text-left mb-4"
-          onClick={() => !renaming && onClick(document.id)}
-          aria-label={`View ${document.name}`}
-        >
-          {renaming ? (
+        {/* Tag chips — read-only on the card; edit on the detail page. */}
+        {document.tags.length > 0 && (
+          <ul className="flex flex-wrap gap-1 mb-3 list-none p-0" aria-label="Tags">
+            {document.tags.map((tag) => (
+              <li
+                key={tag}
+                className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 text-[10px] font-medium"
+              >
+                {tag}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {/* Name + meta — clicking navigates. Render a non-interactive form
+            during rename so we don't nest an <input> inside a <button> (invalid
+            HTML, undefined keyboard/focus behavior across browsers). */}
+        {renaming ? (
+          <div className="flex-1 min-w-0 mb-4">
             <input
               ref={inputRef}
               value={renameValue}
               onChange={(e) => setRenameValue(e.target.value)}
               onBlur={commitRename}
               onKeyDown={handleRenameKeyDown}
-              onClick={(e) => e.stopPropagation()}
+              aria-label="Rename document"
               className="w-full bg-zinc-800 border border-indigo-500 rounded-md px-2 py-1 text-base font-medium text-zinc-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
-          ) : (
+            <p className="mt-1 text-xs text-zinc-500">
+              v{document.versionNumber} &middot; {formattedDate}
+            </p>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="flex-1 min-w-0 text-left mb-4"
+            onClick={() => onClick(document.id)}
+            aria-label={`View ${document.name}`}
+          >
             <h2 className="text-base font-medium text-zinc-50 truncate">{document.name}</h2>
-          )}
-          <p className="mt-1 text-xs text-zinc-500">
-            v{document.versionNumber} &middot; {formattedDate}
-          </p>
-        </button>
+            <p className="mt-1 text-xs text-zinc-500">
+              v{document.versionNumber} &middot; {formattedDate}
+            </p>
+          </button>
+        )}
 
         {/* Action icons*/}
         <div className="flex items-center justify-center gap-1 pt-3 border-t border-zinc-800">

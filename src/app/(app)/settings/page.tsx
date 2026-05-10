@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { LogoutButton } from "@/components/dashboard/logout-button";
 import { AccountSection } from "@/components/settings/account-section";
@@ -10,19 +11,34 @@ import type { UserPreferences } from "@/types/settings";
 import { DEFAULT_PREFERENCES } from "@/types/settings";
 
 export default function SettingsPage() {
+  const router = useRouter();
   const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/settings")
+    const ctrl = new AbortController();
+    fetch("/api/settings", { signal: ctrl.signal })
       .then((res) => {
+        if (res.status === 401) {
+          router.push("/login");
+          return null;
+        }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
       })
-      .then((data: UserPreferences) => setPreferences(data))
-      .catch(() => showToast("Failed to load settings", "error"))
-      .finally(() => setLoading(false));
-  }, []);
+      .then((data: UserPreferences | null) => {
+        if (ctrl.signal.aborted || !data) return;
+        setPreferences(data);
+      })
+      .catch((err) => {
+        if (ctrl.signal.aborted || err?.name === "AbortError") return;
+        showToast("Failed to load settings", "error");
+      })
+      .finally(() => {
+        if (!ctrl.signal.aborted) setLoading(false);
+      });
+    return () => ctrl.abort();
+  }, [router]);
 
   const updatePreference = useCallback(
     async <K extends keyof UserPreferences>(key: K, value: UserPreferences[K]) => {
@@ -52,7 +68,7 @@ export default function SettingsPage() {
         <p className="mt-1 text-sm text-zinc-400">Manage your account and preferences.</p>
       </div>
 
-      <div className="space-y-8">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:items-start">
         <AccountSection />
         {/* TODO: Future feature — email notification pipeline
             <NotificationSection preferences={notifications} onToggle={handleToggleNotification} />

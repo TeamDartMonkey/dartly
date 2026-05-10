@@ -1,19 +1,21 @@
 "use client";
 
-import JobForm from "@/components/dashboard/job-form";
+import JobForm, { type JobFormPayload } from "@/components/dashboard/job-form";
 import { Modal } from "@/components/ui/modal";
-import type { Job } from "@/types/job";
+import type { Job, JobStage } from "@/types/job";
 
 type AddJobModalProps = {
   isOpen: boolean;
   initialValues?: Job | null;
-  onSubmit: (job: Omit<Job, "id" | "createdAt"> & { id?: string }) => void | Promise<void>;
+  defaultStage?: JobStage;
+  onSubmit: (job: JobFormPayload) => void | Promise<void>;
   onClose: () => void;
 };
 
 export default function AddJobModal({
   isOpen,
   initialValues = null,
+  defaultStage,
   onSubmit,
   onClose,
 }: AddJobModalProps) {
@@ -24,7 +26,12 @@ export default function AddJobModal({
       title={initialValues ? "Edit Job" : "Add Job"}
       maxWidth="2xl"
     >
-      <JobForm initialValues={initialValues} onSubmit={onSubmit} onCancel={onClose} />
+      <JobForm
+        initialValues={initialValues}
+        defaultStage={defaultStage}
+        onSubmit={onSubmit}
+        onCancel={onClose}
+      />
     </Modal>
   );
 }

@@ -45,7 +45,11 @@ function Chevron({ orientation, ...props }: ChevronProps) {
 }
 
 function time24ToParts(time24: string): { hour: string; minute: string; period: "AM" | "PM" } {
-  const [h, m] = time24.split(":").map(Number);
+  const [hRaw, mRaw] = time24.split(":").map(Number);
+  // Guard against partial input like "9" with no minutes — `mRaw` becomes NaN
+  // and pad("NaN") would render literal "NaN" in the minute input.
+  const h = Number.isFinite(hRaw) ? hRaw : 0;
+  const m = Number.isFinite(mRaw) ? mRaw : 0;
   const period = h >= 12 ? "PM" : "AM";
   const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
   return { hour: String(hour12), minute: String(m).padStart(2, "0"), period };
@@ -91,6 +95,7 @@ export function DatePicker({
 }: DatePickerProps) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [viewMonth, setViewMonth] = useState<Date | undefined>(undefined);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   const dateValue = includeTime ? (value ? value.slice(0, 10) : "") : value;
@@ -251,7 +256,8 @@ export function DatePicker({
               disabled={disabledMatchers.length > 0 ? disabledMatchers : undefined}
               startMonth={new Date(1970, 0)}
               endMonth={new Date(2035, 11)}
-              defaultMonth={selected ?? minDateParsed ?? new Date()}
+              month={viewMonth ?? selected ?? minDateParsed ?? new Date()}
+              onMonthChange={setViewMonth}
             />
             {includeTime && (
               <div className="mt-3 pt-3 border-t border-zinc-700 flex items-center gap-2">

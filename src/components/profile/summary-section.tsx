@@ -22,6 +22,9 @@ export function SummarySection({ profile, onUpdate }: SummarySectionProps) {
     setModalOpen(true);
   }
 
+  const isUnchanged =
+    headline.trim() === (profile.headline ?? "") && summary.trim() === (profile.summary ?? "");
+
   function handleSave() {
     onUpdate({
       headline: headline.trim() || undefined,
@@ -86,7 +89,8 @@ export function SummarySection({ profile, onUpdate }: SummarySectionProps) {
             <button
               type="button"
               onClick={handleSave}
-              className="bg-indigo-500 hover:bg-indigo-600 text-zinc-50 px-4 py-2 rounded-md text-sm font-medium"
+              disabled={isUnchanged}
+              className="bg-indigo-500 hover:bg-indigo-600 text-zinc-50 px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Save
             </button>

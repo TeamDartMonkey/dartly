@@ -1,10 +1,27 @@
 "use client";
 
+import { defaultSchema } from "hast-util-sanitize";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import Markdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
+import rehypeSanitize from "rehype-sanitize";
 import { RewritePanel } from "@/components/documents/rewrite-panel";
+
+// Resume content (Jake's-Resume format) embeds inline span/div/br with `class`
+// attributes for layout. We extend the default sanitize schema narrowly:
+// `class` is permitted only on span and div (not globally), and only on the
+// added tags. Script/iframe/on*/etc. remain blocked by defaultSchema.
+const RESUME_SANITIZE_SCHEMA = {
+  ...defaultSchema,
+  attributes: {
+    ...defaultSchema.attributes,
+    span: [...(defaultSchema.attributes?.span ?? []), "className", "class"],
+    div: [...(defaultSchema.attributes?.div ?? []), "className", "class"],
+  },
+  // br is already in defaultSchema.tagNames; we add span/div which are not.
+  tagNames: Array.from(new Set([...(defaultSchema.tagNames ?? []), "span", "div"])),
+};
 import { ConfirmArchiveModal } from "@/components/ui/confirm-archive-modal";
 import { ConfirmDeleteModal } from "@/components/ui/confirm-delete-modal";
 import { Select } from "@/components/ui/select";
@@ -12,6 +29,7 @@ import { showToast } from "@/components/ui/toast";
 import "@/styles/jakes-resume.css";
 import type { DocumentResponse, DocumentVersionResponse } from "@/types/document";
 import { DownloadButton } from "@/components/documents/download-button";
+import { TagInput } from "@/components/documents/tag-input";
 import dynamic from "next/dynamic";
 
 const PdfViewer = dynamic(
@@ -67,18 +85,27 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   const renameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    params.then((p) => setId(p.id));
+    let cancelled = false;
+    params.then((p) => {
+      if (!cancelled) setId(p.id);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [params]);
 
   useEffect(() => {
     if (!id) return;
+    const ctrl = new AbortController();
 
     async function loadData() {
       try {
         const [docRes, verRes] = await Promise.all([
-          fetch(`/api/documents/${id}`),
-          fetch(`/api/documents/${id}/versions`),
+          fetch(`/api/documents/${id}`, { signal: ctrl.signal }),
+          fetch(`/api/documents/${id}/versions`, { signal: ctrl.signal }),
         ]);
+
+        if (ctrl.signal.aborted) return;
 
         if (docRes.status === 401) {
           router.push("/login");
@@ -94,13 +121,14 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
         if (!docRes.ok) throw new Error(`HTTP ${docRes.status}`);
 
         const docData = await docRes.json();
+        if (ctrl.signal.aborted) return;
         setDoc(docData);
         setEditContent(docData.content ?? "");
         setRenameValue(docData.name);
 
         if (verRes.ok) {
           const verData = await verRes.json();
-          if (Array.isArray(verData)) {
+          if (!ctrl.signal.aborted && Array.isArray(verData)) {
             setVersions(verData);
             if (verData.length > 0) {
               setSelectedVersionId(verData[0].id);
@@ -112,25 +140,30 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
         if (docData.status === "UPLOADED" || docData.status === "ARCHIVED") {
           setLoadingSignedUrl(true);
           try {
-            const urlRes = await fetch(`/api/documents/${id}/signed-url`);
+            const urlRes = await fetch(`/api/documents/${id}/signed-url`, {
+              signal: ctrl.signal,
+            });
+            if (ctrl.signal.aborted) return;
             if (urlRes.ok) {
               const { url } = await urlRes.json();
-              setSignedUrl(url);
+              if (!ctrl.signal.aborted) setSignedUrl(url);
             } else {
               showToast("Failed to load file preview", "error");
             }
           } finally {
-            setLoadingSignedUrl(false);
+            if (!ctrl.signal.aborted) setLoadingSignedUrl(false);
           }
         }
-      } catch {
+      } catch (err) {
+        if (ctrl.signal.aborted || (err as Error)?.name === "AbortError") return;
         showToast("Failed to load document", "error");
       } finally {
-        setLoading(false);
+        if (!ctrl.signal.aborted) setLoading(false);
       }
     }
 
     loadData();
+    return () => ctrl.abort();
   }, [id, router]);
 
   async function handleSave() {
@@ -310,27 +343,66 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     if (e.key === "Escape") setRenaming(false);
   }
 
-  function refreshDoc() {
-    if (!id) return;
-    fetch(`/api/documents/${id}`)
-      .then((res) => {
-        if (res.ok) return res.json();
-        return null;
-      })
-      .then((data) => {
-        if (data) {
-          setDoc(data);
-          setEditContent(data.content ?? "");
-        }
+  // Persist the full tag list on every change. Optimistically update local
+  // state so the chip input stays responsive; revert on server rejection.
+  async function handleTagsChange(nextTags: string[]) {
+    if (!doc) return;
+    const previous = doc.tags;
+    setDoc({ ...doc, tags: nextTags });
+    try {
+      const res = await fetch(`/api/documents/${doc.id}/tags`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tags: nextTags }),
       });
-    fetch(`/api/documents/${id}/versions`)
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data) => {
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}) as { error?: string });
+        throw new Error(body.error ?? `HTTP ${res.status}`);
+      }
+      const updated: DocumentResponse = await res.json();
+      // Server may sort/dedupe — sync back to canonical form.
+      setDoc(updated);
+    } catch (e) {
+      setDoc({ ...doc, tags: previous });
+      showToast(e instanceof Error ? e.message : "Failed to update tags", "error");
+    }
+  }
+
+  async function refreshDoc() {
+    if (!id) return;
+    try {
+      const [docRes, verRes] = await Promise.all([
+        fetch(`/api/documents/${id}`),
+        fetch(`/api/documents/${id}/versions`),
+      ]);
+
+      if (docRes.status === 401 || verRes.status === 401) {
+        router.push("/login");
+        return;
+      }
+
+      if (docRes.ok) {
+        const data = await docRes.json();
+        setDoc(data);
+        setEditContent(data.content ?? "");
+      } else {
+        showToast("Failed to refresh document", "error");
+      }
+
+      if (verRes.ok) {
+        const data = await verRes.json();
         if (Array.isArray(data)) {
           setVersions(data);
           if (data.length > 0) setSelectedVersionId(data[0].id);
         }
-      });
+      }
+    } catch {
+      showToast("Failed to refresh document", "error");
+    }
   }
 
   function handleViewModeChange(mode: ViewMode) {
@@ -341,13 +413,17 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   }
 
   const isViewingOldVersion = doc && versions.length > 0 && selectedVersionId !== versions[0]?.id;
-  const displayContent = (() => {
-    const v = versions.find((ver) => ver.id === selectedVersionId);
-    if (v) return v.content ?? "";
-    return doc?.content ?? "";
-  })();
+  const selectedVersion = versions.find((v) => v.id === selectedVersionId) ?? null;
+  const displayContent = selectedVersion?.content ?? doc?.content ?? "";
+  // Used to pin the Download button to the version the user is currently
+  // viewing — both for content and for the filename suffix (-vN.pdf).
+  const downloadVersionNumber = selectedVersion?.versionNumber ?? doc?.versionNumber;
 
-  const isUploaded = doc?.status === "UPLOADED" || (doc?.status === "ARCHIVED" && signedUrl);
+  // File-backed status is derived from the document itself (the version has a
+  // fileUrl), not from a runtime state that depends on whether the signed-URL
+  // fetch happened to succeed. Otherwise a transient signed-URL fetch failure
+  // on an archived PDF flips the page into the markdown-editor branch.
+  const isUploaded = doc?.status === "UPLOADED" || !!doc?.fileUrl;
   const isArchived = doc?.status === "ARCHIVED";
 
   if (loading || !doc) {
@@ -400,8 +476,18 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               </span>
             </div>
             <p className="text-xs text-zinc-500">
-              v{doc.versionNumber} &middot; Created {new Date(doc.createdAt).toLocaleDateString()}{" "}
-              &middot; Updated {new Date(doc.updatedAt).toLocaleDateString()}
+              v{doc.versionNumber} &middot; Created{" "}
+              {new Date(doc.createdAt).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}{" "}
+              &middot; Updated{" "}
+              {new Date(doc.updatedAt).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
             </p>
           </div>
 
@@ -454,9 +540,22 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                 </button>
               </>
             )}
-            <DownloadButton doc={doc} signedUrl={signedUrl} />
+            <DownloadButton
+              doc={doc}
+              signedUrl={signedUrl}
+              versionContent={displayContent}
+              versionNumber={downloadVersionNumber}
+            />
           </div>
         </div>
+
+        {/* Tags editor — chip input. Tags persist on every change via PUT. */}
+        {!isArchived && (
+          <div>
+            <span className="block text-xs font-medium text-zinc-400 mb-1.5">Tags</span>
+            <TagInput value={doc.tags} onChange={handleTagsChange} ariaLabel="Document tags" />
+          </div>
+        )}
 
         {!isUploaded && versions.length > 0 && (
           <div className="flex items-center gap-3">
@@ -551,7 +650,11 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                     <div
                       className={`jakes-resume-preview${doc.type === "COVER_LETTER" ? " cover-letter-preview" : ""}`}
                     >
-                      <Markdown rehypePlugins={[rehypeRaw]}>{displayContent}</Markdown>
+                      <Markdown
+                        rehypePlugins={[rehypeRaw, [rehypeSanitize, RESUME_SANITIZE_SCHEMA]]}
+                      >
+                        {displayContent}
+                      </Markdown>
                     </div>
                   ) : (
                     <span className="text-zinc-500 italic">No content</span>
@@ -561,7 +664,11 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
                 <div className="bg-zinc-950 rounded-md p-4 overflow-auto">
                   {displayContent ? (
                     <div className="markdown-viewer max-w-3xl mx-auto">
-                      <Markdown rehypePlugins={[rehypeRaw]}>{displayContent}</Markdown>
+                      <Markdown
+                        rehypePlugins={[rehypeRaw, [rehypeSanitize, RESUME_SANITIZE_SCHEMA]]}
+                      >
+                        {displayContent}
+                      </Markdown>
                     </div>
                   ) : (
                     <span className="text-zinc-500 italic">No content</span>

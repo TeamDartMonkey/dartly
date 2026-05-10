@@ -13,8 +13,10 @@ type EducationSectionProps = {
 
 function formatDate(date: string | undefined): string {
   if (!date) return "";
+  // Profile dates come from the API as YYYY-MM-DD (UTC-derived). Format in UTC
+  // so a Jan 1 start doesn't render as "Dec" for west-of-UTC users.
   const d = new Date(date);
-  return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  return d.toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
 }
 
 export function EducationSection({ educations, onUpdate }: EducationSectionProps) {
@@ -83,7 +85,10 @@ export function EducationSection({ educations, onUpdate }: EducationSectionProps
               className="group rounded-lg border border-zinc-700 bg-zinc-950/40 p-4 hover:border-zinc-600 transition-colors cursor-pointer"
               onClick={() => handleEdit(index)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") handleEdit(index);
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleEdit(index);
+                }
               }}
             >
               <div className="flex items-start justify-between">

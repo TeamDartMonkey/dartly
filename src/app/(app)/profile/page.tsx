@@ -46,7 +46,8 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/profile")
+    const ctrl = new AbortController();
+    fetch("/api/profile", { signal: ctrl.signal })
       .then((res) => {
         if (res.status === 401) {
           router.push("/login");
@@ -58,14 +59,19 @@ export default function ProfilePage() {
         return res.json();
       })
       .then((data) => {
+        if (ctrl.signal.aborted) return;
         if (data && typeof data === "object") {
           setProfile((prev) => ({ ...EMPTY_PROFILE, ...prev, ...data }));
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        if (ctrl.signal.aborted || err?.name === "AbortError") return;
         showToast("Failed to load profile", "error");
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!ctrl.signal.aborted) setLoading(false);
+      });
+    return () => ctrl.abort();
   }, [router]);
 
   async function handleUpdate(fields: Partial<ProfileData>, message?: string) {
@@ -77,8 +83,12 @@ export default function ProfilePage() {
     );
     if (!isDirty) return;
 
-    const merged = { ...profile, ...fields };
-    setProfile(merged);
+    // Snapshot only the fields this update modifies so a concurrent
+    // sibling save isn't reverted on this request's failure.
+    const previousValues = Object.fromEntries(
+      (Object.keys(fields) as (keyof ProfileData)[]).map((k) => [k, profile[k]])
+    );
+    setProfile((prev) => ({ ...prev, ...fields }));
 
     const payload = Object.fromEntries(
       Object.entries(fields).map(([k, v]) => [k, v === undefined ? null : v])
@@ -100,7 +110,9 @@ export default function ProfilePage() {
       showToast(message ?? "Profile updated");
       router.refresh();
     } else {
-      setProfile(profile);
+      // Revert only the fields this request set. Using a functional setter
+      // means a concurrent sibling save's optimistic update is preserved.
+      setProfile((prev) => ({ ...prev, ...previousValues }));
       showToast("Failed to update profile", "error");
     }
   }

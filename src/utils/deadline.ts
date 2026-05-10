@@ -1,9 +1,15 @@
+import { localTodayString } from "@/utils/datetime";
+
 export type Urgency = "overdue" | "due-soon" | "upcoming" | "none";
 
 const DUE_SOON_DAYS = 7;
 
+// Local date to avoid off-by-one-day errors near day boundaries.
+// e.g. PST 11pm Dec 31 has UTC = Jan 1 — toISOString().slice(0, 10) returns
+// "Jan 1" and a deadline of Jan 1 wrongly shows "due today" while it is
+// still Dec 31 locally.
 function todayStr(): string {
-  return new Date().toISOString().slice(0, 10);
+  return localTodayString();
 }
 
 function diffDays(a: string, b: string): number {

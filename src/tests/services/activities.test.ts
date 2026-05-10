@@ -4,8 +4,9 @@ const mockJobFindFirst = vi.fn();
 const mockActivityFindFirst = vi.fn();
 const mockFindMany = vi.fn();
 const mockCreate = vi.fn();
-const mockUpdate = vi.fn();
-const mockDelete = vi.fn();
+const mockUpdateMany = vi.fn();
+const mockDeleteMany = vi.fn();
+const mockTransaction = vi.fn();
 
 vi.mock("server-only", () => ({}));
 
@@ -16,9 +17,10 @@ vi.mock("@/services/prisma", () => ({
       findMany: mockFindMany,
       findFirst: mockActivityFindFirst,
       create: mockCreate,
-      update: mockUpdate,
-      delete: mockDelete,
+      updateMany: mockUpdateMany,
+      deleteMany: mockDeleteMany,
     },
+    $transaction: mockTransaction,
   },
 }));
 
@@ -49,7 +51,7 @@ describe("verifyJobOwnership", () => {
 describe("getActivities", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns activities ordered newest first", async () => {
+  it("returns activities ordered newest first, scoped by user", async () => {
     const { getActivities } = await import("@/services/activities");
     const mockActivities = [
       { id: "a2", type: "NOTE", title: "Second", createdAt: new Date("2026-02-01") },
@@ -57,10 +59,10 @@ describe("getActivities", () => {
     ];
     mockFindMany.mockResolvedValue(mockActivities);
 
-    const result = await getActivities("j1");
+    const result = await getActivities("j1", "u1");
     expect(result).toEqual(mockActivities);
     expect(mockFindMany).toHaveBeenCalledWith({
-      where: { jobId: "j1" },
+      where: { jobId: "j1", job: { userId: "u1" } },
       orderBy: { createdAt: "desc" },
     });
   });
@@ -69,12 +71,17 @@ describe("getActivities", () => {
 describe("createActivity", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("creates activity with all fields", async () => {
+  it("creates activity with all fields when user owns job", async () => {
     const { createActivity } = await import("@/services/activities");
     const mockActivity = { id: "a1", jobId: "j1", type: "INTERVIEW", title: "Phone Screen" };
-    mockCreate.mockResolvedValue(mockActivity);
 
-    const result = await createActivity("j1", {
+    const tx = {
+      job: { findFirst: vi.fn().mockResolvedValue({ id: "j1" }) },
+      jobActivity: { create: vi.fn().mockResolvedValue(mockActivity) },
+    };
+    mockTransaction.mockImplementation(async (cb: (t: typeof tx) => Promise<unknown>) => cb(tx));
+
+    const result = await createActivity("j1", "u1", {
       type: "INTERVIEW",
       title: "Phone Screen",
       description: "Technical round",
@@ -84,7 +91,7 @@ describe("createActivity", () => {
     });
 
     expect(result).toEqual(mockActivity);
-    expect(mockCreate).toHaveBeenCalledWith({
+    expect(tx.jobActivity.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         jobId: "j1",
         type: "INTERVIEW",
@@ -96,55 +103,41 @@ describe("createActivity", () => {
     });
   });
 
-  it("creates activity with minimal fields", async () => {
+  it("returns null when user does not own job", async () => {
     const { createActivity } = await import("@/services/activities");
-    mockCreate.mockResolvedValue({ id: "a2" });
+    const tx = {
+      job: { findFirst: vi.fn().mockResolvedValue(null) },
+      jobActivity: { create: vi.fn() },
+    };
+    mockTransaction.mockImplementation(async (cb: (t: typeof tx) => Promise<unknown>) => cb(tx));
 
-    await createActivity("j1", { type: "NOTE", title: "Note" });
-
-    expect(mockCreate).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        jobId: "j1",
-        type: "NOTE",
-        title: "Note",
-        description: null,
-        scheduledAt: null,
-        roundType: null,
-        completed: false,
-      }),
-    });
+    const result = await createActivity("j1", "u1", { type: "NOTE", title: "Note" });
+    expect(result).toBeNull();
+    expect(tx.jobActivity.create).not.toHaveBeenCalled();
   });
 });
 
 describe("updateActivity", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("updates activity fields", async () => {
+  it("updates activity fields scoped by user", async () => {
     const { updateActivity } = await import("@/services/activities");
-    const existing = {
-      id: "a1",
-      jobId: "j1",
-      title: "Old",
-      description: "desc",
-      scheduledAt: null,
-      roundType: null,
-      completed: false,
-    };
-    mockActivityFindFirst.mockResolvedValue(existing);
-    mockUpdate.mockResolvedValue({ ...existing, title: "New" });
+    mockUpdateMany.mockResolvedValue({ count: 1 });
+    mockActivityFindFirst.mockResolvedValue({ id: "a1", title: "New" });
 
-    const _result = await updateActivity("a1", "j1", { title: "New" });
-    expect(mockUpdate).toHaveBeenCalledWith({
-      where: { id: "a1" },
+    const result = await updateActivity("a1", "j1", "u1", { title: "New" });
+    expect(mockUpdateMany).toHaveBeenCalledWith({
+      where: { id: "a1", jobId: "j1", job: { userId: "u1" } },
       data: expect.objectContaining({ title: "New" }),
     });
+    expect(result).toEqual({ id: "a1", title: "New" });
   });
 
   it("returns null when activity not found or wrong job", async () => {
     const { updateActivity } = await import("@/services/activities");
-    mockActivityFindFirst.mockResolvedValue(null);
+    mockUpdateMany.mockResolvedValue({ count: 0 });
 
-    const result = await updateActivity("a1", "j1", { title: "X" });
+    const result = await updateActivity("a1", "j1", "u1", { title: "X" });
     expect(result).toBeNull();
   });
 });
@@ -152,20 +145,22 @@ describe("updateActivity", () => {
 describe("deleteActivity", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("deletes activity that belongs to job", async () => {
+  it("deletes activity that belongs to job and user", async () => {
     const { deleteActivity } = await import("@/services/activities");
-    mockActivityFindFirst.mockResolvedValue({ id: "a1", jobId: "j1" });
-    mockDelete.mockResolvedValue({ id: "a1" });
+    mockDeleteMany.mockResolvedValue({ count: 1 });
 
-    const _result = await deleteActivity("a1", "j1");
-    expect(mockDelete).toHaveBeenCalledWith({ where: { id: "a1" } });
+    const result = await deleteActivity("a1", "j1", "u1");
+    expect(mockDeleteMany).toHaveBeenCalledWith({
+      where: { id: "a1", jobId: "j1", job: { userId: "u1" } },
+    });
+    expect(result).toEqual({ id: "a1" });
   });
 
   it("returns null when activity not found or wrong job", async () => {
     const { deleteActivity } = await import("@/services/activities");
-    mockActivityFindFirst.mockResolvedValue(null);
+    mockDeleteMany.mockResolvedValue({ count: 0 });
 
-    const result = await deleteActivity("a1", "j1");
+    const result = await deleteActivity("a1", "j1", "u1");
     expect(result).toBeNull();
   });
 });

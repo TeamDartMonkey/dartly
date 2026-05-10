@@ -8,7 +8,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Dartly",
+  title: {
+    default: "Dartly",
+    template: "%s | Dartly",
+  },
   description: "Your personal job search command center.",
 };
 

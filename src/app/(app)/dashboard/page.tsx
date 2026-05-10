@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import AddJobModal from "@/components/dashboard/add-job-modal";
+import type { JobFormPayload } from "@/components/dashboard/job-form";
 import FilterBar from "@/components/dashboard/filter-bar";
 import JobList from "@/components/dashboard/job-list";
 import { MetricsPanel } from "@/components/dashboard/metrics-panel";
@@ -12,6 +13,8 @@ import { DashboardSkeleton } from "@/components/ui/skeletons/dashboard-skeleton"
 import { showToast } from "@/components/ui/toast";
 import { useViewMode } from "@/hooks/use-view-mode";
 import type { Job, JobStage } from "@/types/job";
+import { STAGE_PRISMA_TO_UI } from "@/constants/job-stages";
+import { DEFAULT_PREFERENCES, type UserPreferences } from "@/types/settings";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -19,6 +22,11 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
+  const [defaultStage, setDefaultStage] = useState<JobStage>("Interested");
+  const prefsLoaded = useRef(false);
+  // Tracks whether the user has manually toggled showArchived since mount.
+  // If they have, we don't overwrite their choice when preferences load.
+  const userToggledArchived = useRef(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [pendingDeleteJob, setPendingDeleteJob] = useState<Job | null>(null);
   const [pendingArchiveJob, setPendingArchiveJob] = useState<Job | null>(null);
@@ -29,8 +37,37 @@ export default function DashboardPage() {
   const [viewMode, setViewMode] = useViewMode();
   const [metricsKey, setMetricsKey] = useState(0);
 
+  // Load user preferences once on mount and apply showArchived + defaultJobStage.
+  // If the user has already toggled showArchived before this resolves, respect
+  // their choice and only apply defaultStage.
   useEffect(() => {
-    fetch("/api/jobs")
+    const ctrl = new AbortController();
+    fetch("/api/settings", { signal: ctrl.signal })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((prefs: UserPreferences | null) => {
+        if (ctrl.signal.aborted || prefsLoaded.current) return;
+        prefsLoaded.current = true;
+        const p = prefs ?? DEFAULT_PREFERENCES;
+        if (!userToggledArchived.current) {
+          setShowArchived(p.showArchived);
+        }
+        const uiStage = STAGE_PRISMA_TO_UI[p.defaultJobStage] ?? "Interested";
+        setDefaultStage(uiStage as JobStage);
+      })
+      .catch(() => {
+        // Silently fall back to defaults — preferences are non-critical.
+      });
+    return () => ctrl.abort();
+  }, []);
+
+  const handleShowArchivedChange = useCallback((show: boolean) => {
+    userToggledArchived.current = true;
+    setShowArchived(show);
+  }, []);
+
+  useEffect(() => {
+    const ctrl = new AbortController();
+    fetch("/api/jobs", { signal: ctrl.signal })
       .then((res) => {
         if (res.status === 401) {
           router.push("/login");
@@ -42,12 +79,17 @@ export default function DashboardPage() {
         return res.json();
       })
       .then((data) => {
+        if (ctrl.signal.aborted) return;
         if (data && Array.isArray(data)) setJobs(data);
       })
-      .catch(() => {
+      .catch((err) => {
+        if (ctrl.signal.aborted || err?.name === "AbortError") return;
         showToast("Failed to load jobs", "error");
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!ctrl.signal.aborted) setLoading(false);
+      });
+    return () => ctrl.abort();
   }, [router]);
 
   function handleAddClick() {
@@ -159,7 +201,7 @@ export default function DashboardPage() {
     }
   }
 
-  async function handleSave(job: Omit<Job, "id" | "createdAt"> & { id?: string }) {
+  async function handleSave(job: JobFormPayload) {
     const existing = job.id ? jobs.find((j) => j.id === job.id) : undefined;
     const isEdit = !!existing;
 
@@ -259,7 +301,7 @@ export default function DashboardPage() {
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         showArchived={showArchived}
-        onShowArchivedChange={setShowArchived}
+        onShowArchivedChange={handleShowArchivedChange}
       />
 
       {/* Job board */}
@@ -288,6 +330,7 @@ export default function DashboardPage() {
       <AddJobModal
         isOpen={showForm}
         initialValues={editingJob}
+        defaultStage={defaultStage}
         onSubmit={handleSave}
         onClose={handleCancel}
       />

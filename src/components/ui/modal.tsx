@@ -20,6 +20,7 @@ const MAX_WIDTH_CLASS = {
 
 export function Modal({ open, onClose, title, children, maxWidth = "lg" }: ModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
@@ -58,14 +59,18 @@ export function Modal({ open, onClose, title, children, maxWidth = "lg" }: Modal
   );
 
   useEffect(() => {
-    if (open) {
-      document.addEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "hidden";
-      dialogRef.current?.focus();
-    }
+    if (!open) return;
+    // Capture the currently focused element so we can restore focus when
+    // the modal closes — standard a11y for dialog dismissal.
+    previouslyFocusedRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    document.addEventListener("keydown", handleKeyDown);
+    document.body.style.overflow = "hidden";
+    dialogRef.current?.focus();
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "";
+      previouslyFocusedRef.current?.focus();
     };
   }, [open, handleKeyDown]);
 
@@ -78,9 +83,6 @@ export function Modal({ open, onClose, title, children, maxWidth = "lg" }: Modal
       role="presentation"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
-      }}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" && e.target === e.currentTarget) onClose();
       }}
     >
       <div

@@ -6,8 +6,11 @@ const mockJobUpdate = vi.fn();
 const mockJobDeleteMany = vi.fn();
 const mockStageHistoryCreate = vi.fn();
 const mockActivityCreate = vi.fn();
+// updateJob now re-reads existing inside the transaction, so the tx's
+// findFirst must share the same fn as the top-level mock for assertions
+// to keep working.
 const mockTx = {
-  job: { create: mockJobCreate, update: mockJobUpdate, findFirst: vi.fn() },
+  job: { create: mockJobCreate, update: mockJobUpdate, findFirst: mockJobFindFirst },
   jobStageHistory: { create: mockStageHistoryCreate },
   jobActivity: { create: mockActivityCreate },
 };
@@ -155,6 +158,45 @@ describe("updateJob", () => {
 
     const updateCall = mockJobUpdate.mock.calls[0][0];
     expect(updateCall.data.deadline).toBeNull();
+  });
+
+  it("writes structured prep notes to all three columns", async () => {
+    const { updateJob } = await import("@/services/jobs");
+
+    mockJobFindFirst.mockResolvedValue({ id: "j1", userId: "u1", stage: "APPLIED" });
+    mockJobUpdate.mockResolvedValue({ id: "j1", stage: "APPLIED" });
+
+    await updateJob("j1", "u1", {
+      prepNotesStar: "STAR content",
+      prepNotesQuestions: "Questions content",
+      prepNotesTalkingPoints: "Talking content",
+    });
+
+    expect(mockJobUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          prepNotesStar: "STAR content",
+          prepNotesQuestions: "Questions content",
+          prepNotesTalkingPoints: "Talking content",
+        }),
+      })
+    );
+  });
+
+  it("clears a single prep notes field by passing null without touching the others", async () => {
+    const { updateJob } = await import("@/services/jobs");
+
+    mockJobFindFirst.mockResolvedValue({ id: "j1", userId: "u1", stage: "APPLIED" });
+    mockJobUpdate.mockResolvedValue({ id: "j1", stage: "APPLIED" });
+
+    await updateJob("j1", "u1", { prepNotesStar: null });
+
+    const updateCall = mockJobUpdate.mock.calls[0][0];
+    expect(updateCall.data.prepNotesStar).toBeNull();
+    // Other prep fields must NOT be in the update payload — undefined means
+    // "leave column alone", which is critical to avoid wiping user data.
+    expect("prepNotesQuestions" in updateCall.data).toBe(false);
+    expect("prepNotesTalkingPoints" in updateCall.data).toBe(false);
   });
 });
 

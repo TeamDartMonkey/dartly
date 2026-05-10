@@ -1,3 +1,5 @@
+"use client";
+
 import JobCard from "@/components/dashboard/job-card";
 import JobListItem from "@/components/dashboard/job-list-item";
 import type { Job, JobStage, ViewMode } from "@/types/job";
@@ -102,6 +104,7 @@ export default function JobList({
             onEdit={onEdit}
             onDelete={onDelete}
             onStageChange={onStageChange}
+            onRestore={onRestore}
           />
         ))}
       </div>

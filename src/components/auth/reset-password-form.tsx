@@ -5,36 +5,56 @@ import { Input } from "@/components/ui/input";
 import { createClient } from "@/services/supabase";
 import type { ResetPasswordFormData } from "@/types";
 
+type SessionState = "loading" | "ready" | "invalid";
+
 export function ResetPasswordForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [sessionReady, setSessionReady] = useState(false);
+  const [sessionState, setSessionState] = useState<SessionState>("loading");
 
   useEffect(() => {
     const supabase = createClient();
+    let cancelled = false;
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    async function init() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (cancelled) return;
+
       if (session) {
-        setSessionReady(true);
-      } else {
-        const code = new URLSearchParams(window.location.search).get("code");
-        if (code) {
-          supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-            if (error) {
-              setError("Invalid or expired reset link.");
-            } else {
-              setSessionReady(true);
-            }
-          });
-        } else {
+        setSessionState("ready");
+        return;
+      }
+
+      const code = new URLSearchParams(window.location.search).get("code");
+      if (!code) {
+        if (!cancelled) {
+          setSessionState("invalid");
           setError("Invalid or expired reset link.");
         }
+        return;
       }
-    });
+
+      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+      if (cancelled) return;
+      if (exchangeError) {
+        setSessionState("invalid");
+        setError("Invalid or expired reset link.");
+      } else {
+        setSessionState("ready");
+      }
+    }
+
+    init();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function handleSubmit(e: SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (sessionState !== "ready" || loading) return;
     setError(null);
     setLoading(true);
 
@@ -49,31 +69,28 @@ export function ResetPasswordForm() {
       setLoading(false);
       return;
     }
-
     if (!/[A-Z]/.test(values.password)) {
       setError("Password must contain at least one uppercase letter.");
       setLoading(false);
       return;
     }
-
     if (!/[a-z]/.test(values.password)) {
       setError("Password must contain at least one lowercase letter.");
       setLoading(false);
       return;
     }
-
     if (!/[0-9]/.test(values.password)) {
       setError("Password must contain at least one number.");
       setLoading(false);
       return;
     }
-
-    if (!/[!@#$%^&*]/.test(values.password)) {
+    // Broadened from a fixed allowlist to "any non-alphanumeric" so common
+    // strong characters (underscore, hyphen, plus, etc.) are accepted.
+    if (!/[^A-Za-z0-9]/.test(values.password)) {
       setError("Password must contain at least one special character.");
       setLoading(false);
       return;
     }
-
     if (values.password !== values.confirmPassword) {
       setError("Passwords do not match.");
       setLoading(false);
@@ -82,16 +99,16 @@ export function ResetPasswordForm() {
 
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.updateUser({
+      const { error: updateError } = await supabase.auth.updateUser({
         password: values.password,
       });
 
-      if (error) {
-        setError(error.message);
+      if (updateError) {
+        setError(updateError.message);
         return;
       }
 
-      //log out user after password reset
+      // Log out user after password reset
       await supabase.auth.signOut();
       window.location.href = "/login";
     } catch {
@@ -101,10 +118,14 @@ export function ResetPasswordForm() {
     }
   }
 
-  if (error && !sessionReady) {
+  if (sessionState === "loading") {
+    return <p className="text-sm text-zinc-400">Verifying reset link…</p>;
+  }
+
+  if (sessionState === "invalid") {
     return (
       <div className="rounded-md bg-red-500/10 border border-red-500/20 px-3 py-2 text-sm text-red-400">
-        {error}
+        {error ?? "Invalid or expired reset link."}
       </div>
     );
   }
@@ -122,6 +143,7 @@ export function ResetPasswordForm() {
         label="New Password"
         name="password"
         type="password"
+        autoComplete="new-password"
         placeholder="••••••••"
       />
       <Input
@@ -129,12 +151,13 @@ export function ResetPasswordForm() {
         label="Confirm New Password"
         name="confirmPassword"
         type="password"
+        autoComplete="new-password"
         placeholder="••••••••"
       />
 
       <button
         type="submit"
-        disabled={loading}
+        disabled={loading || sessionState !== "ready"}
         className="w-full bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-50 px-4 py-2 rounded-md text-sm font-medium transition-colors"
       >
         {loading ? "Updating password..." : "Reset Password"}

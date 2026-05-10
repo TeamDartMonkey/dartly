@@ -1,5 +1,7 @@
+"use client";
+
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { memo, useState } from "react";
 import { BadgePicker } from "@/components/ui/badge-picker";
 import { STAGES, STAGE_STYLES } from "@/constants/job-stages";
 import type { Job, JobStage } from "@/types/job";
@@ -21,14 +23,7 @@ function getStageOptions(_currentStage: JobStage) {
   });
 }
 
-export default function JobCard({
-  job,
-  onEdit,
-  onDelete,
-  onStageChange,
-  onArchive,
-  onRestore,
-}: JobCardProps) {
+function JobCardImpl({ job, onEdit, onDelete, onStageChange, onArchive, onRestore }: JobCardProps) {
   const router = useRouter();
   const [isChangingStage, setIsChangingStage] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
@@ -61,22 +56,25 @@ export default function JobCard({
     }
   }
 
+  // Single outer button covers the title + meta. Action icons inside
+  // call e.stopPropagation() so they don't navigate.
   return (
     <div className="group relative flex flex-col bg-zinc-900 border border-zinc-700 hover:border-zinc-500 rounded-lg shadow-sm p-6 transition-colors">
-      <div className="flex items-start justify-between gap-3">
-        <button
-          type="button"
-          className="flex-1 min-w-0 text-left"
-          onClick={() => router.push(`/dashboard/${job.id}`)}
-          aria-label={`View details for ${job.title} at ${job.company}`}
-        >
+      <button
+        type="button"
+        className="absolute inset-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        onClick={() => router.push(`/dashboard/${job.id}`)}
+        aria-label={`View details for ${job.title} at ${job.company}`}
+      />
+      <div className="relative flex items-start justify-between gap-3 pointer-events-none">
+        <div className="flex-1 min-w-0">
           <div className="min-w-0">
             <h2 className="text-base font-medium text-zinc-50 truncate">{job.title}</h2>
             <p className="text-sm text-zinc-400">{job.company}</p>
           </div>
-        </button>
+        </div>
 
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1 pointer-events-auto relative">
           {onEdit && (
             <button
               type="button"
@@ -88,7 +86,20 @@ export default function JobCard({
               aria-label="Edit"
               title="Edit"
             >
-              ✎
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
             </button>
           )}
 
@@ -194,22 +205,15 @@ export default function JobCard({
         </div>
       </div>
 
-      <button
-        type="button"
-        className="flex-1 min-w-0 text-left"
-        onClick={() => router.push(`/dashboard/${job.id}`)}
-        aria-label={`View details for ${job.title} at ${job.company}`}
-      >
-        <div className="mt-4 space-y-1 text-sm text-zinc-500">
-          {job.location && <p>{job.location}</p>}
-          {job.stage === "Interested" && job.deadline && (
-            <p className="whitespace-nowrap">Deadline: {job.deadline}</p>
-          )}
-          <p className="whitespace-nowrap">Last activity: {job.lastActivityDate}</p>
-        </div>
-      </button>
+      <div className="relative pointer-events-none mt-4 space-y-1 text-sm text-zinc-500">
+        {job.location && <p>{job.location}</p>}
+        {job.stage === "Interested" && job.deadline && (
+          <p className="whitespace-nowrap">Deadline: {job.deadline}</p>
+        )}
+        <p className="whitespace-nowrap">Last activity: {job.lastActivityDate}</p>
+      </div>
 
-      <div className="mt-auto flex items-center justify-between pt-4">
+      <div className="relative pointer-events-auto mt-auto flex items-center justify-between pt-4">
         <div className="flex items-center gap-1.5">
           {isChangingStage && (
             <svg
@@ -299,3 +303,11 @@ export default function JobCard({
     </div>
   );
 }
+
+// Wrap with memo so that, when the parent passes stable (useCallback-wrapped)
+// handlers, re-renders are limited to cards whose `job` prop actually
+// changed. Today the parent passes some inline arrow handlers which defeats
+// memoization, but adding memo at the leaf is cheap and lets parent
+// optimization (when added) take effect without further changes here.
+const JobCard = memo(JobCardImpl);
+export default JobCard;

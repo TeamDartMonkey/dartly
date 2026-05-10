@@ -13,15 +13,34 @@ type GenerateResult = {
   content: string;
 };
 
-const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY ?? "");
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+// Lazily construct the Gemini client so a missing API key produces a clear
+// error from a single place rather than a confusing failure on first call.
+let cachedModel: ReturnType<GoogleGenerativeAI["getGenerativeModel"]> | null = null;
+
+function getModel() {
+  if (cachedModel) return cachedModel;
+  if (!env.GEMINI_API_KEY) {
+    throw new Error("AI is not configured (GEMINI_API_KEY missing)");
+  }
+  const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY);
+  cachedModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+  return cachedModel;
+}
 
 const MAX_RETRIES = 1;
+const GENERATE_TIMEOUT_MS = 30_000;
+
+// Cap parsed retry delays so a malformed upstream message can't pin the route
+// open for hours.
+const MAX_RETRY_DELAY_MS = 30_000;
 
 function parseRetryDelay(error: unknown): number | null {
   if (error instanceof Error) {
     const match = error.message.match(/retryDelay["':\s]+(\d+)s/i);
-    if (match) return Number.parseInt(match[1], 10) * 1000;
+    if (match) {
+      const ms = Number.parseInt(match[1], 10) * 1000;
+      return Math.min(ms, MAX_RETRY_DELAY_MS);
+    }
   }
   return null;
 }
@@ -34,24 +53,41 @@ function isRetryable(error: unknown): boolean {
   return false;
 }
 
+// Wrap a promise with a timeout so a hung Gemini call cannot pin the route.
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error("AI generation timed out")), ms);
+    p.then(
+      (v) => {
+        clearTimeout(t);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(t);
+        reject(e);
+      }
+    );
+  });
+}
+
 async function generateWithRetry(prompt: string): Promise<string> {
-  let lastError: unknown;
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+  let attempt = 0;
+  while (true) {
     try {
-      const result = await model.generateContent(prompt);
+      const result = await withTimeout(getModel().generateContent(prompt), GENERATE_TIMEOUT_MS);
       const text = result.response.text();
       if (!text || text.trim().length === 0) {
         throw new Error("AI generation returned empty response");
       }
       return text.trim();
     } catch (error) {
-      lastError = error;
       if (error instanceof Error && error.message === "AI generation returned empty response") {
         throw error;
       }
       if (attempt < MAX_RETRIES && isRetryable(error)) {
         const delay = parseRetryDelay(error) ?? 2000 * (attempt + 1);
         await new Promise((resolve) => setTimeout(resolve, delay));
+        attempt += 1;
         continue;
       }
       throw new Error(
@@ -59,9 +95,6 @@ async function generateWithRetry(prompt: string): Promise<string> {
       );
     }
   }
-  throw new Error(
-    `AI generation failed after ${MAX_RETRIES + 1} attempts: ${lastError instanceof Error ? lastError.message : "Unknown error"}`
-  );
 }
 
 function serializeProfile(profile: ProfileData): string {

@@ -30,6 +30,31 @@ export default function DocumentFilterBar({
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("");
   const [sortBy, setSortBy] = useState<SortKey>("recent");
+  // Multi-select tag filter. AND-semantic: doc must have ALL selected tags.
+  // Stored case-insensitively for robust matching.
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+  // Available tag set is derived from the current (non-archived) documents
+  // so we never show tags that don't apply. Sorted case-insensitively.
+  const availableTags = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const doc of documents) {
+      for (const tag of doc.tags) {
+        const key = tag.toLowerCase();
+        if (!seen.has(key)) seen.set(key, tag);
+      }
+    }
+    return Array.from(seen.values()).sort((a, b) =>
+      a.toLowerCase().localeCompare(b.toLowerCase())
+    );
+  }, [documents]);
+
+  function toggleTag(tag: string) {
+    const key = tag.toLowerCase();
+    setSelectedTags((prev) =>
+      prev.some((t) => t.toLowerCase() === key) ? prev.filter((t) => t.toLowerCase() !== key) : [...prev, tag]
+    );
+  }
 
   const filtered = useMemo(() => {
     let result = [...documents];
@@ -47,6 +72,14 @@ export default function DocumentFilterBar({
       result = result.filter((doc) => doc.status === statusFilter);
     }
 
+    if (selectedTags.length > 0) {
+      const required = selectedTags.map((t) => t.toLowerCase());
+      result = result.filter((doc) => {
+        const lower = doc.tags.map((t) => t.toLowerCase());
+        return required.every((t) => lower.includes(t));
+      });
+    }
+
     result.sort((a, b) => {
       if (sortBy === "recent")
         return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
@@ -56,7 +89,7 @@ export default function DocumentFilterBar({
     });
 
     return result;
-  }, [documents, search, typeFilter, statusFilter, sortBy]);
+  }, [documents, search, typeFilter, statusFilter, sortBy, selectedTags]);
 
   useEffect(() => {
     onFilteredChange(filtered);
@@ -75,8 +108,15 @@ export default function DocumentFilterBar({
       chips.push({ label: `Status: ${statusFilter}`, clear: () => setStatusFilter("") });
     }
     if (search) chips.push({ label: `Search: ${search}`, clear: () => setSearch("") });
+    for (const tag of selectedTags) {
+      chips.push({
+        label: `Tag: ${tag}`,
+        clear: () =>
+          setSelectedTags((prev) => prev.filter((t) => t.toLowerCase() !== tag.toLowerCase())),
+      });
+    }
     return chips;
-  }, [typeFilter, statusFilter, search]);
+  }, [typeFilter, statusFilter, search, selectedTags]);
 
   const hasActiveFilters = activeFilters.length > 0;
 
@@ -85,6 +125,7 @@ export default function DocumentFilterBar({
     setTypeFilter("");
     setStatusFilter("");
     setSortBy("recent");
+    setSelectedTags([]);
   }
 
   return (
@@ -244,6 +285,34 @@ export default function DocumentFilterBar({
           </button>
         </div>
       </div>
+
+      {/* Tag toggle row — shown only when there are tags to filter by, and
+          only in non-archived view since archived also shouldn't filter by
+          tag in this iteration. */}
+      {!showArchived && availableTags.length > 0 && (
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+          <span className="text-xs text-zinc-500 mr-1">Filter by tag:</span>
+          {availableTags.map((tag) => {
+            const active = selectedTags.some((t) => t.toLowerCase() === tag.toLowerCase());
+            return (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => toggleTag(tag)}
+                aria-pressed={active}
+                className={[
+                  "inline-flex items-center px-2 py-0.5 rounded-md border text-xs font-medium transition-colors",
+                  active
+                    ? "bg-indigo-500/20 border-indigo-500/50 text-indigo-200"
+                    : "bg-zinc-800 border-zinc-700 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300",
+                ].join(" ")}
+              >
+                {tag}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {!showArchived && hasActiveFilters && (
         <div className="mt-3 flex flex-wrap items-center gap-2">

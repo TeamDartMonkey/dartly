@@ -49,7 +49,12 @@ export const ProfilePatchSchema = z
     targetLocations: z.array(z.string().trim().max(100)).max(50),
     workModePreference: z.enum(["Remote", "Hybrid", "On-site", "Flexible"]).nullish(),
     salaryPreference: z.number().int().min(0).max(10_000_000).nullish(),
-    professionalLinks: z.record(z.string(), z.url().or(z.literal(""))).nullish(),
+    professionalLinks: z
+      .record(z.string().trim().min(1).max(50), z.url().or(z.literal("")))
+      .refine((v) => Object.keys(v).length <= 20, {
+        message: "Too many professional links (max 20)",
+      })
+      .nullish(),
     experiences: z.array(ExperienceSchema).max(50),
     educations: z.array(EducationSchema).max(50),
     skills: z.array(SkillSchema).max(200),

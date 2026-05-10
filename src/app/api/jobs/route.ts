@@ -25,9 +25,11 @@ export async function POST(request: NextRequest) {
       const user = await requireAuth();
       const data = await validateBody(request, CreateJobSchema);
 
+      // Spread validated data first so userId cannot be overridden by the
+      // client even if the schema were ever to permit a userId field.
       const job = await createJob({
-        userId: user.id,
         ...data,
+        userId: user.id,
       });
 
       logger.info("Job created", {

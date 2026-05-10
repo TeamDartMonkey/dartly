@@ -20,6 +20,11 @@ export const STAGE_PRISMA_TO_UI: Record<string, JobStage> = {
   ARCHIVED: "Archived",
 };
 
+// Same shape as STAGE_PRISMA_TO_UI but typed as a generic record so callers
+// constructing activity titles from raw Prisma stages can index it without
+// narrowing first. Source-of-truth for "Stage changed: X → Y" labels.
+export const STAGE_LABELS: Record<string, string> = STAGE_PRISMA_TO_UI;
+
 export const STAGES: JobStage[] = [
   "Interested",
   "Applied",

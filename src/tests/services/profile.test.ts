@@ -245,7 +245,11 @@ describe("upsertProfile", () => {
       expect(mockSkillUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: "skill-1" },
-          data: { profileId: PROFILE_ID, name: "TypeScript Updated" },
+          data: expect.objectContaining({
+            profileId: PROFILE_ID,
+            name: "TypeScript Updated",
+            order: 0,
+          }),
         })
       );
       expect(mockSkillCreate).not.toHaveBeenCalled();

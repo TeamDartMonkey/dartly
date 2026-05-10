@@ -1,30 +1,22 @@
 import type { Job as PrismaJob, JobStage as PrismaJobStage } from "@prisma/client";
-import { STAGE_PRISMA_TO_UI, STAGE_UI_TO_PRISMA } from "@/constants/job-stages";
+import { STAGE_LABELS, STAGE_PRISMA_TO_UI, STAGE_UI_TO_PRISMA } from "@/constants/job-stages";
 import { prisma } from "@/services/prisma";
 import type { Job, JobStage } from "@/types/job";
-
-const STAGE_LABELS: Record<string, string> = {
-  INTERESTED: "Interested",
-  APPLIED: "Applied",
-  INTERVIEW: "Interview",
-  OFFER: "Offer",
-  REJECTED: "Rejected",
-  GHOSTED: "Ghosted",
-  ARCHIVED: "Archived",
-};
 
 type CreateJobInput = {
   userId: string;
   title: string;
   company: string;
-  location?: string;
+  location?: string | null;
   description?: string | null;
   compensationNotes?: string | null;
   applicationDate?: string | null;
   deadline?: string | null;
   recruiterNotes?: string | null;
   companyResearch?: string | null;
-  prepNotes?: string | null;
+  prepNotesStar?: string | null;
+  prepNotesQuestions?: string | null;
+  prepNotesTalkingPoints?: string | null;
   customNotes?: string | null;
   stage?: JobStage;
   priority?: boolean;
@@ -33,14 +25,16 @@ type CreateJobInput = {
 type UpdateJobInput = {
   title?: string;
   company?: string;
-  location?: string;
+  location?: string | null;
   description?: string | null;
   compensationNotes?: string | null;
   applicationDate?: string | null;
   deadline?: string | null;
   recruiterNotes?: string | null;
   companyResearch?: string | null;
-  prepNotes?: string | null;
+  prepNotesStar?: string | null;
+  prepNotesQuestions?: string | null;
+  prepNotesTalkingPoints?: string | null;
   customNotes?: string | null;
   stage?: JobStage;
   priority?: boolean;
@@ -61,7 +55,9 @@ export function toJobResponse(job: PrismaJob): Job {
     deadline: job.deadline?.toISOString().slice(0, 10) ?? undefined,
     recruiterNotes: job.recruiterNotes ?? undefined,
     companyResearch: job.companyResearch ?? undefined,
-    prepNotes: job.prepNotes ?? undefined,
+    prepNotesStar: job.prepNotesStar ?? undefined,
+    prepNotesQuestions: job.prepNotesQuestions ?? undefined,
+    prepNotesTalkingPoints: job.prepNotesTalkingPoints ?? undefined,
     customNotes: job.customNotes ?? undefined,
     priority: job.priority,
   };
@@ -74,10 +70,17 @@ export async function getJobsByUserId(userId: string) {
   });
 }
 
+function toPrismaStage(uiStage: JobStage | undefined): PrismaJobStage | undefined {
+  if (uiStage === undefined) return undefined;
+  const mapped = STAGE_UI_TO_PRISMA[uiStage];
+  if (!mapped) {
+    throw new Error(`Unknown job stage: ${uiStage}`);
+  }
+  return mapped as PrismaJobStage;
+}
+
 export async function createJob(data: CreateJobInput) {
-  const prismaStage = data.stage
-    ? (STAGE_UI_TO_PRISMA[data.stage] as PrismaJobStage)
-    : "INTERESTED";
+  const prismaStage: PrismaJobStage = toPrismaStage(data.stage) ?? "INTERESTED";
 
   return prisma.$transaction(async (tx) => {
     const job = await tx.job.create({
@@ -92,7 +95,9 @@ export async function createJob(data: CreateJobInput) {
         deadline: data.deadline ? new Date(data.deadline) : null,
         recruiterNotes: data.recruiterNotes,
         companyResearch: data.companyResearch,
-        prepNotes: data.prepNotes,
+        prepNotesStar: data.prepNotesStar,
+        prepNotesQuestions: data.prepNotesQuestions,
+        prepNotesTalkingPoints: data.prepNotesTalkingPoints,
         customNotes: data.customNotes,
         stage: prismaStage,
         priority: data.priority ?? false,
@@ -113,14 +118,17 @@ export async function createJob(data: CreateJobInput) {
 }
 
 export async function updateJob(id: string, userId: string, data: UpdateJobInput) {
-  const existing = await prisma.job.findFirst({ where: { id, userId } });
-  if (!existing) return null;
-
-  const prismaStage = data.stage ? (STAGE_UI_TO_PRISMA[data.stage] as PrismaJobStage) : undefined;
-  const stageChanged = prismaStage && prismaStage !== existing.stage;
-  const leavingInterested = stageChanged && existing.stage === "INTERESTED";
+  const prismaStage = toPrismaStage(data.stage);
 
   return prisma.$transaction(async (tx) => {
+    // Re-read inside the transaction so two concurrent updates can't both
+    // observe the same fromStage and write incorrect JobStageHistory rows.
+    const existing = await tx.job.findFirst({ where: { id, userId } });
+    if (!existing) return null;
+
+    const stageChanged = prismaStage !== undefined && prismaStage !== existing.stage;
+    const leavingInterested = stageChanged && existing.stage === "INTERESTED";
+
     const updated = await tx.job.update({
       where: { id },
       data: {
@@ -137,10 +145,19 @@ export async function updateJob(id: string, userId: string, data: UpdateJobInput
         }),
         ...(data.recruiterNotes !== undefined && { recruiterNotes: data.recruiterNotes }),
         ...(data.companyResearch !== undefined && { companyResearch: data.companyResearch }),
-        ...(data.prepNotes !== undefined && { prepNotes: data.prepNotes }),
+        ...(data.prepNotesStar !== undefined && { prepNotesStar: data.prepNotesStar }),
+        ...(data.prepNotesQuestions !== undefined && {
+          prepNotesQuestions: data.prepNotesQuestions,
+        }),
+        ...(data.prepNotesTalkingPoints !== undefined && {
+          prepNotesTalkingPoints: data.prepNotesTalkingPoints,
+        }),
         ...(data.customNotes !== undefined && { customNotes: data.customNotes }),
         ...(prismaStage !== undefined && { stage: prismaStage }),
-        ...(leavingInterested && { deadline: null }),
+        // Auto-clear deadline when leaving INTERESTED, but only if the
+        // request didn't explicitly set a deadline — otherwise an explicit
+        // user-supplied deadline would be silently dropped on stage change.
+        ...(leavingInterested && data.deadline === undefined && { deadline: null }),
         ...(data.priority !== undefined && { priority: data.priority }),
         lastActivityAt: new Date(),
       },

@@ -53,7 +53,9 @@ export function RegisterForm() {
       return;
     }
 
-    if (!/[!@#$%^&*]/.test(values.password)) {
+    // Accept any non-alphanumeric character as a valid special. The previous
+    // fixed allowlist rejected strong passwords using common chars like _ - +.
+    if (!/[^A-Za-z0-9]/.test(values.password)) {
       setError("Password must contain at least one special character.");
       setLoading(false);
       return;
@@ -101,6 +103,7 @@ export function RegisterForm() {
         label="Email"
         name="email"
         type="email"
+        autoComplete="email"
         required
         placeholder="you@example.com"
       />
@@ -109,6 +112,7 @@ export function RegisterForm() {
         label="Password"
         name="password"
         type="password"
+        autoComplete="new-password"
         required
         placeholder="••••••••"
       />
@@ -117,6 +121,7 @@ export function RegisterForm() {
         label="Confirm Password"
         name="confirmPassword"
         type="password"
+        autoComplete="new-password"
         required
         placeholder="••••••••"
       />

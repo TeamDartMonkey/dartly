@@ -169,6 +169,7 @@ describe("PATCH /api/documents/[id]", () => {
   it("returns 200 with renamed document", async () => {
     const renamed = { ...mockDocResponse, name: "New Name" };
     mockRenameDocument.mockResolvedValue(renamed);
+    mockValidateBody.mockResolvedValue({ name: "New Name" });
 
     const res = await PATCH(makeRequest("PATCH", { name: "New Name" }), context);
     const body = await res.json();
@@ -180,6 +181,7 @@ describe("PATCH /api/documents/[id]", () => {
 
   it("returns 404 when document not found", async () => {
     mockRenameDocument.mockResolvedValue(null);
+    mockValidateBody.mockResolvedValue({ name: "New Name" });
 
     const res = await PATCH(makeRequest("PATCH", { name: "New Name" }), context);
     const body = await res.json();
@@ -188,21 +190,21 @@ describe("PATCH /api/documents/[id]", () => {
     expect(body.error).toBe("Document not found");
   });
 
-  it("returns 400 when name is missing", async () => {
-    const res = await PATCH(makeRequest("PATCH", {}), context);
-    const body = await res.json();
+  it("returns 400 when name is missing (validation rejects)", async () => {
+    const { ApiError } = await import("@/lib/api-error");
+    mockValidateBody.mockRejectedValue(new ApiError(400, "Name is required"));
 
+    const res = await PATCH(makeRequest("PATCH", {}), context);
     expect(res.status).toBe(400);
-    expect(body.error).toBe("Name is required");
     expect(mockRenameDocument).not.toHaveBeenCalled();
   });
 
-  it("returns 400 when name is only whitespace", async () => {
-    const res = await PATCH(makeRequest("PATCH", { name: "   " }), context);
-    const body = await res.json();
+  it("returns 400 when name is only whitespace (validation rejects)", async () => {
+    const { ApiError } = await import("@/lib/api-error");
+    mockValidateBody.mockRejectedValue(new ApiError(400, "Name is required"));
 
+    const res = await PATCH(makeRequest("PATCH", { name: "   " }), context);
     expect(res.status).toBe(400);
-    expect(body.error).toBe("Name is required");
     expect(mockRenameDocument).not.toHaveBeenCalled();
   });
 

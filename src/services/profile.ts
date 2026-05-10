@@ -1,4 +1,5 @@
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import { ApiError } from "@/lib/api-error";
 import { prisma } from "@/services/prisma";
 import type { Education, Experience, ProfileData, Skill } from "@/types/profile";
 
@@ -77,6 +78,18 @@ function mapSkill(s: DbSkill): Skill {
   };
 }
 
+// Defensive validation for the JSON column. Anything written before the schema
+// was tightened, or via Prisma Studio / SQL, may not match the expected shape.
+// We only return a record of string→string entries; anything else is dropped.
+function validateProfessionalLinks(value: unknown): Record<string, string> | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof v === "string") out[k] = v;
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
 function toProfileData(profile: {
   firstName: string | null;
   lastName: string | null;
@@ -100,8 +113,7 @@ function toProfileData(profile: {
     email: profile.email ?? undefined,
     phone: profile.phone ?? undefined,
     location: profile.location ?? undefined,
-    professionalLinks:
-      (profile.professionalLinks as Record<string, string> | undefined) ?? undefined,
+    professionalLinks: validateProfessionalLinks(profile.professionalLinks),
     headline: profile.headline ?? undefined,
     summary: profile.summary ?? undefined,
     targetRoles: profile.targetRoles,
@@ -195,9 +207,11 @@ async function syncExperiences(
     await tx.experience.deleteMany({ where: { id: { in: toDelete } } });
   }
 
+  // Prisma's interactive transaction serializes statements over a single
+  // connection, so Promise.all here is misleading and makes failure
+  // semantics harder to reason about. Issue writes sequentially.
   for (let index = 0; index < incoming.length; index++) {
     const e = incoming[index];
-
     const data = {
       profileId,
       type: e.type,
@@ -212,14 +226,9 @@ async function syncExperiences(
     };
 
     if (e.id && existingIds.has(e.id)) {
-      await tx.experience.update({
-        where: { id: e.id },
-        data,
-      });
+      await tx.experience.update({ where: { id: e.id }, data });
     } else {
-      await tx.experience.create({
-        data,
-      });
+      await tx.experience.create({ data });
     }
   }
 }
@@ -254,14 +263,9 @@ async function syncEducations(
     };
 
     if (e.id && existingIds.has(e.id)) {
-      await tx.education.update({
-        where: { id: e.id },
-        data,
-      });
+      await tx.education.update({ where: { id: e.id }, data });
     } else {
-      await tx.education.create({
-        data,
-      });
+      await tx.education.create({ data });
     }
   }
 }
@@ -290,44 +294,20 @@ async function syncSkills(tx: Prisma.TransactionClient, profileId: string, incom
 
   for (let index = 0; index < deduped.length; index++) {
     const s = deduped[index];
-
-    const data: {
-      profileId: string;
-      name: string;
-      category?: string | null;
-      proficiency?: string | null;
-      order?: number;
-    } = {
+    const data = {
       profileId,
       name: s.name,
+      // Always set order on update too — single-skill saves stay in sync
+      // with the create branch instead of preserving a stale order value.
+      order: index,
+      category: s.category ?? null,
+      proficiency: s.proficiency ?? null,
     };
 
-    if (s.category !== undefined) {
-      data.category = s.category || null;
-    }
-
-    if (s.proficiency !== undefined) {
-      data.proficiency = s.proficiency || null;
-    }
-
-    if (deduped.length > 1) {
-      data.order = index;
-    }
-
     if (s.id && existingIds.has(s.id)) {
-      await tx.skill.update({
-        where: { id: s.id },
-        data,
-      });
+      await tx.skill.update({ where: { id: s.id }, data });
     } else {
-      await tx.skill.create({
-        data: {
-          ...data,
-          order: index,
-          category: s.category || null,
-          proficiency: s.proficiency || null,
-        },
-      });
+      await tx.skill.create({ data });
     }
   }
 }
@@ -335,44 +315,62 @@ async function syncSkills(tx: Prisma.TransactionClient, profileId: string, incom
 export async function upsertProfile(userId: string, data: ProfilePatchInput): Promise<ProfileData> {
   const fields = buildUpdateFields(data);
 
-  return await prisma.$transaction(async (tx) => {
-    const profile = await tx.profile.upsert({
-      where: { userId },
-      create: {
-        userId,
-        targetRoles: [],
-        targetLocations: [],
-        ...fields,
-      },
-      update: fields,
-    });
-
-    if (data.experiences !== undefined) {
-      await syncExperiences(tx, profile.id, data.experiences);
+  try {
+    return await runUpsert();
+  } catch (err) {
+    // Skill has @@unique([profileId, name]); two concurrent saves can both
+    // pass the in-memory dedup and collide. Translate to a 409 so the client
+    // can prompt the user to retry rather than reporting a generic 500.
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      throw new ApiError(409, "Profile was modified concurrently — please retry.");
     }
+    throw err;
+  }
 
-    if (data.educations !== undefined) {
-      await syncEducations(tx, profile.id, data.educations);
-    }
-
-    if (data.skills !== undefined) {
-      await syncSkills(tx, profile.id, data.skills);
-    }
-
-    const fresh = await tx.profile.findUnique({
-      where: { id: profile.id },
-      include: {
-        experiences: {
-          orderBy: { order: "asc" },
+  async function runUpsert(): Promise<ProfileData> {
+    return prisma.$transaction(async (tx) => {
+      const profile = await tx.profile.upsert({
+        where: { userId },
+        create: {
+          userId,
+          targetRoles: [],
+          targetLocations: [],
+          ...fields,
         },
-        educations: true,
-        skills: {
-          orderBy: { order: "asc" },
-        },
-      },
-    });
+        update: fields,
+      });
 
-    if (!fresh) throw new Error("Profile not found after upsert");
-    return toProfileData(fresh);
-  });
+      if (data.experiences !== undefined) {
+        await syncExperiences(tx, profile.id, data.experiences);
+      }
+
+      if (data.educations !== undefined) {
+        await syncEducations(tx, profile.id, data.educations);
+      }
+
+      if (data.skills !== undefined) {
+        await syncSkills(tx, profile.id, data.skills);
+      }
+
+      const fresh = await tx.profile.findUnique({
+        where: { id: profile.id },
+        include: {
+          experiences: {
+            orderBy: { order: "asc" },
+          },
+          // Mirror getProfile's ordering so the post-save response and a
+          // page-refresh response display educations in the same order.
+          educations: {
+            orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
+          },
+          skills: {
+            orderBy: { order: "asc" },
+          },
+        },
+      });
+
+      if (!fresh) throw new Error("Profile not found after upsert");
+      return toProfileData(fresh);
+    });
+  }
 }

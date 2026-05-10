@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { showToast } from "@/components/ui/toast";
+import { STAGE_STYLES } from "@/constants/job-stages";
 import type { JobActivity } from "@/types/activity";
 import type { Job } from "@/types/job";
 import { DocumentsSection } from "./documents-section";
@@ -22,16 +23,6 @@ type Tab =
   | "research"
   | "prepnotes";
 
-const STAGE_STYLES: Record<string, string> = {
-  Interested: "bg-zinc-800 text-zinc-400",
-  Applied: "bg-blue-950 text-blue-400",
-  Interview: "bg-yellow-950 text-yellow-400",
-  Offer: "bg-green-950 text-green-400",
-  Rejected: "bg-red-950 text-red-400",
-  Ghosted: "bg-purple-950 text-purple-400",
-  Archived: "bg-orange-950 text-orange-400",
-};
-
 export default function JobDetailPage({ params }: { params: Promise<{ jobId: string }> }) {
   const router = useRouter();
   const [jobId, setJobId] = useState<string | null>(null);
@@ -41,43 +32,61 @@ export default function JobDetailPage({ params }: { params: Promise<{ jobId: str
   const [activeTab, setActiveTab] = useState<Tab>("overview");
 
   useEffect(() => {
-    params.then(({ jobId }) => setJobId(jobId));
+    let cancelled = false;
+    params.then(({ jobId }) => {
+      if (!cancelled) setJobId(jobId);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [params]);
 
-  const fetchJob = useCallback(async () => {
-    if (!jobId) return;
-    try {
-      const res = await fetch(`/api/jobs/${jobId}`);
-      if (res.status === 401) {
-        router.push("/login");
-        return;
+  const fetchJob = useCallback(
+    async (signal?: AbortSignal) => {
+      if (!jobId) return;
+      try {
+        const res = await fetch(`/api/jobs/${jobId}`, { signal });
+        if (res.status === 401) {
+          router.push("/login");
+          return;
+        }
+        if (res.status === 404) {
+          router.push("/dashboard");
+          return;
+        }
+        if (!res.ok) throw new Error();
+        if (!signal?.aborted) setJob(await res.json());
+      } catch (err) {
+        if (signal?.aborted || (err as Error)?.name === "AbortError") return;
+        showToast("Failed to load job", "error");
       }
-      if (res.status === 404) {
-        router.push("/dashboard");
-        return;
-      }
-      if (!res.ok) throw new Error();
-      setJob(await res.json());
-    } catch {
-      showToast("Failed to load job", "error");
-    }
-  }, [jobId, router]);
+    },
+    [jobId, router]
+  );
 
-  const fetchActivities = useCallback(async () => {
-    if (!jobId) return;
-    try {
-      const res = await fetch(`/api/jobs/${jobId}/activities`);
-      if (!res.ok) throw new Error();
-      setActivities(await res.json());
-    } catch {
-      showToast("Failed to load activities", "error");
-    }
-  }, [jobId]);
+  const fetchActivities = useCallback(
+    async (signal?: AbortSignal) => {
+      if (!jobId) return;
+      try {
+        const res = await fetch(`/api/jobs/${jobId}/activities`, { signal });
+        if (!res.ok) throw new Error();
+        if (!signal?.aborted) setActivities(await res.json());
+      } catch (err) {
+        if (signal?.aborted || (err as Error)?.name === "AbortError") return;
+        showToast("Failed to load activities", "error");
+      }
+    },
+    [jobId]
+  );
 
   useEffect(() => {
     if (!jobId) return;
     setLoading(true);
-    Promise.all([fetchJob(), fetchActivities()]).finally(() => setLoading(false));
+    const ctrl = new AbortController();
+    Promise.all([fetchJob(ctrl.signal), fetchActivities(ctrl.signal)]).finally(() => {
+      if (!ctrl.signal.aborted) setLoading(false);
+    });
+    return () => ctrl.abort();
   }, [jobId, fetchJob, fetchActivities]);
 
   if (loading) {
@@ -123,7 +132,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ jobId: str
             </p>
           </div>
           <span
-            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STAGE_STYLES[job.stage] ?? "bg-zinc-800 text-zinc-300"}`}
+            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STAGE_STYLES[job.stage]?.badge ?? "bg-zinc-800 text-zinc-300"}`}
           >
             {job.stage}
           </span>
@@ -155,53 +164,77 @@ export default function JobDetailPage({ params }: { params: Promise<{ jobId: str
         ))}
       </div>
 
-      {activeTab === "overview" && (
-        <div role="tabpanel" id="panel-overview" aria-labelledby="tab-overview">
-          <OverviewSection job={job} onJobUpdated={(updated) => setJob(updated)} />
-        </div>
-      )}
-      {activeTab === "timeline" && (
-        <div role="tabpanel" id="panel-timeline" aria-labelledby="tab-timeline">
-          <TimelineSection
-            activities={activities}
-            jobId={job.id}
-            onActivitiesChanged={fetchActivities}
-          />
-        </div>
-      )}
-      {activeTab === "interviews" && (
-        <div role="tabpanel" id="panel-interviews" aria-labelledby="tab-interviews">
-          <InterviewsSection
-            activities={activities.filter((a) => a.type === "INTERVIEW")}
-            jobId={job.id}
-            onActivitiesChanged={fetchActivities}
-          />
-        </div>
-      )}
-      {activeTab === "followups" && (
-        <div role="tabpanel" id="panel-followups" aria-labelledby="tab-followups">
-          <FollowUpsSection
-            activities={activities.filter((a) => a.type === "FOLLOWUP")}
-            jobId={job.id}
-            onActivitiesChanged={fetchActivities}
-          />
-        </div>
-      )}
-      {activeTab === "documents" && (
-        <div role="tabpanel" id="panel-documents" aria-labelledby="tab-documents">
-          <DocumentsSection job={job} />
-        </div>
-      )}
-      {activeTab === "research" && (
-        <div role="tabpanel" id="panel-research" aria-labelledby="tab-research">
-          <ResearchSection job={job} onJobUpdated={(updated) => setJob(updated)} />
-        </div>
-      )}
-      {activeTab === "prepnotes" && (
-        <div role="tabpanel" id="panel-prepnotes" aria-labelledby="tab-prepnotes">
-          <PrepNotesSection job={job} onJobUpdated={(updated) => setJob(updated)} />
-        </div>
-      )}
+      {/* All panels are always mounted to preserve in-progress edits and
+          avoid re-fetching on every tab switch. The hidden attribute (display:none)
+          keeps inactive panels out of the visual flow and inaccessible to AT. */}
+      <div
+        role="tabpanel"
+        id="panel-overview"
+        aria-labelledby="tab-overview"
+        hidden={activeTab !== "overview"}
+      >
+        <OverviewSection job={job} onJobUpdated={(updated) => setJob(updated)} />
+      </div>
+      <div
+        role="tabpanel"
+        id="panel-timeline"
+        aria-labelledby="tab-timeline"
+        hidden={activeTab !== "timeline"}
+      >
+        <TimelineSection
+          activities={activities}
+          jobId={job.id}
+          onActivitiesChanged={fetchActivities}
+        />
+      </div>
+      <div
+        role="tabpanel"
+        id="panel-interviews"
+        aria-labelledby="tab-interviews"
+        hidden={activeTab !== "interviews"}
+      >
+        <InterviewsSection
+          activities={activities.filter((a) => a.type === "INTERVIEW")}
+          jobId={job.id}
+          onActivitiesChanged={fetchActivities}
+        />
+      </div>
+      <div
+        role="tabpanel"
+        id="panel-followups"
+        aria-labelledby="tab-followups"
+        hidden={activeTab !== "followups"}
+      >
+        <FollowUpsSection
+          activities={activities.filter((a) => a.type === "FOLLOWUP")}
+          jobId={job.id}
+          onActivitiesChanged={fetchActivities}
+        />
+      </div>
+      <div
+        role="tabpanel"
+        id="panel-documents"
+        aria-labelledby="tab-documents"
+        hidden={activeTab !== "documents"}
+      >
+        <DocumentsSection job={job} />
+      </div>
+      <div
+        role="tabpanel"
+        id="panel-research"
+        aria-labelledby="tab-research"
+        hidden={activeTab !== "research"}
+      >
+        <ResearchSection job={job} onJobUpdated={(updated) => setJob(updated)} />
+      </div>
+      <div
+        role="tabpanel"
+        id="panel-prepnotes"
+        aria-labelledby="tab-prepnotes"
+        hidden={activeTab !== "prepnotes"}
+      >
+        <PrepNotesSection job={job} onJobUpdated={(updated) => setJob(updated)} />
+      </div>
     </div>
   );
 }

@@ -1,5 +1,9 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // Include linux-musl binary so the Docker runner stage (node:22-alpine)
+  // can load Prisma. Without this, the engine binary built on the Debian
+  // builder stage cannot run on Alpine.
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -92,10 +96,16 @@ model Job {
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
   companyResearch   String?
-  prepNotes         String?
+  prepNotesStar             String?
+  prepNotesQuestions        String?
+  prepNotesTalkingPoints    String?
   activities        JobActivity[]
   documentLinks     JobDocumentLink[]
   stageHistory      JobStageHistory[]
+
+  @@index([userId])
+  @@index([userId, stage])
+  @@index([userId, lastActivityAt])
 }
 
 model JobStageHistory {
@@ -105,6 +115,8 @@ model JobStageHistory {
   toStage   JobStage
   changedAt DateTime  @default(now())
   job       Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId, changedAt])
 }
 
 model JobActivity {
@@ -119,6 +131,8 @@ model JobActivity {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   job         Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId, createdAt])
 }
 
 model Document {
@@ -126,7 +140,7 @@ model Document {
   userId         String
   type           DocumentType
   name           String
-  category       String?
+  tags           String[]          @default([])
   status         DocumentStatus    @default(DRAFT)
   previousStatus DocumentStatus?
   isDeleted      Boolean           @default(false)
@@ -135,6 +149,9 @@ model Document {
   updatedAt      DateTime          @updatedAt
   versions       DocumentVersion[]
   jobLinks       JobDocumentLink[]
+
+  @@index([userId, isDeleted])
+  @@index([userId, updatedAt])
 }
 
 model DocumentVersion {
@@ -146,6 +163,9 @@ model DocumentVersion {
   createdAt     DateTime          @default(now())
   document      Document          @relation(fields: [documentId], references: [id], onDelete: Cascade)
   jobLinks      JobDocumentLink[]
+
+  @@unique([documentId, versionNumber])
+  @@index([documentId, versionNumber])
 }
 
 model JobDocumentLink {
@@ -159,6 +179,8 @@ model JobDocumentLink {
   job               Job             @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
   @@unique([jobId, documentVersionId])
+  @@index([jobId, linkedAt])
+  @@index([documentId])
 }
 
 model UserSettings {

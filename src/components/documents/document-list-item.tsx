@@ -128,37 +128,58 @@ export default function DocumentListItem({
     <>
       <div className="bg-zinc-900 border border-zinc-700 hover:border-zinc-500 rounded-lg px-5 py-4 transition-colors">
         <div className="flex items-center gap-4">
-          {/* Nav click area */}
-          <button
-            type="button"
-            className="flex-1 min-w-0 text-left"
-            onClick={() => !renaming && onClick(document.id)}
-            aria-label={`View ${document.name}`}
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              <TypeIcon type={document.type} />
-              {renaming ? (
+          {/* Nav click area. While renaming, render the input outside a
+              <button> so we don't nest interactive elements (invalid HTML). */}
+          {renaming ? (
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <TypeIcon type={document.type} />
                 <input
                   ref={inputRef}
                   value={renameValue}
                   onChange={(e) => setRenameValue(e.target.value)}
                   onBlur={commitRename}
                   onKeyDown={handleRenameKeyDown}
-                  onClick={(e) => e.stopPropagation()}
+                  aria-label="Rename document"
                   className="bg-zinc-800 border border-indigo-500 rounded-md px-2 py-0.5 text-sm font-medium text-zinc-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-48"
                 />
-              ) : (
-                <span className="text-sm font-medium text-zinc-50 truncate">{document.name}</span>
-              )}
-              <span
-                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[document.status] ?? STATUS_STYLES.DRAFT}`}
-              >
-                {document.status}
-              </span>
-              <span className="text-xs text-zinc-500">v{document.versionNumber}</span>
-              <span className="text-xs text-zinc-500 whitespace-nowrap">{formattedDate}</span>
+                <span
+                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[document.status] ?? STATUS_STYLES.DRAFT}`}
+                >
+                  {document.status}
+                </span>
+                <span className="text-xs text-zinc-500">v{document.versionNumber}</span>
+                <span className="text-xs text-zinc-500 whitespace-nowrap">{formattedDate}</span>
+              </div>
             </div>
-          </button>
+          ) : (
+            <button
+              type="button"
+              className="flex-1 min-w-0 text-left"
+              onClick={() => onClick(document.id)}
+              aria-label={`View ${document.name}`}
+            >
+              <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                <TypeIcon type={document.type} />
+                <span className="text-sm font-medium text-zinc-50 truncate">{document.name}</span>
+                <span
+                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[document.status] ?? STATUS_STYLES.DRAFT}`}
+                >
+                  {document.status}
+                </span>
+                <span className="text-xs text-zinc-500">v{document.versionNumber}</span>
+                <span className="text-xs text-zinc-500 whitespace-nowrap">{formattedDate}</span>
+                {document.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 text-[10px] font-medium"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </button>
+          )}
 
           {/* Action icons */}
           <div className="flex items-center gap-1 shrink-0">
