@@ -491,6 +491,7 @@ describe("getDocumentsForJob", () => {
         documentId: "doc-1",
         documentVersionId: "ver-1",
         linkedAt: now,
+        documentVersion: baseVersion,
         document: { ...baseDoc, isDeleted: false, versions: [baseVersion] },
       },
     ]);
@@ -519,6 +520,7 @@ describe("getDocumentsForJob", () => {
         documentId: "doc-1",
         documentVersionId: "ver-1",
         linkedAt: now,
+        documentVersion: baseVersion,
         document: { ...baseDoc, versions: [] },
       },
     ]);
@@ -526,6 +528,51 @@ describe("getDocumentsForJob", () => {
     const result = await getDocumentsForJob("job-1", USER_ID);
 
     expect(result).toEqual([]);
+  });
+
+  it("returns the linked version (not latest) and flags hasNewerVersion when the doc has a newer version", async () => {
+    mockJobFindFirst.mockResolvedValue(job);
+    const linkedVersion = { ...baseVersion, id: "ver-1", versionNumber: 1, content: "v1" };
+    const latestVersion = { ...baseVersion, id: "ver-2", versionNumber: 2, content: "v2" };
+    mockLinkFindMany.mockResolvedValue([
+      {
+        id: "link-1",
+        jobId: "job-1",
+        documentId: "doc-1",
+        documentVersionId: "ver-1",
+        linkedAt: now,
+        documentVersion: linkedVersion,
+        document: { ...baseDoc, versions: [latestVersion] },
+      },
+    ]);
+
+    const result = await getDocumentsForJob("job-1", USER_ID);
+
+    expect(result).toHaveLength(1);
+    expect(result?.[0].versionNumber).toBe(1);
+    expect(result?.[0].content).toBe("v1");
+    expect(result?.[0].hasNewerVersion).toBe(true);
+    expect(result?.[0].latestVersionNumber).toBe(2);
+  });
+
+  it("does not flag hasNewerVersion when the linked version is the latest", async () => {
+    mockJobFindFirst.mockResolvedValue(job);
+    mockLinkFindMany.mockResolvedValue([
+      {
+        id: "link-1",
+        jobId: "job-1",
+        documentId: "doc-1",
+        documentVersionId: "ver-1",
+        linkedAt: now,
+        documentVersion: baseVersion,
+        document: { ...baseDoc, versions: [baseVersion] },
+      },
+    ]);
+
+    const result = await getDocumentsForJob("job-1", USER_ID);
+
+    expect(result?.[0].hasNewerVersion).toBe(false);
+    expect(result?.[0].latestVersionNumber).toBe(baseVersion.versionNumber);
   });
 });
 

@@ -203,6 +203,75 @@ export function DocumentsSection({ job }: DocumentsSectionProps) {
     }
   }
 
+  // Re-link the same document at its latest version. Done as unlink + link
+  // because the link table is keyed on documentVersionId; updating in place
+  // would require a different schema. The user sees one toast.
+  async function handleUpdateToLatest(doc: DocumentResponse) {
+    if (!doc.documentVersionId) return;
+    setUnlinkingId(doc.documentVersionId);
+
+    try {
+      // Fetch the latest version id from the library list. If we don't have
+      // it cached, refresh first.
+      let library = libraryDocuments;
+      if (library.length === 0) {
+        await fetchLibraryDocuments();
+        library = libraryDocuments; // may still be stale; below uses fresh
+      }
+      // Re-fetch fresh in any case so we don't stale-link.
+      const res = await fetch(`/api/documents/${doc.id}`);
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
+      if (!res.ok) {
+        showToast("Failed to load latest version", "error");
+        return;
+      }
+      const latest: DocumentResponse = await res.json();
+      if (!latest.documentVersionId) {
+        showToast("Latest version unavailable", "error");
+        return;
+      }
+
+      // Unlink the old version.
+      const delRes = await fetch(`/api/jobs/${job.id}/documents/${doc.documentVersionId}`, {
+        method: "DELETE",
+      });
+      if (delRes.status === 401) {
+        router.push("/login");
+        return;
+      }
+      if (!delRes.ok) {
+        showToast("Failed to update link", "error");
+        return;
+      }
+
+      // Link the new version.
+      const linkRes = await fetch(`/api/jobs/${job.id}/documents`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ documentId: doc.id, documentVersionId: latest.documentVersionId }),
+      });
+      if (linkRes.status === 401) {
+        router.push("/login");
+        return;
+      }
+      if (!linkRes.ok) {
+        showToast("Failed to link new version", "error");
+        return;
+      }
+
+      showToast(`Updated to v${latest.versionNumber}`);
+      await fetchDocuments();
+      await fetchLibraryDocuments();
+    } catch {
+      showToast("Failed to update link", "error");
+    } finally {
+      setUnlinkingId(null);
+    }
+  }
+
   async function handleGenerate(type: "resume" | "cover-letter") {
     setGenerating(type);
 
@@ -345,13 +414,25 @@ export function DocumentsSection({ job }: DocumentsSectionProps) {
                     <div className="min-w-0">
                       <p className="truncate text-sm text-zinc-200">{doc.name}</p>
                       <p className="text-xs text-zinc-500">
-                        v{doc.versionNumber} &middot;{" "}
-                        {new Date(doc.updatedAt).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
+                        v{doc.versionNumber}
+                        {doc.linkedAt && (
+                          <>
+                            {" "}
+                            &middot; linked{" "}
+                            {new Date(doc.linkedAt).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
+                          </>
+                        )}
                       </p>
+                      {doc.hasNewerVersion && doc.latestVersionNumber && (
+                        <p className="mt-0.5 text-xs text-amber-400">
+                          v{doc.latestVersionNumber} available — this link is pinned to v
+                          {doc.versionNumber}
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -370,6 +451,18 @@ export function DocumentsSection({ job }: DocumentsSectionProps) {
                     <polyline points="9 18 15 12 9 6" />
                   </svg>
                 </button>
+
+                {doc.hasNewerVersion && (
+                  <button
+                    type="button"
+                    onClick={() => handleUpdateToLatest(doc)}
+                    disabled={unlinkingId === doc.documentVersionId}
+                    className="rounded-md border border-amber-500/30 px-2 py-1 text-xs font-medium text-amber-300 hover:bg-amber-500/10 disabled:opacity-50"
+                    title="Re-link to the latest version"
+                  >
+                    Update to v{doc.latestVersionNumber}
+                  </button>
+                )}
 
                 <button
                   type="button"

@@ -345,10 +345,13 @@ export async function getDocumentsForJob(jobId: string, userId: string) {
   const job = await prisma.job.findFirst({ where: { id: jobId, userId } });
   if (!job) return null;
 
-  // Filter at the SQL layer to avoid pulling soft-deleted or empty documents.
+  // Pull the version that was actually linked (via the link's documentVersionId)
+  // PLUS the doc's latest version so we can flag when the linked version is
+  // out of date. Filtering at the SQL layer skips soft-deleted/empty docs.
   const links = await prisma.jobDocumentLink.findMany({
     where: { jobId, document: { isDeleted: false, versions: { some: {} } } },
     include: {
+      documentVersion: true,
       document: {
         include: { versions: { orderBy: { versionNumber: "desc" }, take: 1 } },
       },
@@ -358,11 +361,22 @@ export async function getDocumentsForJob(jobId: string, userId: string) {
 
   return links
     .filter((l) => l.document.versions.length > 0)
-    .map((l) => ({
-      ...toDocumentResponse(l.document, l.document.versions[0]),
-      documentVersionId: l.documentVersionId,
-      linkedAt: l.linkedAt.toISOString(),
-    }));
+    .map((l) => {
+      const latest = l.document.versions[0];
+      // Use the linked version (pinned at link time) as the source of truth
+      // for content/version number shown in the UI. If the doc has since been
+      // edited, hasNewerVersion = true so the UI can surface a hint.
+      const linked = l.documentVersion;
+      const hasNewerVersion = linked.versionNumber < latest.versionNumber;
+
+      return {
+        ...toDocumentResponse(l.document, linked),
+        documentVersionId: l.documentVersionId,
+        linkedAt: l.linkedAt.toISOString(),
+        hasNewerVersion,
+        latestVersionNumber: latest.versionNumber,
+      };
+    });
 }
 
 export async function archiveDocument(id: string, userId: string) {
