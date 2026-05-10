@@ -24,6 +24,9 @@ export default function DashboardPage() {
   const [showArchived, setShowArchived] = useState(false);
   const [defaultStage, setDefaultStage] = useState<JobStage>("Interested");
   const prefsLoaded = useRef(false);
+  // Tracks whether the user has manually toggled showArchived since mount.
+  // If they have, we don't overwrite their choice when preferences load.
+  const userToggledArchived = useRef(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [pendingDeleteJob, setPendingDeleteJob] = useState<Job | null>(null);
   const [pendingArchiveJob, setPendingArchiveJob] = useState<Job | null>(null);
@@ -35,6 +38,8 @@ export default function DashboardPage() {
   const [metricsKey, setMetricsKey] = useState(0);
 
   // Load user preferences once on mount and apply showArchived + defaultJobStage.
+  // If the user has already toggled showArchived before this resolves, respect
+  // their choice and only apply defaultStage.
   useEffect(() => {
     const ctrl = new AbortController();
     fetch("/api/settings", { signal: ctrl.signal })
@@ -43,7 +48,9 @@ export default function DashboardPage() {
         if (ctrl.signal.aborted || prefsLoaded.current) return;
         prefsLoaded.current = true;
         const p = prefs ?? DEFAULT_PREFERENCES;
-        setShowArchived(p.showArchived);
+        if (!userToggledArchived.current) {
+          setShowArchived(p.showArchived);
+        }
         const uiStage = STAGE_PRISMA_TO_UI[p.defaultJobStage] ?? "Interested";
         setDefaultStage(uiStage as JobStage);
       })
@@ -51,6 +58,11 @@ export default function DashboardPage() {
         // Silently fall back to defaults — preferences are non-critical.
       });
     return () => ctrl.abort();
+  }, []);
+
+  const handleShowArchivedChange = useCallback((show: boolean) => {
+    userToggledArchived.current = true;
+    setShowArchived(show);
   }, []);
 
   useEffect(() => {
@@ -289,7 +301,7 @@ export default function DashboardPage() {
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         showArchived={showArchived}
-        onShowArchivedChange={setShowArchived}
+        onShowArchivedChange={handleShowArchivedChange}
       />
 
       {/* Job board */}
