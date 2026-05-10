@@ -1,6 +1,5 @@
 "use client";
 
-import { differenceInCalendarDays, format, isToday, isYesterday, startOfDay } from "date-fns";
 import { useState } from "react";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
@@ -9,16 +8,46 @@ import { showToast } from "@/components/ui/toast";
 import type { JobActivity } from "@/types/activity";
 import { localTodayString } from "@/utils/datetime";
 
+/**
+ * Today / yesterday in the UTC calendar frame. Activities are stored as UTC
+ * midnight on the user-picked day (see handleSave), so we compare day strings
+ * in the same UTC reference instead of letting date-fns/local-tz introduce a
+ * day-of-month skew for users west of UTC.
+ */
+function todayUtc(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function yesterdayUtc(): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
+function daysAgoUtc(dateStr: string): number {
+  const a = new Date(`${dateStr}T00:00:00.000Z`).getTime();
+  const b = new Date(`${todayUtc()}T00:00:00.000Z`).getTime();
+  return Math.round((b - a) / 86_400_000);
+}
+
 function formatDayHeader(dateStr: string): string {
-  // dateStr is a YYYY-MM-DD UTC date string (UTC midnight).
-  // Parse as UTC so the label matches the user-picked calendar day.
+  // dateStr is the YYYY-MM-DD portion of the stored UTC timestamp.
+  if (dateStr === todayUtc()) return "Today";
+  if (dateStr === yesterdayUtc()) return "Yesterday";
   const d = new Date(`${dateStr}T00:00:00.000Z`);
-  if (isToday(d)) return "Today";
-  if (isYesterday(d)) return "Yesterday";
-  const diff = differenceInCalendarDays(startOfDay(new Date()), d);
-  if (diff < 7) return format(d, "EEEE"); // e.g. "Monday"
-  if (diff < 365) return format(d, "MMM d"); // e.g. "May 9"
-  return format(d, "MMM d, yyyy");
+  const diff = daysAgoUtc(dateStr);
+  // Within the last week (excluding today/yesterday): show the weekday name.
+  if (diff > 1 && diff < 7) {
+    return new Intl.DateTimeFormat("en-US", { weekday: "long", timeZone: "UTC" }).format(d);
+  }
+  // Otherwise: absolute calendar date. Include year for items >1 year old or
+  // future-dated, omit for the current year.
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: diff >= 365 || diff < 0 ? "numeric" : undefined,
+    timeZone: "UTC",
+  }).format(d);
 }
 
 /**
