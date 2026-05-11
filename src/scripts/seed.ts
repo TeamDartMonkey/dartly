@@ -1468,13 +1468,22 @@ const PROFILES: Record<
 
 const SEED_DOCUMENTS: Record<
   string,
-  { type: "RESUME" | "COVER_LETTER"; name: string; content: string; jobIndex: number }[]
+  {
+    type: "RESUME" | "COVER_LETTER" | "OTHER";
+    name: string;
+    content: string;
+    jobIndex: number;
+    status?: "DRAFT" | "READY" | "ARCHIVED" | "UPLOADED";
+    tags?: string[];
+  }[]
 > = {
   [USER_A]: [
     {
       type: "RESUME",
       name: "Resume - Cirrus Cloud",
       jobIndex: 0,
+      status: "READY",
+      tags: ["Resume", "Tailored", "Cloud"],
       content: `<h1>John Doe</h1>
 <div class="section headerInfo">
 
@@ -1527,6 +1536,8 @@ john.doe@email.com | (555) 123-4567 | San Francisco, CA
       type: "COVER_LETTER",
       name: "Cover Letter - ArcDev Tools",
       jobIndex: 1,
+      status: "DRAFT",
+      tags: ["Cover Letter", "Dev Tools"],
       content: `<h1>John Doe</h1>
 <div class="section headerInfo">
 
@@ -1556,6 +1567,8 @@ John Doe`,
       type: "COVER_LETTER",
       name: "Cover Letter - NeuralPath AI",
       jobIndex: 2,
+      status: "READY",
+      tags: ["Cover Letter", "AI/ML", "Priority"],
       content: `<h1>John Doe</h1>
 <div class="section headerInfo">
 
@@ -1580,6 +1593,128 @@ I would welcome the opportunity to discuss how my background in platform enginee
 Sincerely,
 
 John Doe`,
+    },
+    {
+      type: "RESUME",
+      name: "Resume - CloudPeak (Internal Tooling)",
+      jobIndex: 8,
+      status: "UPLOADED",
+      tags: ["Resume", "Tailored", "Frontend"],
+      content: `<h1>John Doe</h1>
+<div class="section headerInfo">
+
+john.doe@email.com | (555) 123-4567 | San Francisco, CA
+
+</div>
+
+### Summary
+
+Frontend-leaning full-stack engineer with 4+ years building internal tooling and dashboards in React, TypeScript, and Tailwind CSS. Comfortable owning a product surface end-to-end from design system to deploy.
+
+### Experience
+
+### Software Engineer <span class="spacer"></span><span class="normal">Jun 2022 - Present</span>
+*TechNova Inc.* <span class="tech-stack">| TypeScript, React, Tailwind, GraphQL, PostgreSQL</span>
+- Built and maintained the internal admin console used daily by 300+ ops users, reducing average task time by 35%.
+- Established a shared component library on top of Tailwind that 6 teams adopted, cutting new-page build time in half.
+
+### Junior Developer <span class="spacer"></span><span class="normal">Aug 2020 - May 2022</span>
+*WebForge LLC* <span class="tech-stack">| React, TypeScript, Node.js, Express</span>
+- Owned dashboard surface for an SMB analytics product; shipped 12+ features end-to-end.
+
+### Technical Skills
+
+**Languages:** TypeScript, JavaScript, SQL
+
+**Frameworks:** React, Next.js, Tailwind CSS, Node.js
+
+**Tools:** Storybook, Vitest, Playwright, Vercel`,
+    },
+    {
+      type: "COVER_LETTER",
+      name: "Cover Letter - Meridian Tech",
+      jobIndex: 11,
+      status: "READY",
+      tags: ["Cover Letter", "Full Stack"],
+      content: `<h1>John Doe</h1>
+<div class="section headerInfo">
+
+john.doe@email.com | (555) 123-4567 | San Francisco, CA
+
+</div>
+
+April 03, 2026
+
+Meridian Tech
+
+Dear Hiring Manager,
+
+I am writing to express my interest in the Full Stack Engineer position at **Meridian Tech**. The team's heavy use of **React 19 Server Components** and a Next.js + Express developer platform aligns directly with what I have been building for the past two years.
+
+At TechNova Inc., I led the migration of our admin console to the App Router and adopted Server Components for our highest-traffic surfaces, cutting average page TTI by 40%. I also own our internal developer platform — a Next.js app that gives engineers self-serve access to feature flags, environment configs, and deploy controls — which gives me a strong intuition for the kind of work your team is doing.
+
+I would welcome the chance to talk through how I can contribute to Meridian Tech. Thank you for your consideration.
+
+Sincerely,
+
+John Doe`,
+    },
+    {
+      type: "OTHER",
+      name: "Portfolio Highlights (One-Pager)",
+      jobIndex: -1,
+      status: "READY",
+      tags: ["Portfolio", "Reference"],
+      content: `<h1>John Doe — Portfolio Highlights</h1>
+
+### Selected Projects
+
+**E-Commerce Platform** — Next.js 14, TypeScript, PostgreSQL, Prisma, Stripe
+Full-stack storefront with edge caching for 500+ concurrent shoppers and a custom admin for inventory and order workflows.
+
+**Inventory Management API** — Java, Spring Boot, PostgreSQL, Docker
+RESTful inventory service handling 5k+ SKU lookups/sec, containerized for portable deploys.
+
+**Task Automation CLI** — TypeScript, Node.js
+Open-source CLI for scripted task pipelines with a plugin architecture. 500+ GitHub stars, 95% test coverage.
+
+### Speaking & Writing
+
+- Internal tech talk on Server Components adoption (TechNova, 2025)
+- Blog series on building a typed plugin architecture in TypeScript
+
+### Links
+
+- GitHub: github.com/johndoe
+- Portfolio: johndoe.dev`,
+    },
+    {
+      type: "RESUME",
+      name: "Resume - Old Generic v1",
+      jobIndex: -1,
+      status: "ARCHIVED",
+      tags: ["Resume", "Old"],
+      content: `<h1>John Doe</h1>
+<div class="section headerInfo">
+
+john.doe@email.com | (555) 123-4567 | San Francisco, CA
+
+</div>
+
+### Summary
+
+Software engineer with experience in full-stack web development.
+
+### Experience
+
+### Junior Developer <span class="spacer"></span><span class="normal">Aug 2020 - May 2022</span>
+*WebForge LLC*
+- Built dashboards in React.
+- Worked on backend services in Node.js.
+
+### Technical Skills
+
+JavaScript, React, Node.js, HTML, CSS, SQL`,
     },
   ],
   [USER_B]: [
@@ -1919,11 +2054,24 @@ async function seedJobs(userId: string, jobs: SeedJob[], userLabel: string) {
 }
 
 type SeedDocument = {
-  type: "RESUME" | "COVER_LETTER";
+  type: "RESUME" | "COVER_LETTER" | "OTHER";
   name: string;
   content: string;
   jobIndex: number;
+  status?: "DRAFT" | "READY" | "ARCHIVED" | "UPLOADED";
+  tags?: string[];
 };
+
+function defaultDocTags(type: SeedDocument["type"]): string[] {
+  switch (type) {
+    case "RESUME":
+      return ["Resume", "Active"];
+    case "COVER_LETTER":
+      return ["Cover Letter", "Active"];
+    case "OTHER":
+      return ["Reference"];
+  }
+}
 
 async function seedDocuments(userId: string, documents: SeedDocument[], userLabel: string) {
   console.log(`\n🌱 Seeding ${documents.length} documents for ${userLabel}`);
@@ -1935,19 +2083,22 @@ async function seedDocuments(userId: string, documents: SeedDocument[], userLabe
   });
 
   const createdDocs = await prisma.$transaction(
-    documents.map((docData) =>
-      prisma.document.create({
+    documents.map((docData) => {
+      const status = docData.status ?? "DRAFT";
+      // When seeding an archived doc, populate previousStatus so the Restore
+      // flow demo lands on a meaningful prior state instead of falling back.
+      const previousStatus = status === "ARCHIVED" ? "READY" : null;
+      return prisma.document.create({
         data: {
           userId,
           type: docData.type,
           name: docData.name,
-          // Demo data with realistic tags so the library demos the filter UX.
-          tags:
-            docData.type === "RESUME" ? ["Resume", "Active"] : ["Cover Letter", "Active"],
-          status: "DRAFT",
+          tags: docData.tags ?? defaultDocTags(docData.type),
+          status,
+          previousStatus,
         },
-      })
-    )
+      });
+    })
   );
 
   const versions = await prisma.$transaction(
@@ -1960,7 +2111,9 @@ async function seedDocuments(userId: string, documents: SeedDocument[], userLabe
 
   const linkCreates: Parameters<typeof prisma.jobDocumentLink.create>[0][] = [];
   for (let idx = 0; idx < documents.length; idx++) {
-    const job = jobs[documents[idx].jobIndex];
+    const targetIndex = documents[idx].jobIndex;
+    if (targetIndex < 0) continue;
+    const job = jobs[targetIndex];
     if (job) {
       linkCreates.push({
         data: {
@@ -1981,6 +2134,255 @@ async function seedDocuments(userId: string, documents: SeedDocument[], userLabe
   }
 }
 
+type JobNotesSeed = {
+  company: string;
+  title?: string;
+  companyResearch?: string;
+  prepNotesStar?: string;
+  prepNotesQuestions?: string;
+  prepNotesTalkingPoints?: string;
+};
+
+const USER_A_JOB_NOTES: JobNotesSeed[] = [
+  {
+    company: "Bloom Health",
+    title: "Senior Frontend Engineer",
+    companyResearch: `## Bloom Health — Company Snapshot
+
+**What they do:** Telehealth platform connecting patients to mental-health providers. Patient portal is a React + TypeScript SPA migrating to Next.js App Router.
+
+**Stage & funding:** Series C (~$80M raised, last round late 2024). Reportedly ~280 employees, ~40 in engineering.
+
+**Why this role matters to them:** They are rebuilding the patient portal on React 19 with Server Components. The hiring manager mentioned in the phone screen that the React 19 migration is the team's #1 priority for the next two quarters.
+
+**Recent signals:**
+- Tech blog post from March 2026 on "Lessons from our Server Components migration" — confirms they are deep in this work.
+- LinkedIn shows two recent hires from telehealth competitors; team is scaling.
+- Glassdoor reviews emphasize async-friendly culture and strong WLB.
+
+**Open questions to validate in onsite:**
+- How much of the rebuild is greenfield vs migration on top of legacy patterns?
+- What is the design-system story — Tailwind, Radix, internal lib?
+- HIPAA/compliance scope of a frontend engineer's day-to-day?`,
+    prepNotesStar: `## STAR Stories
+
+**Leading a high-impact migration (LEADERSHIP / IMPACT)**
+- **S:** Internal admin console at TechNova was on Pages Router and getting slow.
+- **T:** I was asked to evaluate whether to migrate to App Router and Server Components.
+- **A:** Ran a 2-week spike, wrote an ADR, got buy-in from 4 teams, then led the migration over a quarter with feature-flagged rollout.
+- **R:** Average page TTI dropped 40%; team adopted a shared layout pattern; zero rollback incidents.
+
+**Debugging a production issue (TECHNICAL DEPTH)**
+- **S:** GraphQL endpoint started returning intermittent 502s after a deploy.
+- **T:** I was on-call and had to find root cause before EU business hours.
+- **A:** Used distributed tracing to narrow it to a resolver, found an N+1 that only fired for accounts with >50 linked records.
+- **R:** Patched the resolver, added a load test, wrote a postmortem. No recurrence.
+
+**Mentoring a junior engineer (COLLABORATION)**
+- **S:** New grad joined our team and was struggling with code reviews.
+- **T:** I was asked to be their primary mentor.
+- **A:** Weekly 1:1s, pair-coded on their first three PRs, set up a personal review checklist.
+- **R:** They shipped their first solo feature within 6 weeks; got "exceeds expectations" at next review.`,
+    prepNotesQuestions: `## Questions to Ask
+
+**For the hiring manager:**
+- What does success in this role look like at the 30/60/90-day mark?
+- What is the team's biggest open technical debt right now?
+- How is scope decided between product and engineering — RFC, PRD, both?
+
+**For peer engineers:**
+- Walk me through a recent feature you shipped end-to-end — what made it harder than expected?
+- How does on-call work? What is the average page volume?
+- What is something about the codebase you wish were different?
+
+**For the recruiter / cross-functional folks:**
+- How does promotion to Staff work here, and what is the typical timeline?
+- What is the comp structure — base, equity refresh, bonus target?
+- What does the next funding round mean for headcount and runway?`,
+    prepNotesTalkingPoints: `## Talking Points
+
+**Why Bloom Health, specifically**
+- React 19 + Server Components migration is exactly what I just led at TechNova; I can hit the ground running on the rebuild.
+- Telehealth has real user-impact gravity — different from another B2B SaaS dashboard, and I want that in my next role.
+- Async-friendly remote culture matches how I work best.
+
+**My differentiators**
+- Owned a migration of comparable scope at TechNova end-to-end (eval → ADR → execution).
+- Comfortable across the stack — frontend-leaning but I've shipped GraphQL resolvers, Prisma schemas, and CI/CD pipelines.
+- Strong mentoring track record; happy to be a force multiplier for the team.
+
+**Concerns to disarm proactively**
+- I haven't worked in HIPAA-regulated environments. Frame this as "fast learner with strong security instincts" + cite our SOC 2 work at TechNova.
+- I have not worked at Staff title. Frame as "ready for the scope" — point to the migration leadership story.`,
+  },
+  {
+    company: "InnovateTech",
+    title: "Full Stack Developer",
+    companyResearch: `## InnovateTech — Company Snapshot
+
+**What they do:** Full-stack consultancy + product studio for mid-market companies. Build custom React/Node apps and ship them with a small embedded team.
+
+**Stage:** Profitable, ~60 employees, no outside funding. Recruiter Jake described culture as "minimal meetings, heavy async, ship every two weeks."
+
+**Why this role matters to them:** Small team of 6 — adding one engineer is a 17% bump. They explicitly want someone who can own a project end-to-end with a single PM and lead, no big-company process to lean on.
+
+**Recent signals:**
+- Their public case studies show recent work in React + Node + PostgreSQL — stack matches.
+- Recent blog post titled "Why we stopped using daily standups" — async-first is real, not just a recruiting line.
+- Two recent Glassdoor reviews flag pace as intense; not necessarily bad, but worth probing.
+
+**Open questions to validate in onsite:**
+- How does on-call work with a team of 6?
+- What does "owning end-to-end" actually mean — solo PRs to prod, or paired review?
+- What is the path if I want to grow into a tech-lead role here?`,
+    prepNotesStar: `## STAR Stories
+
+**Shipping fast under ambiguity (OWNERSHIP)**
+- **S:** TechNova needed a customer-facing usage dashboard, no PM was available.
+- **T:** I was asked to own scope, design, and implementation.
+- **A:** Drafted a 1-page PRD, validated with 3 customer-success reps, built a v0 in 3 days, iterated weekly with users.
+- **R:** Shipped in 4 weeks; became the #2 most-visited page in the product.
+
+**Working across the stack (BREADTH)**
+- **S:** A migration to GraphQL touched frontend hooks, backend resolvers, and DB indices.
+- **T:** I was the only engineer on the project.
+- **A:** Wrote a phased plan, shipped resolvers first behind a feature flag, then converted hooks page-by-page, last added covering indices when slow queries surfaced in metrics.
+- **R:** 40% payload reduction with zero downtime.
+
+**Designing for the next engineer (CRAFT)**
+- **S:** We kept rewriting the same form-validation logic across pages.
+- **T:** Build something reusable without over-engineering.
+- **A:** Wrote a small typed form-state hook, documented it with 3 example pages, presented in a brown-bag.
+- **R:** Adopted by 4 of 6 product teams within a quarter.`,
+    prepNotesQuestions: `## Questions to Ask
+
+**For the team:**
+- How do you decide what to build next when there is no big-company process?
+- Walk me through a recent project that did NOT go well — what would you change?
+- What does pairing look like here?
+
+**For Jake / recruiting:**
+- What is the comp band, and how does refresh equity work in a profitable, no-funding company?
+- How does promotion work without formal levels?
+
+**Technical:**
+- What is your testing philosophy — unit, integration, e2e?
+- How do you handle deploys and rollbacks for client work?`,
+    prepNotesTalkingPoints: `## Talking Points
+
+**Why InnovateTech, specifically**
+- Small team, real ownership, no theater — exactly the environment I want next.
+- Async-first matches how I do my best deep work.
+- Stack overlap is near 100%; ramp will be fast.
+
+**My differentiators**
+- Comfortable owning end-to-end with minimal scaffolding (PRD → ship).
+- Generalist who has shipped frontend, backend, and CI/CD — fits a team of 6.
+- I optimize for the next engineer reading the code — useful in a consultancy where projects change hands.
+
+**Concerns to disarm proactively**
+- Pace concerns from Glassdoor — ask the team directly how they protect focus time.
+- Career growth — confirm that "no formal levels" doesn't mean no growth conversations.`,
+  },
+];
+
+const USER_B_JOB_NOTES: JobNotesSeed[] = [
+  {
+    company: "ScaleOps",
+    title: "DevOps Engineer",
+    companyResearch: `## ScaleOps — Company Snapshot
+
+**What they do:** Kubernetes cost-optimization and observability platform for mid-market and enterprise. Recruiter described the role as "very hands-on, lots of autonomy."
+
+**Stage:** Series B (~$50M raised). Engineering org ~35 people, DevOps/SRE sub-team ~6.
+
+**Why this role matters to them:** They are scaling onboarding for larger customers, and the platform's reliability is the top differentiator vs competitors. A new DevOps hire directly impacts customer trust.
+
+**Recent signals:**
+- Blog posts on multi-cluster cost analysis and spot-instance strategy — they take this domain seriously.
+- LinkedIn shows recent hires from Datadog and HashiCorp — strong infra DNA.
+- Boston location is a known hub for infra-leaning engineers.
+
+**Open questions to validate in onsite:**
+- What is the split between internal infra and customer-facing platform work?
+- How is on-call structured across a 6-person team?
+- What is the language mix — Go-heavy or polyglot?`,
+    prepNotesStar: `## STAR Stories
+
+**Cost optimization with measurable impact**
+- **S:** CloudScale's AWS bill was growing 12% per quarter.
+- **T:** I was asked to lead a cost-optimization initiative.
+- **A:** Audited workloads, moved appropriate services to spot, right-sized 40+ deployments, set up cost alerting.
+- **R:** Reduced AWS spend by 35% over 2 quarters; no reliability regressions.
+
+**Leading on-call across a critical service**
+- **S:** Our event pipeline (10M events/day) had a noisy on-call rotation.
+- **T:** Stabilize it without adding headcount.
+- **A:** Added SLO-based alerting, killed 60% of noisy pages, ran a postmortem culture refresh.
+- **R:** Page volume dropped from ~25/wk to ~6/wk; team retention improved noticeably.
+
+**Building tooling for the next engineer**
+- **S:** Engineers were guessing at Kubernetes resource requests.
+- **T:** Build a recommendation tool.
+- **A:** Wrote a Go CLI that queries Prometheus and proposes right-sized requests with a one-command apply.
+- **R:** 30% cost reduction across the cluster; tool is now standard onboarding.`,
+    prepNotesQuestions: `## Questions to Ask
+
+**For the hiring manager:**
+- What is the split between internal platform work and customer-facing platform work?
+- What is the team's biggest reliability risk right now?
+- What does the on-call rotation look like, and how is page noise managed?
+
+**For peers:**
+- Walk me through how a customer issue flows from report → fix → postmortem.
+- What is the language mix and where is Go used vs other languages?
+- What would you change about the platform if you had unlimited time?
+
+**Logistics:**
+- Boston office: full remote acceptable, hybrid expectation, or in-office?
+- How is comp structured — base, equity, on-call pay?`,
+    prepNotesTalkingPoints: `## Talking Points
+
+**Why ScaleOps, specifically**
+- Kubernetes cost-optimization is exactly the problem I solved at CloudScale and built tooling for as a side project.
+- "Hands-on autonomy" matches my preferred operating mode.
+- Boston is a strong infra hub and a great career bet.
+
+**My differentiators**
+- I have shipped both internal cost wins (35% reduction) and external-facing infra tooling.
+- Comfortable across Go, Python, and shell — and the operating layer (K8s, Helm, Terraform).
+- Strong on-call discipline: SLOs, runbooks, postmortems are habits, not chores.`,
+  },
+];
+
+async function seedJobNotes(userId: string, notes: JobNotesSeed[], userLabel: string) {
+  if (notes.length === 0) return;
+  console.log(`\n🌱 Seeding research + prep notes for ${userLabel}`);
+
+  for (const note of notes) {
+    const updated = await prisma.job.updateMany({
+      where: {
+        userId,
+        company: note.company,
+        ...(note.title ? { title: note.title } : {}),
+      },
+      data: {
+        companyResearch: note.companyResearch ?? null,
+        prepNotesStar: note.prepNotesStar ?? null,
+        prepNotesQuestions: note.prepNotesQuestions ?? null,
+        prepNotesTalkingPoints: note.prepNotesTalkingPoints ?? null,
+      },
+    });
+    if (updated.count > 0) {
+      console.log(`  ✅ Notes attached: ${note.company}${note.title ? ` — ${note.title}` : ""}`);
+    } else {
+      console.warn(
+        `  ⚠️  Skipped notes for ${note.company}${note.title ? ` — ${note.title}` : ""} (no matching job)`
+      );
+    }
+  }
+}
+
 async function main() {
   console.log("=== Dartly Demo Seed Script ===");
 
@@ -1996,6 +2398,11 @@ async function main() {
     seedDocuments(USER_B, SEED_DOCUMENTS[USER_B], "User B"),
   ]);
 
+  await Promise.all([
+    seedJobNotes(USER_A, USER_A_JOB_NOTES, "User A"),
+    seedJobNotes(USER_B, USER_B_JOB_NOTES, "User B"),
+  ]);
+
   const counts = {
     jobs: await prisma.job.count(),
     profiles: await prisma.profile.count(),
@@ -2007,20 +2414,32 @@ async function main() {
     documents: await prisma.document.count({ where: { isDeleted: false } }),
     documentVersions: await prisma.documentVersion.count(),
     jobDocumentLinks: await prisma.jobDocumentLink.count(),
+    jobsWithResearch: await prisma.job.count({ where: { companyResearch: { not: null } } }),
+    jobsWithPrepNotes: await prisma.job.count({
+      where: {
+        OR: [
+          { prepNotesStar: { not: null } },
+          { prepNotesQuestions: { not: null } },
+          { prepNotesTalkingPoints: { not: null } },
+        ],
+      },
+    }),
   };
 
   console.log("\n✨ Seed complete!");
   console.log("   Summary:");
-  console.log(`   Jobs:              ${counts.jobs}`);
-  console.log(`   Profiles:          ${counts.profiles}`);
-  console.log(`   Experiences:       ${counts.experiences}`);
-  console.log(`   Educations:        ${counts.educations}`);
-  console.log(`   Skills:            ${counts.skills}`);
-  console.log(`   Activities:        ${counts.activities}`);
-  console.log(`   Stage History:     ${counts.stageHistory}`);
-  console.log(`   Documents:         ${counts.documents}`);
-  console.log(`   Document Versions: ${counts.documentVersions}`);
+  console.log(`   Jobs:                ${counts.jobs}`);
+  console.log(`   Profiles:            ${counts.profiles}`);
+  console.log(`   Experiences:         ${counts.experiences}`);
+  console.log(`   Educations:          ${counts.educations}`);
+  console.log(`   Skills:              ${counts.skills}`);
+  console.log(`   Activities:          ${counts.activities}`);
+  console.log(`   Stage History:       ${counts.stageHistory}`);
+  console.log(`   Documents:           ${counts.documents}`);
+  console.log(`   Document Versions:   ${counts.documentVersions}`);
   console.log(`   Job-Doc Links:       ${counts.jobDocumentLinks}`);
+  console.log(`   Jobs w/ Research:    ${counts.jobsWithResearch}`);
+  console.log(`   Jobs w/ Prep Notes:  ${counts.jobsWithPrepNotes}`);
 }
 
 main()
