@@ -322,14 +322,18 @@ type CompanyResearchInput = {
 export async function generateCompanyResearch(
   input: CompanyResearchInput
 ): Promise<GenerateResult> {
+  const userContextBlock = input.userContext
+    ? `\nCANDIDATE'S SPECIFIC REQUEST:\n${input.userContext}\n\nThe candidate has a specific focus area above. You MUST prioritize and deeply address this request — add dedicated sections for it, expand relevant sections significantly, and tailor all content toward what they asked for. The standard sections below are a baseline; adapt, reorder, or supplement them to fully satisfy the candidate's request.`
+    : "";
+
   const prompt = `You are a professional career coach helping a job candidate research a company before an interview or application.
 
 COMPANY: ${input.company}
 ROLE THEY'RE APPLYING FOR: ${input.jobTitle}
 ${input.jobDescription ? `JOB DESCRIPTION:\n${input.jobDescription}\n` : ""}
-${input.userContext ? `ADDITIONAL CONTEXT FROM CANDIDATE:\n${input.userContext}\n` : ""}
+${userContextBlock}
 
-Generate structured company research notes to help this candidate prepare. Cover the following:
+Generate structured company research notes to help this candidate prepare. Use these sections as a baseline, but adapt them based on the candidate's specific request if one was provided:
 
 1. **Company Overview** — what the company does, industry, size/stage if known
 2. **Products & Services** — key offerings relevant to this role
@@ -339,7 +343,7 @@ Generate structured company research notes to help this candidate prepare. Cover
 6. **Suggested Questions to Ask** — 3-5 thoughtful questions the candidate could ask interviewers
 
 FORMAT RULES:
-- Use markdown with "## " section headings for each of the 6 sections above
+- Use markdown with "## " section headings
 - Keep each section concise — 2-5 bullet points or a short paragraph
 - Use "- " bullet points where appropriate
 - If you don't have reliable information about something, say "Research recommended:" and suggest what to look up rather than guessing
