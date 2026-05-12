@@ -34,9 +34,12 @@
 .jakes-resume-preview h3 {
   font-size: 11pt;
   font-weight: 700;
+  margin: 8pt 0 0 0;
+}
+
+.jakes-resume-preview h3:not(:has(.spacer)) {
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  margin: 8pt 0 0 0;
   padding: 0 0 2pt 0;
   border-bottom: 1px solid #1a1a1a;
 }
@@ -179,21 +182,31 @@
 .markdown-viewer h3 {
   font-size: 12pt;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
   margin: 12pt 0 2pt 0;
-  padding: 0;
   color: #f4f4f5;
 }
 
+/* Section headers */
+.markdown-viewer h3:not(:has(.spacer)) {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0 0 3pt 0;
+  border-bottom: 1px solid #3f3f46;
+}
+
+/* Job titles */
 .markdown-viewer h3:has(.spacer) {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: baseline;
+
   text-transform: none;
   letter-spacing: normal;
+  border-bottom: none;
+
   font-size: 11pt;
+  padding: 0;
 }
 
 .markdown-viewer .spacer {
