@@ -1,8 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { showToast } from "@/components/ui/toast";
 import type { Job } from "@/types/job";
+import "@/styles/github-markdown.css";
+
+type ViewMode = "rendered" | "markdown";
+
+const VIEW_OPTIONS: { value: ViewMode; label: string }[] = [
+  { value: "rendered", label: "Rendered" },
+  { value: "markdown", label: "Markdown" },
+];
 
 interface Props {
   job: Job;
@@ -16,8 +26,8 @@ export function ResearchSection({ job, onJobUpdated }: Props) {
   const [userContext, setUserContext] = useState("");
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
-  // Whether the user has unsaved edits to the content
   const [isDirty, setIsDirty] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("rendered");
 
   async function handleGenerate() {
     if (generating || saving) return;
@@ -160,37 +170,65 @@ export function ResearchSection({ job, onJobUpdated }: Props) {
         </div>
       </div>
 
-      {/* Research notes editor — shown once content exists */}
+      {/* Research notes — shown once content exists */}
       {hasContent && (
         <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-medium text-zinc-50">Research notes</h3>
             <div className="flex items-center gap-2">
-              {isDirty && <span className="text-xs text-amber-400">Unsaved changes</span>}
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={saving || !isDirty}
-                className="bg-indigo-500 hover:bg-indigo-600 text-zinc-50 px-3 py-1.5 rounded-md text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                {saving ? "Saving..." : "Save"}
-              </button>
+              {VIEW_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setViewMode(opt.value)}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium ${
+                    viewMode === opt.value
+                      ? "bg-indigo-500 text-zinc-50"
+                      : "bg-zinc-800 border border-zinc-700 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-50"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
           </div>
 
-          <textarea
-            value={content}
-            onChange={(e) => {
-              setContent(e.target.value);
-              setIsDirty(true);
-            }}
-            rows={20}
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-300 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-y"
-            aria-label="Company research notes"
-          />
-          <p className="mt-2 text-xs text-zinc-600">
-            Edit these notes freely — they are saved only to this job and never used as AI input.
-          </p>
+          {viewMode === "rendered" ? (
+            <div className="bg-zinc-950 rounded-md p-6 overflow-auto">
+              <div className="github-markdown">
+                <Markdown remarkPlugins={[remarkGfm]}>{content}</Markdown>
+              </div>
+            </div>
+          ) : (
+            <>
+              <textarea
+                value={content}
+                onChange={(e) => {
+                  setContent(e.target.value);
+                  setIsDirty(true);
+                }}
+                rows={20}
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-300 font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-y"
+                aria-label="Company research notes"
+              />
+              <div className="flex items-center justify-between mt-3">
+                <p className="text-xs text-zinc-600">
+                  Edit these notes freely — they are saved only to this job and never used as AI input.
+                </p>
+                <div className="flex items-center gap-2">
+                  {isDirty && <span className="text-xs text-amber-400">Unsaved changes</span>}
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={saving || !isDirty}
+                    className="bg-indigo-500 hover:bg-indigo-600 text-zinc-50 px-3 py-1.5 rounded-md text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {saving ? "Saving..." : "Save"}
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 

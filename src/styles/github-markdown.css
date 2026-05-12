@@ -1,0 +1,155 @@
+.github-markdown {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #e6edf3;
+  word-wrap: break-word;
+}
+
+.github-markdown h1 {
+  font-size: 2em;
+  font-weight: 700;
+  margin: 0.67em 0 0.5em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid #3f3f46;
+}
+
+.github-markdown h2 {
+  font-size: 1.5em;
+  font-weight: 700;
+  margin: 1em 0 0.5em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid #3f3f46;
+}
+
+.github-markdown h3 {
+  font-size: 1.25em;
+  font-weight: 600;
+  margin: 1em 0 0.5em;
+}
+
+.github-markdown h4 {
+  font-size: 1em;
+  font-weight: 600;
+  margin: 1em 0 0.5em;
+}
+
+.github-markdown h5,
+.github-markdown h6 {
+  font-size: 0.875em;
+  font-weight: 600;
+  margin: 1em 0 0.5em;
+}
+
+.github-markdown p {
+  margin: 0 0 1em;
+}
+
+.github-markdown ul,
+.github-markdown ol {
+  margin: 0 0 1em;
+  padding-left: 2em;
+}
+
+.github-markdown ul {
+  list-style-type: disc;
+}
+
+.github-markdown ol {
+  list-style-type: decimal;
+}
+
+.github-markdown li {
+  margin: 0.25em 0;
+}
+
+.github-markdown li + li {
+  margin-top: 0.25em;
+}
+
+.github-markdown blockquote {
+  margin: 0 0 1em;
+  padding: 0.5em 1em;
+  border-left: 4px solid #3f3f46;
+  color: #8b949e;
+}
+
+.github-markdown blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+.github-markdown code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 85%;
+  padding: 0.2em 0.4em;
+  background: #161b22;
+  border-radius: 6px;
+}
+
+.github-markdown pre {
+  margin: 0 0 1em;
+  padding: 1em;
+  background: #161b22;
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+.github-markdown pre code {
+  padding: 0;
+  background: none;
+  font-size: 85%;
+  line-height: 1.5;
+}
+
+.github-markdown hr {
+  height: 1px;
+  margin: 1.5em 0;
+  padding: 0;
+  background: #3f3f46;
+  border: 0;
+}
+
+.github-markdown table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  overflow-x: auto;
+}
+
+.github-markdown th,
+.github-markdown td {
+  padding: 6px 13px;
+  border: 1px solid #3f3f46;
+}
+
+.github-markdown th {
+  font-weight: 600;
+  background: #161b22;
+}
+
+.github-markdown tr:nth-child(2n) {
+  background: #0d1117;
+}
+
+.github-markdown a {
+  color: #58a6ff;
+  text-decoration: none;
+}
+
+.github-markdown a:hover {
+  text-decoration: underline;
+}
+
+.github-markdown strong {
+  font-weight: 700;
+  color: #f0f6fc;
+}
+
+.github-markdown img {
+  max-width: 100%;
+  box-sizing: content-box;
+}
+
+.github-markdown input[type="checkbox"] {
+  margin-right: 0.5em;
+}
