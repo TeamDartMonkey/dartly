@@ -1,6 +1,6 @@
 import { Prisma, type Document, type DocumentType, type DocumentVersion } from "@prisma/client";
 import { prisma } from "@/services/prisma";
-import type { DocumentResponse, DocumentVersionResponse } from "@/types/document";
+import type { DocumentResponse, DocumentStatus, DocumentVersionResponse } from "@/types/document";
 import { normalizeTags } from "@/utils/tags";
 
 // Two concurrent saves on the same document can both compute the same
@@ -377,6 +377,25 @@ export async function getDocumentsForJob(jobId: string, userId: string) {
         latestVersionNumber: latest.versionNumber,
       };
     });
+}
+
+export async function updateDocumentStatus(
+  id: string,
+  userId: string,
+  status: DocumentStatus
+) {
+  const { count } = await prisma.document.updateMany({
+    where: { id, userId, isDeleted: false },
+    data: { status, updatedAt: new Date() },
+  });
+  if (count === 0) return null;
+
+  const doc = await prisma.document.findFirst({
+    where: { id, userId, isDeleted: false },
+    include: { versions: { orderBy: { versionNumber: "desc" }, take: 1 } },
+  });
+  if (!doc || doc.versions.length === 0) return null;
+  return withDocumentVersionId(doc, doc.versions[0]);
 }
 
 export async function archiveDocument(id: string, userId: string) {
