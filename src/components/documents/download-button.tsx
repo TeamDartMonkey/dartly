@@ -73,9 +73,11 @@ export async function downloadGenerated(name: string, type: string, content: str
   const cssRes = await fetch("/jakes-resume.css");
   const cssText = cssRes.ok ? await cssRes.text() : "";
 
+  const LETTER_PX = 816;
+
   const iframe = document.createElement("iframe");
   iframe.style.cssText =
-    "position: fixed; left: -9999px; top: 0; width: 816px; height: 1px; border: none;";
+    `position: fixed; left: -9999px; top: 0; width: ${LETTER_PX}px; height: 1px; border: none;`;
   document.body.appendChild(iframe);
 
   const iframeDoc = iframe.contentDocument;
@@ -91,42 +93,80 @@ export async function downloadGenerated(name: string, type: string, content: str
     <meta charset="utf-8" />
     <style>
       * { box-sizing: border-box; margin: 0; padding: 0; }
-      body {
+      html, body {
         background: #ffffff;
         color: #000000;
-        font-family: Georgia, serif;
-        font-size: 14px;
-        line-height: 1.5;
-        padding: 48px;
-        width: 816px;
+        width: ${LETTER_PX}px;
       }
       ${cssText}
-
+      /* PDF-only size overrides — bump everything up so the resume fills
+         more of the letter page.  On-screen sizes (9–11pt) are fine for the
+         compact dark preview pane but look tiny on a printed PDF. */
+      .jakes-resume-preview {
+        max-width: none !important;
+        width: ${LETTER_PX}px !important;
+        margin: 0 !important;
+        font-size: 11pt !important;
+        line-height: 1.45 !important;
+        padding: 0.45in !important;
+      }
+      .jakes-resume-preview h1 {
+        font-size: 28pt !important;
+        margin-bottom: 4pt !important;
+      }
+      .jakes-resume-preview h2 {
+        font-size: 13pt !important;
+        padding-bottom: 3pt !important;
+      }
+      .jakes-resume-preview h3 {
+        font-size: 12.5pt !important;
+      }
+      .jakes-resume-preview p {
+        font-size: 11pt !important;
+      }
+      .jakes-resume-preview ul {
+        font-size: 10.5pt !important;
+      }
+      .jakes-resume-preview li {
+        font-size: 10.5pt !important;
+        line-height: 1.4 !important;
+        margin-bottom: 2pt !important;
+      }
+      .jakes-resume-preview .normal {
+        font-size: 10pt !important;
+      }
+      .jakes-resume-preview .section.headerInfo p {
+        font-size: 10.5pt !important;
+      }
       .jakes-resume-preview h3.pdf-section-header {
-      display: block !important;
-      border-bottom: 1px solid #1a1a1a !important;
-      text-transform: uppercase !important;
-      letter-spacing: 0.08em !important;
-      font-size: 11pt !important;
-      margin-top: 8pt !important;
-      margin-bottom: 0 !important;
-      padding: 0 0 2pt 0 !important;
-      font-weight: 700 !important;
-    }
-
-    .jakes-resume-preview h3.pdf-job-title {
-      display: flex !important;
-      flex-wrap: wrap !important;
-      justify-content: space-between !important;
-      align-items: baseline !important;
-      border-bottom: none !important;
-      text-transform: none !important;
-      letter-spacing: normal !important;
-      font-size: 9.5pt !important;
-      margin-top: 2pt !important;
-      margin-bottom: 0 !important;
-      padding: 0 !important;
-    }
+        display: block !important;
+        border-bottom: 1px solid #1a1a1a !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.08em !important;
+        font-size: 13pt !important;
+        margin: 10pt 0 0 0 !important;
+        padding: 0 0 7pt 0 !important;
+        font-weight: 700 !important;
+      }
+      .jakes-resume-preview h3.pdf-job-title {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        justify-content: space-between !important;
+        align-items: baseline !important;
+        border-bottom: none !important;
+        text-transform: none !important;
+        letter-spacing: normal !important;
+        font-size: 11pt !important;
+        margin: 3pt 0 0 0 !important;
+        padding: 0 !important;
+      }
+      .jakes-resume-preview p.pdf-meta-row {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: baseline !important;
+        font-size: 10pt !important;
+        padding: 0 !important;
+      }
     </style>
   </head>
   <body>
@@ -142,6 +182,11 @@ export async function downloadGenerated(name: string, type: string, content: str
   for (const h3 of iframeDoc.querySelectorAll(".jakes-resume-preview h3")) {
     h3.classList.add(h3.querySelector(".spacer") ? "pdf-job-title" : "pdf-section-header");
   }
+  for (const p of iframeDoc.querySelectorAll(".jakes-resume-preview p")) {
+    if (p.querySelector(".spacer")) {
+      p.classList.add("pdf-meta-row");
+    }
+  }
 
   const body = iframeDoc.body;
   const contentHeight = body.scrollHeight;
@@ -150,12 +195,18 @@ export async function downloadGenerated(name: string, type: string, content: str
   await new Promise((resolve) => requestAnimationFrame(resolve));
 
   try {
-    const canvas = await html2canvas(body, {
+    const resumeEl = iframeDoc.querySelector(".jakes-resume-preview") as HTMLElement | null;
+    if (!resumeEl) {
+      document.body.removeChild(iframe);
+      throw new Error("Resume element not found in iframe");
+    }
+
+    const canvas = await html2canvas(resumeEl, {
       scale: 2,
       useCORS: true,
       backgroundColor: "#ffffff",
-      windowWidth: 816,
-      width: 816,
+      windowWidth: LETTER_PX,
+      width: LETTER_PX,
     });
 
     const imgData = canvas.toDataURL("image/png");
