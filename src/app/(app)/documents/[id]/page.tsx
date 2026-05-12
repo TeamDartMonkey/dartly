@@ -56,6 +56,12 @@ const STATUS_STYLES: Record<string, string> = {
   UPLOADED: "bg-blue-500/10 text-blue-400",
 };
 
+const STATUS_OPTIONS: { value: string; label: string }[] = [
+  { value: "DRAFT", label: "Draft" },
+  { value: "READY", label: "Ready" },
+  { value: "UPLOADED", label: "Uploaded" },
+];
+
 type ViewMode = "preview" | "markdown" | "edit";
 
 const VIEW_OPTIONS: { value: ViewMode; label: string }[] = [
@@ -83,6 +89,7 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const renameInputRef = useRef<HTMLInputElement>(null);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -343,6 +350,33 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
     if (e.key === "Escape") setRenaming(false);
   }
 
+  async function handleStatusChange(newStatus: string) {
+    if (!doc || newStatus === doc.status) return;
+    setUpdatingStatus(true);
+    try {
+      const res = await fetch(`/api/documents/${doc.id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
+      if (res.ok) {
+        const updated = await res.json();
+        setDoc(updated);
+        showToast("Status updated");
+      } else {
+        showToast("Failed to update status", "error");
+      }
+    } catch {
+      showToast("Failed to update status", "error");
+    } finally {
+      setUpdatingStatus(false);
+    }
+  }
+
   // Persist the full tag list on every change. Optimistically update local
   // state so the chip input stays responsive; revert on server rejection.
   async function handleTagsChange(nextTags: string[]) {
@@ -469,11 +503,21 @@ export default function DocumentDetailPage({ params }: { params: Promise<{ id: s
               >
                 {TYPE_LABELS[doc.type] ?? "Other"}
               </span>
-              <span
-                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium shrink-0 ${STATUS_STYLES[doc.status] ?? STATUS_STYLES.DRAFT}`}
-              >
-                {doc.status}
-              </span>
+              {isArchived ? (
+                <span
+                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium shrink-0 ${STATUS_STYLES.ARCHIVED}`}
+                >
+                  ARCHIVED
+                </span>
+              ) : (
+                <Select
+                  value={doc.status}
+                  onChange={handleStatusChange}
+                  options={STATUS_OPTIONS}
+                  disabled={updatingStatus}
+                  className="w-28"
+                />
+              )}
             </div>
             <p className="text-xs text-zinc-500">
               v{doc.versionNumber} &middot; Created{" "}

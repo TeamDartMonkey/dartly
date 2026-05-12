@@ -8,6 +8,7 @@ export {
   RewriteContentSchema,
   TagsSchema,
   UpdateDocumentContentSchema,
+  UpdateDocumentStatusSchema,
   UpdateDocumentTagsSchema,
 } from "./document";
 export { CreateJobSchema, JobStageSchema, UpdateJobSchema } from "./job";

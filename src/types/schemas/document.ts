@@ -52,3 +52,7 @@ export const RenameDocumentSchema = z.object({
 export const UpdateDocumentTagsSchema = z.object({
   tags: TagsSchema,
 });
+
+export const UpdateDocumentStatusSchema = z.object({
+  status: z.enum(["DRAFT", "READY", "UPLOADED"]),
+});
