@@ -39,10 +39,10 @@ describe("settings service", () => {
 
     it("merges stored preferences with defaults", async () => {
       mockFindUnique.mockResolvedValue({
-        preferences: { showArchived: true },
+        preferences: { dashboardView: "list" },
       });
       const result = await getSettings("user-1");
-      expect(result.showArchived).toBe(true);
+      expect(result.dashboardView).toBe("list");
       expect(result.defaultJobStage).toBe(DEFAULT_PREFERENCES.defaultJobStage);
     });
   });
@@ -51,20 +51,20 @@ describe("settings service", () => {
     it("creates settings row with partial update merged into defaults", async () => {
       mockFindUnique.mockResolvedValue(null);
       mockUpsert.mockResolvedValue({
-        preferences: { ...DEFAULT_PREFERENCES, showArchived: true },
+        preferences: { ...DEFAULT_PREFERENCES, dashboardView: "list" },
       });
 
-      await upsertSettings("user-1", { showArchived: true });
+      await upsertSettings("user-1", { dashboardView: "list" });
 
       expect(mockUpsert).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { userId: "user-1" },
           create: expect.objectContaining({
             userId: "user-1",
-            preferences: { ...DEFAULT_PREFERENCES, showArchived: true },
+            preferences: { ...DEFAULT_PREFERENCES, dashboardView: "list" },
           }),
           update: expect.objectContaining({
-            preferences: { ...DEFAULT_PREFERENCES, showArchived: true },
+            preferences: { ...DEFAULT_PREFERENCES, dashboardView: "list" },
           }),
         })
       );
@@ -78,18 +78,18 @@ describe("settings service", () => {
         preferences: {
           ...DEFAULT_PREFERENCES,
           defaultJobStage: "APPLIED",
-          showArchived: true,
+          dashboardView: "list",
         },
       });
 
-      await upsertSettings("user-1", { showArchived: true });
+      await upsertSettings("user-1", { dashboardView: "list" });
 
       expect(mockUpsert).toHaveBeenCalledWith(
         expect.objectContaining({
           update: expect.objectContaining({
             preferences: expect.objectContaining({
               defaultJobStage: "APPLIED",
-              showArchived: true,
+              dashboardView: "list",
             }),
           }),
         })

@@ -30,7 +30,6 @@ import { GET, PATCH } from "@/app/api/settings/route";
 const mockUser = { id: "user-123" };
 const defaultPrefs = {
   defaultJobStage: "INTERESTED",
-  showArchived: false,
   dashboardView: "card" as const,
   autoArchiveRejected: false,
   autoArchiveRejectedDays: 30,
@@ -72,24 +71,24 @@ describe("PATCH /api/settings", () => {
     const req = new Request("http://localhost/api/settings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ showArchived: true }),
+      body: JSON.stringify({ dashboardView: "list" }),
     }) as NextRequest;
     const res = await PATCH(req);
     expect(res.status).toBe(401);
   });
 
   it("updates and returns merged preferences", async () => {
-    const updated = { ...defaultPrefs, showArchived: true };
+    const updated = { ...defaultPrefs, dashboardView: "list" as const };
     mockUpsertSettings.mockResolvedValue(updated);
     const req = new Request("http://localhost/api/settings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ showArchived: true }),
+      body: JSON.stringify({ dashboardView: "list" }),
     }) as NextRequest;
     const res = await PATCH(req);
     expect(res.status).toBe(200);
     const data = await res.json();
-    expect(data.showArchived).toBe(true);
+    expect(data.dashboardView).toBe("list");
   });
 
   it("returns 400 for invalid input", async () => {

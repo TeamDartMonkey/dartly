@@ -87,13 +87,6 @@ export function AppPreferencesSection({ preferences, onUpdate }: AppPreferencesS
         </div>
 
         <Toggle
-          checked={preferences.showArchived}
-          onChange={() => onUpdate("showArchived", !preferences.showArchived)}
-          label="Show archived jobs"
-          description="Display archived jobs on the dashboard."
-        />
-
-        <Toggle
           checked={preferences.autoArchiveRejected}
           onChange={() => onUpdate("autoArchiveRejected", !preferences.autoArchiveRejected)}
           label="Auto-archive rejected jobs"
