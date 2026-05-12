@@ -67,7 +67,7 @@ export async function downloadGenerated(name: string, type: string, content: str
   const { remark } = await import("remark");
   const { default: remarkHtml } = await import("remark-html");
 
-  const result = await remark().use(remarkHtml).process(content);
+  const result = await remark().use(remarkHtml, { sanitize: false }).process(content);
   const htmlContent = await sanitizeResumeHtml(String(result));
 
   const cssRes = await fetch("/jakes-resume.css");
@@ -101,6 +101,32 @@ export async function downloadGenerated(name: string, type: string, content: str
         width: 816px;
       }
       ${cssText}
+
+      .jakes-resume-preview h3.pdf-section-header {
+      display: block !important;
+      border-bottom: 1px solid #1a1a1a !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.08em !important;
+      font-size: 11pt !important;
+      margin-top: 8pt !important;
+      margin-bottom: 0 !important;
+      padding: 0 0 2pt 0 !important;
+      font-weight: 700 !important;
+    }
+
+    .jakes-resume-preview h3.pdf-job-title {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      justify-content: space-between !important;
+      align-items: baseline !important;
+      border-bottom: none !important;
+      text-transform: none !important;
+      letter-spacing: normal !important;
+      font-size: 9.5pt !important;
+      margin-top: 2pt !important;
+      margin-bottom: 0 !important;
+      padding: 0 !important;
+    }
     </style>
   </head>
   <body>
@@ -112,6 +138,10 @@ export async function downloadGenerated(name: string, type: string, content: str
   iframeDoc.close();
 
   await new Promise((resolve) => setTimeout(resolve, 300));
+
+  for (const h3 of iframeDoc.querySelectorAll(".jakes-resume-preview h3")) {
+    h3.classList.add(h3.querySelector(".spacer") ? "pdf-job-title" : "pdf-section-header");
+  }
 
   const body = iframeDoc.body;
   const contentHeight = body.scrollHeight;
